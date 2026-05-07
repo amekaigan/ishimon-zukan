@@ -188,7 +188,70 @@ const buildMonPrompt = (mon, options = {}) => {
   return parts.filter(Boolean).join(', ');
 };
 
-// ===== ダミーベース画像生成（SVG → base64） =====
+// 画像解析失敗時のフォールバック（色からランダム生成）
+const analyzeImageColor = async (imageDataUrl) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32; canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 32, 32);
+      const data = ctx.getImageData(0, 0, 32, 32).data;
+      let r = 0, g = 0, b = 0, count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+      }
+      r = Math.floor(r / count); g = Math.floor(g / count); b = Math.floor(b / count);
+      resolve({ r, g, b });
+    };
+    img.onerror = () => resolve({ r: 128, g: 128, b: 128 });
+    img.src = imageDataUrl;
+  });
+};
+
+// 色からタイプを推測
+const guessTypeFromColor = ({ r, g, b }) => {
+  const max = Math.max(r, g, b);
+  if (r > 180 && g < 130 && b < 130) return '火';
+  if (b > 130 && b > r && b > g) return '水';
+  if (r > 200 && g > 200 && b < 130) return '電気';
+  if (b > 150 && r > 150 && g > 150) return '空';
+  if (r > 100 && g < 100 && b > 100) return 'ドラゴン';
+  if (r > 200 && g > 150 && b > 200) return '精霊';
+  return '土'; // デフォルト
+};
+
+// フォールバック: ランダムな石モンを生成
+const fallbackMon = (color) => {
+  const type = guessTypeFromColor(color);
+  const rarity = 1 + Math.floor(Math.random() * 3); // 1-3
+  const total = 180 + rarity * 50;
+  const split = (total) => {
+    const a = 0.2 + Math.random() * 0.4;
+    const b = 0.2 + Math.random() * 0.4;
+    const c = 0.2 + Math.random() * 0.4;
+    const d = 1 - a - b - c + 0.4;
+    const sum = a + b + c + d;
+    return [a/sum, b/sum, c/sum, d/sum].map(x => Math.floor(total * x));
+  };
+  const [hp, kogeki, bougyo, speed] = split(total);
+  const namePrefixes = ['ゴロ', 'ピコ', 'シズ', 'ボル', 'モエ', 'カザ', 'ドラ', 'ピク'];
+  const nameSuffixes = ['タン', 'ピン', 'ゴン', 'ナン', 'リン', 'カン', 'バン', 'モン'];
+  const name = namePrefixes[Math.floor(Math.random()*namePrefixes.length)]
+             + nameSuffixes[Math.floor(Math.random()*nameSuffixes.length)];
+  return {
+    name, type, stage: 1, rarity,
+    baseStats: { hp, kogeki, bougyo, speed },
+    growthBias: { hp: 0.15, kogeki: 0.15, bougyo: 0.15, speed: 0.15 },
+    skill: 'たいあたり',
+    skillDesc: 'からだで ぶつかる！',
+    description: 'ふしぎな いしモン。',
+    evolveTo: name + 'X',
+  };
+};
+
+
 // ベース12体のダミー画像をSVGで作成（後でAI生成画像に差し替え）
 const makeDummyImage = (type, stage, name) => {
   const TYPE_COLORS = {
@@ -884,42 +947,56 @@ function IshimonZukan() {
     setTimeout(() => setLoadingMsg('いしモン とうじょう！'), 3500);
 
     try {
-      const base64 = imageDataUrl.split(',')[1];
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
-              { type: 'text', text: `この画像は石(または岩)の写真です。この石から「石モン」というポケモン・デジモン風モンスターを生成してください。小学生向けにひらがな多め、カッコいい・かわいい雰囲気で。
+      // Pollinations Vision API（OpenAI互換）でJSON生成
+      // ※画像と一緒にプロンプトを送ると、Visionモデルが解析してJSONを返す
+      const visionPayload = {
+        model: 'openai',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: imageDataUrl } },
+            { type: 'text', text: `この画像は石(または岩)の写真です。この石から「石モン」というポケモン・デジモン風モンスターを生成してください。
 
-**JSONのみ**返してください(\`\`\`不要):
+**JSONのみ**返してください(コードブロック不要、説明不要、JSONのみ):
 
 {
   "name": "カタカナ4-6文字でカッコいい名前",
-  "type": "火|水|土|電気|空|ドラゴン|精霊",
+  "type": "火|水|土|電気|空|ドラゴン|精霊 のいずれか1つ",
   "stage": 1,
-  "rarity": 1-5の整数,
-  "baseStats": { "hp": 30-150, "kogeki": 20-120, "bougyo": 20-120, "speed": 20-120 },
-  "growthBias": { "hp": 0.10-0.20, "kogeki": 0.10-0.20, "bougyo": 0.10-0.20, "speed": 0.10-0.20 },
+  "rarity": 1から5の整数,
+  "baseStats": { "hp": 30から150, "kogeki": 20から120, "bougyo": 20から120, "speed": 20から120 },
+  "growthBias": { "hp": 0.10から0.20, "kogeki": 0.10から0.20, "bougyo": 0.10から0.20, "speed": 0.10から0.20 },
   "skill": "とくぎ名(カタカナ)",
   "skillDesc": "技説明30文字以内",
   "description": "石モン説明60文字以内",
-  "evolveTo": "進化先名"
+  "evolveTo": "進化先名(カタカナ)"
 }
 
-形が独特・大きい・色珍しい→レア度4-5。普通の小石→1-2。ステータス合計はレア度に比例(★1=200、★5=420+)。growthBiasは個性を出すこと。`
-              }
-            ]
-          }]
-        })
+形が独特・大きい・色珍しい→レア度4-5。普通の小石→1-2。ステータス合計はレア度に比例(★1=200、★5=420+)。日本語で。JSON以外は何も書かないこと。`}
+          ]
+        }],
+        max_tokens: 800,
+      };
+
+      const res = await fetch('https://text.pollinations.ai/openai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(visionPayload),
       });
-      if (!res.ok) throw new Error(`API ${res.status}`);
+
+      if (!res.ok) throw new Error(`Vision API ${res.status}`);
       const data = await res.json();
-      const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n').replace(/```json|```/g, '').trim();
-      const mon = JSON.parse(text);
+      const text = data.choices?.[0]?.message?.content || '';
+
+      // JSONを抽出（コードブロックや余計な文字を除去）
+      let jsonStr = text.replace(/```json|```/g, '').trim();
+      // JSON部分だけ抽出（先頭の{から最後の}まで）
+      const jsonStart = jsonStr.indexOf('{');
+      const jsonEnd = jsonStr.lastIndexOf('}');
+      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        jsonStr = jsonStr.slice(jsonStart, jsonEnd + 1);
+      }
+      const mon = JSON.parse(jsonStr);
 
       // === AI画像生成（Anonymous Tier、認証不要） ===
       setLoadingMsg('AIで キャラを えがいてる...');
@@ -941,8 +1018,32 @@ function IshimonZukan() {
       await saveCollection(updated);
       updateMission('capture');
     } catch (err) {
-      console.error(err);
-      setError('しっぱい！ もういちど ためしてみてね');
+      console.error('generateMon error:', err);
+      // Vision API失敗時のフォールバック: 画像の色からランダム生成
+      try {
+        setLoadingMsg('しんちょうに しらべている...');
+        const color = await analyzeImageColor(imageDataUrl);
+        const mon = fallbackMon(color);
+        setLoadingMsg('AIで キャラを えがいてる...');
+        const prompt = buildMonPrompt(mon);
+        const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
+        const entry = {
+          id: `mon-${Date.now()}`,
+          ...mon,
+          level: 1, exp: 0, wins: 0, losses: 0, equipped: {},
+          imageDataUrl: aiImage || imageDataUrl,
+          originalPhoto: imageDataUrl,
+          capturedAt: new Date().toISOString(),
+        };
+        setNewMon(entry);
+        const updated = [entry, ...collection];
+        setCollection(updated);
+        await saveCollection(updated);
+        updateMission('capture');
+      } catch (fallbackErr) {
+        console.error('fallback error:', fallbackErr);
+        setError('しっぱい！ もういちど ためしてみてね');
+      }
     } finally {
       setIsLoading(false);
       setLoadingMsg('');
