@@ -101,45 +101,32 @@ const User = makeIcon('👤');
 const Gem = makeIcon('💎');
 const PackageOpen = makeIcon('📦');
 const Plus = makeIcon('+');
-const LogIn = makeIcon('🔑');
-const LogOut = makeIcon('🚪');
+// LogIn removed
+// LogOut removed
 const Wand2 = makeIcon('🪄');
 
-// ===== Pollinations BYOP 設定 =====
-// 取得したApp Key（公開してOKなキー）
-const POLLINATIONS_APP_KEY = 'pk_7gVUkfXwTLDGS1Uu';
-const POLLINATIONS_AUTH_URL = 'https://enter.pollinations.ai/authorize';
-const POLLINATIONS_API_URL = 'https://gen.pollinations.ai';
+// ===== Pollinations Anonymous API =====
+// APIキー不要・認証不要・URLベース直接アクセス
+// Anonymous Tier: 15秒に1回まで、ウォーターマーク有り
 
-// 認証URLを構築
-const buildAuthUrl = () => {
-  const params = new URLSearchParams({
-    redirect_uri: window.location.origin + window.location.pathname,
-    client_id: POLLINATIONS_APP_KEY,
-    scope: 'usage',
-    models: 'flux,flux-anime',
-    expiry: '30',
-  });
-  return `${POLLINATIONS_AUTH_URL}?${params.toString()}`;
-};
-
-// AI画像生成（Pollinations API使用）
-const generateAiImage = async (prompt, apiKey, seed) => {
+// AI画像生成URL構築（fetch不要、imgタグに直接渡せる）
+const buildImageUrl = (prompt, seed) => {
   const params = new URLSearchParams({
     width: '512',
     height: '512',
-    seed: String(seed || Math.floor(Math.random() * 100000)),
+    seed: String(seed || Math.floor(Math.random() * 1000000)),
     nologo: 'true',
     safe: 'true',
     model: 'flux',
   });
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
-  
-  const headers = {};
-  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-  
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
+};
+
+// AI画像をfetchしてbase64で返す（キャッシュ用）
+const generateAiImage = async (prompt, seed) => {
+  const url = buildImageUrl(prompt, seed);
   try {
-    const res = await fetch(url, { headers });
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`API ${res.status}`);
     const blob = await res.blob();
     return await new Promise((resolve, reject) => {
@@ -154,36 +141,51 @@ const generateAiImage = async (prompt, apiKey, seed) => {
   }
 };
 
-// 石モン用プロンプト構築
-const buildMonPrompt = (mon) => {
+// 石モン用プロンプト構築（時刻・場所・特徴を含む豊かなプロンプト）
+const buildMonPrompt = (mon, options = {}) => {
   const typeMap = {
-    '火': 'fire element, flame body, glowing red-orange',
-    '水': 'water element, droplet shape, glossy blue',
-    '土': 'earth element, rocky body, brown gray',
-    '電気': 'electric element, lightning patterns, yellow',
-    '空': 'sky element, fluffy clouds, cyan white',
-    'ドラゴン': 'dragon element, horns wings claws, purple',
-    '精霊': 'spirit element, glowing halo, pink ethereal',
+    '火': 'fire element with flame body, glowing red-orange aura, ember sparks',
+    '水': 'water element with droplet shape, glossy translucent blue body, water ripples',
+    '土': 'earth element with rocky textured body, brown gray stone, mossy patches',
+    '電気': 'electric element with lightning patterns on yellow body, sparking energy',
+    '空': 'sky element with fluffy cloud body, cyan and white, wind swirls',
+    'ドラゴン': 'dragon element with horns and wings, purple scales, sharp claws, fierce expression',
+    '精霊': 'spirit element with glowing halo, pink ethereal mist, floating sparkles',
   };
   const stageMap = {
-    1: '2-head-tall chibi baby form, simple cute',
-    2: '3-head-tall champion form, balanced proportions',
-    3: '3.5-head-tall ultimate form, majestic crown',
+    1: '2-head-tall chibi baby form, small and cute, large eyes',
+    2: '3-head-tall champion form, balanced proportions, more detailed',
+    3: '3.5-head-tall ultimate form, majestic crown, royal regalia, divine presence',
   };
   const rarityMap = {
-    1: 'simple plain', 2: 'small crystals', 3: 'large crystals glow',
-    4: 'gemstones magical sparkles', 5: 'crown rainbow aura divine',
+    1: 'simple plain design',
+    2: 'small crystal accents, subtle pattern',
+    3: 'large crystals embedded, mild glow effect',
+    4: 'gemstones magical sparkles, radiant aura',
+    5: 'crown rainbow aura, divine sparkles, royal ornaments',
   };
-  return [
-    'cute monster character, original mascot',
-    'Bikkuriman sticker style, Digimon anime style',
-    'cel-shaded, thick black outlines, big shiny eyes',
+
+  // 時刻を入れて毎回違う絵柄に
+  const now = new Date();
+  const hour = now.getHours();
+  const timeOfDay = hour < 6 ? 'dawn' : hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
+
+  const parts = [
+    'cute monster character, original mascot design',
+    'Bikkuriman sticker style mixed with Digimon anime style',
+    'cel-shaded illustration with thick black outlines',
+    'big shiny anime eyes with two highlight dots',
     typeMap[mon.type] || typeMap['土'],
     stageMap[mon.stage] || stageMap[1],
     rarityMap[mon.rarity] || rarityMap[1],
-    'centered front pose, gradient background',
-    'kid-friendly, vibrant, no text, no watermark',
-  ].join(', ');
+    `${timeOfDay} atmosphere`,
+    'centered front-facing pose, full body visible',
+    'gradient background, magical particles',
+    'high quality, vibrant colors, kid-friendly',
+    'no text, no logos, no watermark, no humans',
+  ];
+
+  return parts.filter(Boolean).join(', ');
 };
 
 // ===== ダミーベース画像生成（SVG → base64） =====
@@ -551,8 +553,6 @@ function IshimonZukan() {
     lastLogin: null, streak: 0,
     gachaCards: 0,
     missions: { date: null, list: [], progress: {}, claimed: {}, allClaimed: false },
-    pollinationsKey: null, // BYOPで取得したAPIキー
-    pollinationsKeyExpiry: null, // キーの期限
   });
 
   // モーダル系
@@ -566,8 +566,7 @@ function IshimonZukan() {
   const [gachaPhase, setGachaPhase] = useState('idle');
   const [editingName, setEditingName] = useState(false);
   const nameInputRef = useRef(null);
-  // BYOP関連
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  // AI生成中の状態
   const [aiGenerating, setAiGenerating] = useState(false);
   // 初回オンボーディング
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -607,50 +606,25 @@ function IshimonZukan() {
   // ロード
   useEffect(() => {
     (async () => {
-      // BYOP認証コールバック処理: URLハッシュにapi_keyがあれば取得
-      try {
-        if (window.location.hash) {
-          const params = new URLSearchParams(window.location.hash.slice(1));
-          const newKey = params.get('api_key');
-          if (newKey) {
-            const expiry = Date.now() + 30 * 24 * 3600 * 1000; // 30日後
-            // ロード済みのプレイヤー情報に追加保存（後段で再ロードされる）
-            await window.storage.set('pollinations-key', newKey);
-            await window.storage.set('pollinations-expiry', String(expiry));
-            // URLハッシュをクリア
-            history.replaceState(null, '', window.location.pathname + window.location.search);
-          }
-        }
-      } catch (e) { console.error('Auth callback error:', e); }
-
       try {
         const colR = await window.storage.get('ishimon-collection-v3');
         const playerR = await window.storage.get('ishimon-player-v3');
-        const keyR = await window.storage.get('pollinations-key');
-        const expiryR = await window.storage.get('pollinations-expiry');
         const loadedCollection = colR?.value ? JSON.parse(colR.value) : SAMPLES;
         const loadedPlayer = playerR?.value ? JSON.parse(playerR.value) : null;
-        const savedKey = keyR?.value || null;
-        const savedExpiry = expiryR?.value ? parseInt(expiryR.value) : null;
-        // 期限切れチェック
-        const validKey = (savedKey && savedExpiry && savedExpiry > Date.now()) ? savedKey : null;
 
         setCollection(loadedCollection);
         if (loadedPlayer) {
-          const merged = { ...loadedPlayer, pollinationsKey: validKey, pollinationsKeyExpiry: savedExpiry };
-          setPlayer(merged);
-          checkLoginBonus(merged, loadedCollection);
+          setPlayer(loadedPlayer);
+          checkLoginBonus(loadedPlayer, loadedCollection);
         } else {
           // 初回起動 → オンボーディング表示
           const initialPlayer = {
-            name: '',  // オンボーディングで入力
+            name: '',
             level: 1, exp: 0, gems: 30,
             inventory: ['sword_1', 'shield_1', 'charm_1'],
             lastLogin: todayKey(), streak: 1,
             gachaCards: 3,
             missions: { date: todayKey(), list: getTodayMissions(todayKey()), progress: {}, claimed: {}, allClaimed: false },
-            pollinationsKey: validKey,
-            pollinationsKeyExpiry: savedExpiry,
           };
           setPlayer(initialPlayer);
           await window.storage.set('ishimon-player-v3', JSON.stringify(initialPlayer));
@@ -947,19 +921,16 @@ function IshimonZukan() {
       const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n').replace(/```json|```/g, '').trim();
       const mon = JSON.parse(text);
 
-      // === BYOP: Pollinationsキーがあればキャラ画像をAI生成 ===
-      let aiImage = null;
-      if (player.pollinationsKey) {
-        setLoadingMsg('AIで キャラを えがいてる...');
-        const prompt = buildMonPrompt(mon);
-        aiImage = await generateAiImage(prompt, player.pollinationsKey, Date.now() % 100000);
-      }
+      // === AI画像生成（Anonymous Tier、認証不要） ===
+      setLoadingMsg('AIで キャラを えがいてる...');
+      const prompt = buildMonPrompt(mon);
+      const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
 
       const entry = {
         id: `mon-${Date.now()}`,
         ...mon,
         level: 1, exp: 0, wins: 0, losses: 0, equipped: {},
-        // AI画像があればそれを使い、なければ撮った石の写真を表示
+        // AI画像があればそれを使い、生成失敗時は撮った石の写真を表示
         imageDataUrl: aiImage || imageDataUrl,
         originalPhoto: imageDataUrl, // 元の石の写真も保持
         capturedAt: new Date().toISOString(),
@@ -978,32 +949,12 @@ function IshimonZukan() {
     }
   };
 
-  // ===== Pollinationsログイン/ログアウト =====
-  const loginPollinations = () => {
-    if (POLLINATIONS_APP_KEY === 'pk_YOUR_APP_KEY_HERE') {
-      setError('App Keyが せっていされて いません');
-      return;
-    }
-    window.location.href = buildAuthUrl();
-  };
-
-  const logoutPollinations = async () => {
-    await window.storage.delete('pollinations-key');
-    await window.storage.delete('pollinations-expiry');
-    setPlayer(prev => ({ ...prev, pollinationsKey: null, pollinationsKeyExpiry: null }));
-    setShowAuthModal(false);
-  };
-
-  // ===== AI画像で再生成（既存の石モンを「キラキラ進化」させる）=====
+  // ===== AI画像で再生成（既存の石モンの絵柄を変える）=====
   const regenerateMonImage = async (mon) => {
-    if (!player.pollinationsKey) {
-      setShowAuthModal(true);
-      return;
-    }
     setAiGenerating(true);
     try {
       const prompt = buildMonPrompt(mon);
-      const aiImage = await generateAiImage(prompt, player.pollinationsKey, Date.now() % 100000);
+      const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
       if (aiImage) {
         const updated = collection.map(c => c.id === mon.id ? { ...c, imageDataUrl: aiImage } : c);
         setCollection(updated);
@@ -1011,7 +962,7 @@ function IshimonZukan() {
         if (selected?.id === mon.id) setSelected({ ...mon, imageDataUrl: aiImage });
         if (newMon?.id === mon.id) setNewMon({ ...mon, imageDataUrl: aiImage });
       } else {
-        setError('AI生成に しっぱい...');
+        setError('AI生成に失敗しました。15秒後に再度お試しください');
       }
     } catch (e) {
       console.error(e);
@@ -1701,49 +1652,6 @@ function IshimonZukan() {
             </div>
           </div>
 
-          {/* === BYOP: Pollinations 接続セクション === */}
-          <div className="mt-4 rounded-2xl p-3"
-            style={{ background: 'rgba(106,13,173,0.3)', border: '2px solid #C77DFF' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Wand2 className="w-5 h-5 text-purple-300" />
-              <div className="flex-1">
-                <div className="text-purple-200 text-[10px] font-black tracking-widest">AI画像生成機能</div>
-                <div className="text-white font-black text-sm flex items-center gap-1">
-                  {player.pollinationsKey ? (
-                    <><Check className="w-4 h-4 text-green-400" /> 連携済み</>
-                  ) : (
-                    <><X className="w-4 h-4 text-red-400" /> 未連携</>
-                  )}
-                </div>
-              </div>
-            </div>
-            {player.pollinationsKey ? (
-              <>
-                <div className="text-white/80 text-xs font-bold mb-2 leading-relaxed">
-                  AIが 世界に 1つだけの 石モンを 描いてくれます！
-                </div>
-                <button onClick={logoutPollinations}
-                  className="w-full py-2 rounded-xl text-white/80 font-black text-xs active:scale-95 flex items-center justify-center gap-1"
-                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.3)' }}>
-                  <LogOut className="w-3 h-3" /> 連携を 解除
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="text-white/80 text-xs font-bold mb-2 leading-relaxed">
-                  Pollinations と 連携すると、AIが 世界に 1つだけの オリジナル石モンを 描いてくれます！
-                </div>
-                <div className="text-yellow-200 text-[10px] font-bold mb-2">
-                  💎 無料です（Google または GitHubアカウントが 必要）
-                </div>
-                <button onClick={loginPollinations}
-                  className="w-full py-2 rounded-xl text-white font-black text-sm active:scale-95 flex items-center justify-center gap-1"
-                  style={{ background: 'linear-gradient(135deg, #C77DFF, #6A0DAD)', border: '2px solid white', boxShadow: '0 3px 0 #4A0E78' }}>
-                  <LogIn className="w-4 h-4" /> Pollinationsに 連携する
-                </button>
-              </>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -2072,17 +1980,13 @@ function IshimonZukan() {
   const OnboardingModal = () => {
     if (!showOnboarding) return null;
 
-    const finishOnboarding = (skipAuth = false) => {
+    const finishOnboarding = () => {
       const value = onboardingNameRef.current?.value || '';
       const trimmed = value.trim().slice(0, 10) || 'トレーナー';
       const updated = { ...player, name: trimmed };
       setPlayer(updated);
       savePlayer(updated);
       setShowOnboarding(false);
-      if (!skipAuth) {
-        // Pollinations認証へ
-        setTimeout(() => loginPollinations(), 300);
-      }
     };
 
     return (
@@ -2126,7 +2030,7 @@ function IshimonZukan() {
             </div>
           )}
 
-          {/* ステップ1: 名前入力 */}
+          {/* ステップ1: 名前入力（最終ステップ） */}
           {onboardingStep === 1 && (
             <div className="rounded-3xl p-6"
               style={{ background: 'linear-gradient(135deg, #1976D2, #0D47A1)', border: '4px solid #FFD700', boxShadow: '0 0 60px rgba(255,215,0,0.4)' }}>
@@ -2134,23 +2038,22 @@ function IshimonZukan() {
                 <div className="inline-block bg-yellow-400 rounded-full p-4 mb-3">
                   <User className="w-10 h-10 text-yellow-900" strokeWidth={3} />
                 </div>
-                <div className="text-yellow-300 text-xs font-black tracking-widest">STEP 1 / 2</div>
                 <h2 className="text-2xl font-black text-white">
                   あなたの名前を教えて！
                 </h2>
                 <p className="text-white/80 text-sm font-bold mt-2 leading-relaxed">
                   プレイヤー名として表示されます<br/>
-                  （あとで変更できます）
+                  (あとで変更できます)
                 </p>
               </div>
               <input
                 ref={onboardingNameRef}
                 defaultValue=""
                 maxLength={10}
-                placeholder="名前を入力（10文字まで）"
+                placeholder="名前を入力(10文字まで)"
                 className="w-full rounded-xl px-4 py-3 text-center font-black text-gray-800 text-lg mb-4"
                 style={{ border: '3px solid #FFD700', outline: 'none' }}
-                onKeyDown={e => e.key === 'Enter' && setOnboardingStep(2)}
+                onKeyDown={e => e.key === 'Enter' && finishOnboarding()}
               />
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setOnboardingStep(0)}
@@ -2158,115 +2061,14 @@ function IshimonZukan() {
                   style={{ background: 'rgba(0,0,0,0.3)', border: '2px solid rgba(255,255,255,0.2)' }}>
                   ← 戻る
                 </button>
-                <button onClick={() => setOnboardingStep(2)}
+                <button onClick={finishOnboarding}
                   className="py-3 rounded-2xl text-white font-black active:scale-95"
                   style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 #5A1A4A', border: '2px solid white' }}>
-                  次へ →
+                  始める →
                 </button>
               </div>
             </div>
           )}
-
-          {/* ステップ2: AI連携の説明 */}
-          {onboardingStep === 2 && (
-            <div className="rounded-3xl p-6"
-              style={{ background: 'linear-gradient(135deg, #6A0DAD, #2E0068)', border: '4px solid #C77DFF', boxShadow: '0 0 60px rgba(199,125,255,0.5)' }}>
-              <div className="text-center mb-4">
-                <div className="text-6xl mb-2">🎨✨</div>
-                <div className="text-yellow-300 text-xs font-black tracking-widest">STEP 2 / 2</div>
-                <h2 className="text-2xl font-black text-white mb-1">
-                  AI画像生成を使いますか？
-                </h2>
-                <p className="text-purple-200 text-sm font-bold leading-relaxed">
-                  Pollinations と連携すると、<br/>
-                  AIが世界に1つだけの<br/>
-                  オリジナル石モンを描いてくれます！
-                </p>
-              </div>
-
-              {/* メリット */}
-              <div className="bg-white/10 rounded-2xl p-3 mb-3 space-y-2 text-sm font-bold text-white"
-                style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
-                <div className="text-yellow-300 text-xs font-black tracking-widest mb-1">
-                  ✨ 連携の メリット
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                  <span>撮影した石からAIがキャラを生成</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                  <span>進化・ガチャでもAIアートが楽しめる</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                  <span>完全無料（Pollinationsの無料枠を利用）</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                  <span>30日に1回の連携でずっと使える</span>
-                </div>
-              </div>
-
-              {/* スキップ時の制限 */}
-              <div className="bg-yellow-400/10 rounded-2xl p-3 mb-3 text-xs font-bold text-yellow-200"
-                style={{ border: '1px dashed #FFD700' }}>
-                <div className="font-black mb-1">⚠️ スキップした場合</div>
-                <div>AI画像生成は使えません（撮影した石の写真がそのままキャラに）。バトル・育成・ガチャは普通に遊べます。あとで「プロフィール」画面から連携することも可能です。</div>
-              </div>
-
-              <div className="space-y-2">
-                <button onClick={() => finishOnboarding(false)}
-                  className="w-full py-3 rounded-2xl text-white font-black active:scale-95 flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #C77DFF, #6A0DAD)', boxShadow: '0 4px 0 #1A003A', border: '3px solid white' }}>
-                  <LogIn className="w-4 h-4" /> Pollinationsに連携する
-                </button>
-                <button onClick={() => finishOnboarding(true)}
-                  className="w-full py-2 rounded-2xl text-white/60 font-black text-sm active:text-white underline">
-                  連携せずに始める（あとで連携もOK）
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // ===========================================
-  // BYOP認証モーダル（Pollinationsへの接続案内）
-  // ===========================================
-  const AuthModal = () => {
-    if (!showAuthModal) return null;
-    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.9)' }}>
-        <div className="w-full max-w-sm rounded-3xl p-6 text-center"
-          style={{ background: 'linear-gradient(180deg, #4A0E78, #1a0a05)', border: '4px solid #C77DFF', boxShadow: '0 0 60px rgba(199,125,255,0.5)' }}>
-          <div className="text-6xl mb-3">🎨</div>
-          <div className="text-2xl font-black text-white mb-2">AIで描いてもらう？</div>
-          <div className="text-purple-200 text-sm font-bold mb-4 leading-relaxed">
-            Pollinationsと連携すると、<br/>
-            AIが世界に1つだけの<br/>
-            オリジナル石モンを描いてくれます！
-          </div>
-          <div className="bg-white/10 rounded-2xl p-3 mb-4 text-left text-white/90 text-xs font-bold space-y-1"
-            style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
-            <div className="flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /> あなただけの不思議なAI画像</div>
-            <div className="flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /> 30日に1回の連携でずっと使える</div>
-            <div className="flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /> Google または GitHubで すぐ連携</div>
-            <div className="flex items-center gap-2"><Check className="w-3 h-3 text-green-400" /> 完全無料！</div>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={loginPollinations}
-              className="flex-1 py-3 rounded-2xl text-white font-black active:scale-95 flex items-center justify-center gap-1"
-              style={{ background: 'linear-gradient(135deg, #C77DFF, #6A0DAD)', border: '3px solid white', boxShadow: '0 4px 0 #2E0068' }}>
-              <LogIn className="w-4 h-4" /> 連携する
-            </button>
-            <button onClick={() => setShowAuthModal(false)}
-              className="px-4 py-3 rounded-2xl text-white/70 font-black underline text-sm">
-              あとで
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -2603,7 +2405,7 @@ function IshimonZukan() {
             className="w-full py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg, #6A0DAD, #C77DFF, #FFD700)', boxShadow: '0 4px 0 #2E0068', border: '3px solid white' }}>
             <Wand2 className="w-4 h-4" />
-            {aiGenerating ? <>描いてる...</> : (player.pollinationsKey ? <>✨ AIで オリジナルアートに 変換！</> : <>🎨 AI画像（連携が必要）</>)}
+            {aiGenerating ? <>描いてる...</> : <>✨ AIで オリジナルアートに 変換！</>}
           </button>
         </div>
       </div>
@@ -2813,48 +2615,18 @@ function IshimonZukan() {
             </div>
           </div>
 
-          {/* === BYOP: Pollinations 接続セクション === */}
+          {/* AI画像生成について（情報のみ） */}
           <div className="rounded-2xl p-3"
-            style={{ background: 'rgba(106,13,173,0.4)', border: '2px solid #C77DFF' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Wand2 className="w-5 h-5 text-purple-300" />
+            style={{ background: 'rgba(106,13,173,0.3)', border: '1px solid rgba(199,125,255,0.4)' }}>
+            <div className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-purple-300 flex-shrink-0" />
               <div className="flex-1">
-                <div className="text-purple-200 text-[10px] font-black tracking-widest">AI画像生成機能</div>
-                <div className="text-white font-black text-sm flex items-center gap-1">
-                  {player.pollinationsKey ? (
-                    <><Check className="w-4 h-4 text-green-400" /> 連携済み</>
-                  ) : (
-                    <><X className="w-4 h-4 text-red-400" /> 未連携</>
-                  )}
+                <div className="text-purple-200 text-[10px] font-black tracking-widest">AI画像生成</div>
+                <div className="text-white text-xs font-bold leading-relaxed mt-0.5">
+                  撮影・進化・ガチャでAIが世界に1つだけのオリジナル石モンを自動生成します。完全無料でアカウント登録不要。
                 </div>
               </div>
             </div>
-            {player.pollinationsKey ? (
-              <>
-                <div className="text-white/80 text-xs font-bold mb-2 leading-relaxed">
-                  AIが 世界に 1つだけの 石モンを 描いてくれます！
-                </div>
-                <button onClick={logoutPollinations}
-                  className="w-full py-2 rounded-xl text-white/80 font-black text-xs active:scale-95 flex items-center justify-center gap-1"
-                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.3)' }}>
-                  <LogOut className="w-3 h-3" /> 連携を 解除
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="text-white/80 text-xs font-bold mb-2 leading-relaxed">
-                  Pollinations と 連携すると、AIが 世界に 1つだけの オリジナル石モンを 描いてくれます！
-                </div>
-                <div className="text-yellow-200 text-[10px] font-bold mb-2">
-                  💎 無料です（Google または GitHubアカウントが 必要）
-                </div>
-                <button onClick={loginPollinations}
-                  className="w-full py-2 rounded-xl text-white font-black text-sm active:scale-95 flex items-center justify-center gap-1"
-                  style={{ background: 'linear-gradient(135deg, #C77DFF, #6A0DAD)', border: '2px solid white', boxShadow: '0 3px 0 #4A0E78' }}>
-                  <LogIn className="w-4 h-4" /> Pollinationsに 連携する
-                </button>
-              </>
-            )}
           </div>
         </div>
 
@@ -3040,7 +2812,6 @@ function IshimonZukan() {
       <ShopModal />
       <ProfileModal />
       <EquipModal />
-      <AuthModal />
       <OnboardingModal />
 
       {/* AI画像生成中のローディング */}
