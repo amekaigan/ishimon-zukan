@@ -141,6 +141,40 @@ const generateAiImage = async (prompt, seed) => {
   }
 };
 
+// ===== 画像キャッシュ機構 =====
+// 同じ条件のキャラ（タイプ・レア度・進化段階・名前）の画像を使い回す
+const getMonCacheKey = (mon) => `aiimg:${mon.type}_${mon.rarity}_${mon.stage}_${mon.name}`;
+
+const loadCachedImage = async (mon) => {
+  try {
+    const key = getMonCacheKey(mon);
+    const r = await window.storage.get(key);
+    return r?.value || null;
+  } catch (e) { return null; }
+};
+
+const saveCachedImage = async (mon, base64) => {
+  try {
+    const key = getMonCacheKey(mon);
+    await window.storage.set(key, base64);
+  } catch (e) { console.error('cache save failed:', e); }
+};
+
+// キャッシュ優先で画像取得・なければAI生成
+const getOrGenerateMonImage = async (mon, seed) => {
+  // キャッシュチェック
+  const cached = await loadCachedImage(mon);
+  if (cached) return { image: cached, fromCache: true };
+  // AI生成
+  const prompt = buildMonPrompt(mon);
+  const generated = await generateAiImage(prompt, seed || Date.now() % 1000000);
+  if (generated) {
+    await saveCachedImage(mon, generated);
+    return { image: generated, fromCache: false };
+  }
+  return { image: null, fromCache: false };
+};
+
 // 石モン用プロンプト構築（時刻・場所・特徴を含む豊かなプロンプト）
 const buildMonPrompt = (mon, options = {}) => {
   const typeMap = {
@@ -818,6 +852,33 @@ function IshimonZukan() {
       return updated;
     });
 
+    // === バックグラウンドでAI画像生成を開始（モンのみ、最大2体まで同時） ===
+    // めくり演出中に裏で生成してキャッシュへ。完成したらレンダラーが拾う。
+    const monResults = results.filter(r => r.kind === 'mon');
+    const generateInBackground = async () => {
+      for (let i = 0; i < monResults.length; i++) {
+        const monResult = monResults[i];
+        const cached = await loadCachedImage(monResult.data);
+        if (cached) {
+          // キャッシュ使用、即適用
+          monResult.data.imageDataUrl = cached;
+        } else {
+          // AI生成（15秒間隔を守るためsequential）
+          const { image } = await getOrGenerateMonImage(monResult.data, Date.now() % 1000000);
+          if (image) {
+            monResult.data.imageDataUrl = image;
+            // 表示中の結果も即更新
+            setGachaResults(prev => prev.map(r => 
+              r.kind === 'mon' && r.data.id === monResult.data.id 
+                ? { ...r, data: { ...r.data, imageDataUrl: image } } 
+                : r
+            ));
+          }
+        }
+      }
+    };
+    generateInBackground(); // awaitしない（裏で並行実行）
+
     // 1枚ずつ順番にめくるアニメ（0.5秒おき）
     for (let i = 0; i < results.length; i++) {
       await new Promise(r => setTimeout(r, i === 0 ? 400 : 600));
@@ -826,6 +887,7 @@ function IshimonZukan() {
     setGachaPhase('done');
 
     // 獲得処理: モンはcollectionへ、装備はinventoryへ
+    // ※AI画像はめくり演出中に各 monResult.data.imageDataUrl に書き込み済み（キャッシュor生成完了分）
     const newMons = results.filter(r => r.kind === 'mon').map(r => r.data);
     const newEquips = results.filter(r => r.kind === 'equip').map(r => r.data.id);
 
@@ -998,10 +1060,9 @@ function IshimonZukan() {
       }
       const mon = JSON.parse(jsonStr);
 
-      // === AI画像生成（Anonymous Tier、認証不要） ===
+      // === AI画像生成（キャッシュ優先、なければAnonymous Tierで生成） ===
       setLoadingMsg('AIで キャラを えがいてる...');
-      const prompt = buildMonPrompt(mon);
-      const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
+      const { image: aiImage } = await getOrGenerateMonImage(mon);
 
       const entry = {
         id: `mon-${Date.now()}`,
@@ -1025,8 +1086,7 @@ function IshimonZukan() {
         const color = await analyzeImageColor(imageDataUrl);
         const mon = fallbackMon(color);
         setLoadingMsg('AIで キャラを えがいてる...');
-        const prompt = buildMonPrompt(mon);
-        const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
+        const { image: aiImage } = await getOrGenerateMonImage(mon);
         const entry = {
           id: `mon-${Date.now()}`,
           ...mon,
@@ -1050,13 +1110,15 @@ function IshimonZukan() {
     }
   };
 
-  // ===== AI画像で再生成（既存の石モンの絵柄を変える）=====
+  // ===== AI画像で再生成（既存の石モンの絵柄を変える、キャッシュ更新）=====
   const regenerateMonImage = async (mon) => {
     setAiGenerating(true);
     try {
       const prompt = buildMonPrompt(mon);
+      // 強制的に新しいseedで生成（既存キャッシュは新画像で上書き）
       const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
       if (aiImage) {
+        await saveCachedImage(mon, aiImage); // キャッシュも更新
         const updated = collection.map(c => c.id === mon.id ? { ...c, imageDataUrl: aiImage } : c);
         setCollection(updated);
         await saveCollection(updated);
@@ -1931,17 +1993,26 @@ function IshimonZukan() {
                           <div className="absolute inset-0 pointer-events-none"
                             style={{ background: `radial-gradient(circle, ${rc.bg}40 0%, transparent 70%)`, animation: 'pulse 1s ease-in-out infinite' }} />
                         )}
-                        <div className="text-2xl z-10">{t ? t.emoji : (EQUIPMENT[res.data.id]?.emoji || '⚔️')}</div>
-                        <div className="text-center px-1 z-10">
-                          <div className="font-black text-white text-[10px] leading-tight" style={{ textShadow: t ? `0 1px 0 ${t.dark}` : '0 1px 0 #666' }}>
-                            {res.data.name}
+                        {/* AI画像があれば表示、なければ絵文字 */}
+                        {res.kind === 'mon' && res.data.imageDataUrl ? (
+                          <img src={res.data.imageDataUrl} alt={res.data.name}
+                            className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-2xl z-10">{t ? t.emoji : (EQUIPMENT[res.data.id]?.emoji || '⚔️')}</div>
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 z-10"
+                          style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
+                          <div className="text-center">
+                            <div className="font-black text-white text-[10px] leading-tight">
+                              {res.data.name}
+                            </div>
+                            <div className="text-[8px] font-black" style={{ color: rc.bg }}>
+                              {'★'.repeat(res.rarity)}
+                            </div>
+                            {res.rarity >= 4 && (
+                              <div className="text-[8px] font-black text-yellow-300">{rc.label}</div>
+                            )}
                           </div>
-                          <div className="text-[8px] font-black" style={{ color: rc.bg }}>
-                            {'★'.repeat(res.rarity)}
-                          </div>
-                          {res.rarity >= 4 && (
-                            <div className="text-[8px] font-black text-yellow-300">{rc.label}</div>
-                          )}
                         </div>
                         <div className="absolute top-1 right-1 text-[8px] font-black px-1 rounded"
                           style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}>
