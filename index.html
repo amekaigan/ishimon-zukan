@@ -360,13 +360,61 @@ const fallbackMon = (color) => {
   const nameSuffixes = ['タン', 'ピン', 'ゴン', 'ナン', 'リン', 'カン', 'バン', 'モン'];
   const name = namePrefixes[Math.floor(Math.random()*namePrefixes.length)]
              + nameSuffixes[Math.floor(Math.random()*nameSuffixes.length)];
+  // タイプ別の豊かなテキスト
+  const typeStories = {
+    '火': {
+      skill: 'フレイムバースト', skillDesc: '体内で燃え上がる炎を勢いよく放出する。命中した相手はやけど状態になることがある。',
+      description: '太古の火山の麓で生まれたとされる石モン。心の中に小さな太陽を宿し、寒い夜には自ら熱を放って仲間を守ると伝えられる。',
+      personality: '情熱的で正義感が強く、仲間思い', favorite: '焚き火と、夕焼けの空',
+      legend: '火山が静まる夜、空に流れ星を見ると、この石モンの仲間が地上に降りてくると言われている。',
+    },
+    '水': {
+      skill: 'アクアプリズム', skillDesc: '透明な水の結晶で相手を包む。しばらく動きを封じ、攻撃力を下げることがある。',
+      description: '深い泉のほとりで眠る石モン。月光を浴びると体内の水が虹色に輝き、不思議な力を発揮するという。',
+      personality: '穏やかで思慮深く、優しい', favorite: '雨上がりの森と、清らかな水辺',
+      legend: '満月の夜、湖の底から歌が聞こえたら、それはこの石モンが祝福を歌っている証だと言われる。',
+    },
+    '土': {
+      skill: 'ロックスマッシュ', skillDesc: '体を硬い岩に変えて勢いよく突進する。相手の防御を貫通することがある。',
+      description: '何億年も大地の鼓動を聞き続けてきた石モン。古い記憶を体内に刻み、時々それを夢として見せるという。',
+      personality: 'おおらかで動じない、頼れる兄貴肌', favorite: '苔むした古い岩と、大地の静けさ',
+      legend: '迷子になった旅人が、この石モンの夢を見ると、必ず帰り道が見つかるという伝説がある。',
+    },
+    '電気': {
+      skill: 'スパークボルト', skillDesc: '体に蓄えた電気を一気に放電する。相手をまひ状態にすることがある。',
+      description: '雷雨の夜に生まれたとされる石モン。体内には小さな雷が常に渦巻き、興奮するとパチパチと音を立てる。',
+      personality: 'やんちゃで好奇心旺盛、すぐ動く', favorite: '雷雨の空と、光るもの全般',
+      legend: '雷が3回連続で鳴った時、空からこの石モンの兄弟が落ちてくると伝えられている。',
+    },
+    '空': {
+      skill: 'スカイダンス', skillDesc: '空中を舞いながら風の刃を放つ。素早さが上がることがある。',
+      description: '高い山の頂で雲と戯れる石モン。雲の流れを読んで天気を察知する力を持ち、古来から旅人に愛されてきた。',
+      personality: '自由気ままで、明るく前向き', favorite: '青空と、ふわふわした雲',
+      legend: '羊の形の雲が空に浮かぶ日、この石モンが地上を散歩していると言われている。',
+    },
+    'ドラゴン': {
+      skill: 'ドラゴンクロウ', skillDesc: '鋭い爪に古代の力を込めて切り裂く。会心の一撃が出やすい。',
+      description: '伝説の古代竜の血を引くと言われる希少な石モン。眠っている時も体内で力が脈動している。',
+      personality: '誇り高く威厳があり、孤高', favorite: '古い遺跡と、満月の夜',
+      legend: '七つの星が一直線に並ぶ夜、この石モンを見つけた者は王の素質を持つと伝えられる。',
+    },
+    '精霊': {
+      skill: 'ミスティックヒール', skillDesc: '幻想的な光を放ち、味方の傷を癒す。たまに状態異常も治る。',
+      description: '森の奥深く、神聖な泉のほとりに住むという精霊系の石モン。人の心の優しさに惹かれて姿を現す。',
+      personality: '神秘的で繊細、心優しい', favorite: '木漏れ日と、静かな祈りの場所',
+      legend: 'この石モンに会った者は、3日のうちに大切な人と再会できるという言い伝えがある。',
+    },
+  };
+  const story = typeStories[type] || typeStories['土'];
   return {
     name, type, stage: 1, rarity,
     baseStats: { hp, kogeki, bougyo, speed },
     growthBias: { hp: 0.15, kogeki: 0.15, bougyo: 0.15, speed: 0.15 },
-    skill: 'たいあたり',
-    skillDesc: 'からだで ぶつかる！',
-    description: 'ふしぎな いしモン。',
+    skill: story.skill, skillDesc: story.skillDesc,
+    description: story.description,
+    personality: story.personality,
+    favorite: story.favorite,
+    legend: story.legend,
     evolveTo: name + 'X',
   };
 };
@@ -1107,11 +1155,11 @@ function IshimonZukan() {
   const generateMon = async (imageDataUrl) => {
     setIsLoading(true);
     setError('');
-    setLoadingMsg('いしを 観察しています...');
-    setTimeout(() => setLoadingMsg('魂の波動を 感じています...'), 1800);
-    setTimeout(() => setLoadingMsg('特徴を 分析しています...'), 4000);
-    setTimeout(() => setLoadingMsg('伝説を 紐解いています...'), 7000);
-    setTimeout(() => setLoadingMsg('石モンが 目覚めようとしています...'), 11000);
+    setLoadingMsg('石を 観察しています...');
+    setTimeout(() => setLoadingMsg('魂の波動を 感じています...'), 5000);
+    setTimeout(() => setLoadingMsg('特徴を 分析しています...'), 12000);
+    setTimeout(() => setLoadingMsg('伝説を 紐解いています...'), 20000);
+    setTimeout(() => setLoadingMsg('石モンが 目覚めようとしています...'), 30000);
 
     // 並行して位置情報を取得（プライバシー配慮、失敗してもOK）
     const locationPromise = getCurrentLocation();
@@ -2628,7 +2676,7 @@ function IshimonZukan() {
     useEffect(() => {
       const tipTimer = setInterval(() => {
         setTipIdx(i => (i + 1) % tips.length);
-      }, 3500);
+      }, 10000);
       const walkTimer = setInterval(() => {
         setWalkPhase(p => (p + 1) % 4);
       }, 600);
@@ -2834,11 +2882,12 @@ function IshimonZukan() {
                 </div>
               )}
               {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
-                <div>
-                  <div className="text-white/60 text-[10px] mb-1 mt-1.5">出会った時の石</div>
-                  <img src={mon.originalPhoto}
-                    className="w-full h-24 object-cover rounded-lg"
-                    style={{ border: '1px solid rgba(255,255,255,0.2)' }} />
+                <div className="mt-2">
+                  <div className="text-white/60 text-[10px] font-bold mb-1.5">📷 出会った時の石</div>
+                  <div className="w-full rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.25)', aspectRatio: '4/3' }}>
+                    <img src={mon.originalPhoto}
+                      className="w-full h-full object-cover block" />
+                  </div>
                 </div>
               )}
             </div>
