@@ -711,8 +711,15 @@ function IshimonZukan() {
 
         setCollection(loadedCollection);
         if (loadedPlayer) {
-          setPlayer(loadedPlayer);
-          checkLoginBonus(loadedPlayer, loadedCollection);
+          // 既存プレイヤー: ガチャカードが少ない場合は100枚まで補充
+          const adjusted = (loadedPlayer.gachaCards || 0) < 100
+            ? { ...loadedPlayer, gachaCards: 100 }
+            : loadedPlayer;
+          setPlayer(adjusted);
+          if (adjusted.gachaCards !== loadedPlayer.gachaCards) {
+            await window.storage.set('ishimon-player-v3', JSON.stringify(adjusted));
+          }
+          checkLoginBonus(adjusted, loadedCollection);
         } else {
           // 初回起動 → オンボーディング表示
           const initialPlayer = {
@@ -720,7 +727,7 @@ function IshimonZukan() {
             level: 1, exp: 0, gems: 30,
             inventory: ['sword_1', 'shield_1', 'charm_1'],
             lastLogin: todayKey(), streak: 1,
-            gachaCards: 3,
+            gachaCards: 100,
             missions: { date: todayKey(), list: getTodayMissions(todayKey()), progress: {}, claimed: {}, allClaimed: false },
           };
           setPlayer(initialPlayer);
@@ -1152,13 +1159,41 @@ function IshimonZukan() {
         description: `${mon.name}が しんかした すがた。ちからが あふれている！`,
         evolveTo: newStage < 3 ? `${mon.evolveTo}X` : null,
       };
+
+      // === 進化アニメ中にAI画像をバックグラウンド生成 ===
+      // 進化アニメは2500ms。その間にAI画像生成（5〜15秒）が始まり、画像はキャッシュへ保存。
+      // アニメ完了時点でキャッシュにあれば即適用、なければ後から自動更新する。
+      const imagePromise = getOrGenerateMonImage(evolved);
+
       await new Promise(r => setTimeout(r, 2500));
+
+      // アニメ完了。AI画像を待つ（最大10秒）
+      const imageRace = await Promise.race([
+        imagePromise,
+        new Promise(resolve => setTimeout(() => resolve({ image: null }), 10000)),
+      ]);
+      if (imageRace?.image) {
+        evolved.imageDataUrl = imageRace.image;
+      }
+
       const updated = collection.map(c => c.id === mon.id ? evolved : c);
       setCollection(updated);
       await saveCollection(updated);
       setShowEvolveAnim(null);
       setSelected(evolved);
       updateMission('evolve');
+
+      // もしまだ画像が来てなかった場合、後で来たら反映
+      if (!imageRace?.image) {
+        imagePromise.then(({ image }) => {
+          if (image) {
+            const finalEvolved = { ...evolved, imageDataUrl: image };
+            setCollection(prev => prev.map(c => c.id === mon.id ? finalEvolved : c));
+            saveCollection(collection.map(c => c.id === mon.id ? finalEvolved : c));
+            if (selected?.id === mon.id) setSelected(finalEvolved);
+          }
+        });
+      }
     } catch (err) { setError('しんかに しっぱい...'); setShowEvolveAnim(null); }
   };
 
