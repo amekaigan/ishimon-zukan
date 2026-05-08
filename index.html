@@ -122,12 +122,49 @@ const buildImageUrl = (prompt, seed) => {
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
 };
 
+// ===== GPS位置情報の取得 =====
+// ユーザーの現在地を取得し、可能なら逆ジオコーディングで地名を返す
+const getCurrentLocation = async () => {
+  if (!navigator.geolocation) return null;
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve(null), 8000);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        clearTimeout(timeout);
+        const { latitude, longitude } = pos.coords;
+        const result = { lat: latitude, lng: longitude, name: null };
+        // 逆ジオコーディング (OpenStreetMap Nominatim、無料・APIキー不要)
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ja&zoom=14`,
+            { headers: { 'User-Agent': 'IshimonZukan/1.0' } }
+          );
+          if (r.ok) {
+            const data = await r.json();
+            const a = data.address || {};
+            // 「市区町村」「都道府県」レベルで取得（プライバシー配慮）
+            const parts = [a.city || a.town || a.village || a.suburb, a.state || a.prefecture].filter(Boolean);
+            result.name = parts.join('・') || data.display_name?.split(',').slice(0, 2).join(',') || null;
+          }
+        } catch (e) { /* オフラインや拒否時は名前なしで進む */ }
+        resolve(result);
+      },
+      () => { clearTimeout(timeout); resolve(null); },
+      { timeout: 6000, maximumAge: 60000, enableHighAccuracy: false }
+    );
+  });
+};
+
 // AI画像をfetchしてbase64で返す（キャッシュ用）
-const generateAiImage = async (prompt, seed) => {
+const generateAiImageRaw = async (prompt, seed) => {
   const url = buildImageUrl(prompt, seed);
   try {
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`API ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(`API ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
     const blob = await res.blob();
     return await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -137,8 +174,57 @@ const generateAiImage = async (prompt, seed) => {
     });
   } catch (e) {
     console.error('AI generation failed:', e);
-    return null;
+    throw e;
   }
+};
+
+// ===== レートリミッター付きキュー =====
+// Pollinations Anonymous Tier: 15秒に1回まで
+// 429エラーが出るとしばらくブロックされるので、確実に間隔を守る
+const RATE_LIMIT_MS = 16000; // 16秒（余裕を持って）
+let _lastRequestAt = 0;
+let _consecutiveFailures = 0; // 連続失敗回数（429時に増加）
+const _aiQueue = [];
+let _processingQueue = false;
+
+// キューを順次処理する内部関数
+const processAiQueue = async () => {
+  if (_processingQueue) return;
+  _processingQueue = true;
+  while (_aiQueue.length > 0) {
+    const job = _aiQueue.shift();
+    // 前回からの経過を確認
+    const elapsed = Date.now() - _lastRequestAt;
+    let wait = Math.max(0, RATE_LIMIT_MS - elapsed);
+    // 連続失敗があれば追加待機
+    if (_consecutiveFailures > 0) {
+      wait += _consecutiveFailures * 30000; // 失敗ごとに+30秒
+    }
+    if (wait > 0) {
+      await new Promise(r => setTimeout(r, wait));
+    }
+    _lastRequestAt = Date.now();
+    try {
+      const result = await generateAiImageRaw(job.prompt, job.seed);
+      _consecutiveFailures = 0; // 成功でリセット
+      job.resolve(result);
+    } catch (e) {
+      if (e.status === 429) {
+        _consecutiveFailures = Math.min(_consecutiveFailures + 1, 5);
+        console.warn(`Rate limited. Backoff: ${_consecutiveFailures * 30}s`);
+      }
+      job.resolve(null); // エラーでもnullで返してアプリは継続
+    }
+  }
+  _processingQueue = false;
+};
+
+// 公開関数: キュー経由で生成
+const generateAiImage = (prompt, seed) => {
+  return new Promise((resolve) => {
+    _aiQueue.push({ prompt, seed, resolve });
+    processAiQueue();
+  });
 };
 
 // ===== 画像キャッシュ機構 =====
@@ -835,9 +921,9 @@ function IshimonZukan() {
   const doGacha = async (count, useGems = false) => {
     const cost = count === 10 ? 500 : 50;
     if (useGems) {
-      if ((player.gems || 0) < cost) { setError('きらめき石が たりないよ！'); return; }
+      if ((player.gems || 0) < cost) { setError('きらめき石が足りません！'); return; }
     } else {
-      if ((player.gachaCards || 0) < count) { setError('ガチャカードが たりないよ！'); return; }
+      if ((player.gachaCards || 0) < count) { setError('ガチャカードが足りません！'); return; }
     }
 
     // 10連は最後の1枚がレア以上保証
@@ -862,29 +948,39 @@ function IshimonZukan() {
     // === バックグラウンドでAI画像生成を開始（モンのみ、最大2体まで同時） ===
     // めくり演出中に裏で生成してキャッシュへ。完成したらレンダラーが拾う。
     const monResults = results.filter(r => r.kind === 'mon');
-    const generateInBackground = async () => {
-      for (let i = 0; i < monResults.length; i++) {
-        const monResult = monResults[i];
-        const cached = await loadCachedImage(monResult.data);
-        if (cached) {
-          // キャッシュ使用、即適用
-          monResult.data.imageDataUrl = cached;
-        } else {
-          // AI生成（15秒間隔を守るためsequential）
-          const { image } = await getOrGenerateMonImage(monResult.data, Date.now() % 1000000);
-          if (image) {
-            monResult.data.imageDataUrl = image;
-            // 表示中の結果も即更新
-            setGachaResults(prev => prev.map(r => 
-              r.kind === 'mon' && r.data.id === monResult.data.id 
-                ? { ...r, data: { ...r.data, imageDataUrl: image } } 
-                : r
-            ));
-          }
-        }
+
+    // 1. まずキャッシュ済みのものを全部即時反映（並列）
+    await Promise.all(monResults.map(async (monResult) => {
+      const cached = await loadCachedImage(monResult.data);
+      if (cached) {
+        monResult.data.imageDataUrl = cached;
+        setGachaResults(prev => prev.map(r =>
+          r.kind === 'mon' && r.data.id === monResult.data.id
+            ? { ...r, data: { ...r.data, imageDataUrl: cached } }
+            : r
+        ));
       }
-    };
-    generateInBackground(); // awaitしない（裏で並行実行）
+    }));
+
+    // 2. キャッシュ未ヒットのものをキュー投入（並列で投入、内部で順次処理）
+    const uncached = monResults.filter(r => !r.data.imageDataUrl);
+    uncached.forEach((monResult) => {
+      // キューに投入。完了次第表示が更新される（数分〜数十分かかる可能性）
+      getOrGenerateMonImage(monResult.data).then(({ image }) => {
+        if (image) {
+          monResult.data.imageDataUrl = image;
+          setGachaResults(prev => prev.map(r =>
+            r.kind === 'mon' && r.data.id === monResult.data.id
+              ? { ...r, data: { ...r.data, imageDataUrl: image } }
+              : r
+          ));
+          // collectionも更新（コレクション画面で見たときに反映）
+          setCollection(prev => prev.map(c =>
+            c.id === monResult.data.id ? { ...c, imageDataUrl: image } : c
+          ));
+        }
+      });
+    });
 
     // 1枚ずつ順番にめくるアニメ（0.5秒おき）
     for (let i = 0; i < results.length; i++) {
@@ -1011,40 +1107,54 @@ function IshimonZukan() {
   const generateMon = async (imageDataUrl) => {
     setIsLoading(true);
     setError('');
-    setLoadingMsg('いしを みている...');
-    setTimeout(() => setLoadingMsg('たましいを かんじる...'), 1500);
-    setTimeout(() => setLoadingMsg('いしモン とうじょう！'), 3500);
+    setLoadingMsg('いしを 観察しています...');
+    setTimeout(() => setLoadingMsg('魂の波動を 感じています...'), 1800);
+    setTimeout(() => setLoadingMsg('特徴を 分析しています...'), 4000);
+    setTimeout(() => setLoadingMsg('伝説を 紐解いています...'), 7000);
+    setTimeout(() => setLoadingMsg('石モンが 目覚めようとしています...'), 11000);
+
+    // 並行して位置情報を取得（プライバシー配慮、失敗してもOK）
+    const locationPromise = getCurrentLocation();
 
     try {
       // Pollinations Vision API（OpenAI互換）でJSON生成
-      // ※画像と一緒にプロンプトを送ると、Visionモデルが解析してJSONを返す
       const visionPayload = {
         model: 'openai',
         messages: [{
           role: 'user',
           content: [
             { type: 'image_url', image_url: { url: imageDataUrl } },
-            { type: 'text', text: `この画像は石(または岩)の写真です。この石から「石モン」というポケモン・デジモン風モンスターを生成してください。
+            { type: 'text', text: `この画像は石(または岩)の写真です。この石から「石モン」というポケモン・デジモン風の架空のモンスターを生成してください。創造性豊かに、世界観のあるストーリーを持たせてください。
 
 **JSONのみ**返してください(コードブロック不要、説明不要、JSONのみ):
 
 {
-  "name": "カタカナ4-6文字でカッコいい名前",
+  "name": "カタカナ4-6文字のカッコいい名前",
   "type": "火|水|土|電気|空|ドラゴン|精霊 のいずれか1つ",
   "stage": 1,
   "rarity": 1から5の整数,
   "baseStats": { "hp": 30から150, "kogeki": 20から120, "bougyo": 20から120, "speed": 20から120 },
   "growthBias": { "hp": 0.10から0.20, "kogeki": 0.10から0.20, "bougyo": 0.10から0.20, "speed": 0.10から0.20 },
-  "skill": "とくぎ名(カタカナ)",
-  "skillDesc": "技説明30文字以内",
-  "description": "石モン説明60文字以内",
-  "evolveTo": "進化先名(カタカナ)"
+  "skill": "とくぎ名(カタカナ4-7文字)",
+  "skillDesc": "技の発動時の演出と効果を50-80文字で(例:大地から噴き出す業火で敵を焼き尽くす。命中率は低いが、火傷状態にすることがある。)",
+  "description": "石モンの生態・発見場所の伝説を80-120文字で(例:古代から大地の鼓動と共に眠っていた精霊。月夜の晩、岩の隙間から這い出して星を見上げると言われる。)",
+  "personality": "性格を15-25文字で(例:好奇心旺盛で、人懐っこいが寂しがり屋)",
+  "favorite": "好きなもの・好む環境を15-25文字で(例:温かい日差しと、古い言い伝えのある場所)",
+  "legend": "石モンに関する伝説を50-80文字で(例:この石モンを最初に見つけた者には、3つの願いが叶うという言い伝えがある。)",
+  "evolveTo": "進化先のカッコいい名前(カタカナ4-7文字)"
 }
 
-形が独特・大きい・色珍しい→レア度4-5。普通の小石→1-2。ステータス合計はレア度に比例(★1=200、★5=420+)。日本語で。JSON以外は何も書かないこと。`}
+ガイド:
+- 形が独特・大きい・色珍しい・特徴的→レア度4-5
+- 普通の小石→レア度1-2
+- ステータス合計はレア度に比例(★1=200、★2=260、★3=320、★4=380、★5=420+)
+- growthBiasは個性を反映(火タイプは攻撃寄り、水タイプはHP寄り、空タイプは素早さ寄りなど)
+- 名前・とくぎ名はカタカナで、カッコよさ重視
+- 説明文はストーリー性豊かに、子供にも大人にも楽しめる文体で
+- 日本語で。JSON以外は何も書かないこと。`}
           ]
         }],
-        max_tokens: 800,
+        max_tokens: 1200,
       };
 
       const res = await fetch('https://text.pollinations.ai/openai', {
@@ -1068,17 +1178,23 @@ function IshimonZukan() {
       const mon = JSON.parse(jsonStr);
 
       // === AI画像生成（キャッシュ優先、なければAnonymous Tierで生成） ===
-      setLoadingMsg('AIで キャラを えがいてる...');
+      setLoadingMsg('AIで キャラを 描いています...');
       const { image: aiImage } = await getOrGenerateMonImage(mon);
+
+      // 位置情報を取得待機（最大3秒）
+      const location = await Promise.race([
+        locationPromise,
+        new Promise(resolve => setTimeout(() => resolve(null), 3000)),
+      ]);
 
       const entry = {
         id: `mon-${Date.now()}`,
         ...mon,
         level: 1, exp: 0, wins: 0, losses: 0, equipped: {},
-        // AI画像があればそれを使い、生成失敗時は撮った石の写真を表示
         imageDataUrl: aiImage || imageDataUrl,
-        originalPhoto: imageDataUrl, // 元の石の写真も保持
+        originalPhoto: imageDataUrl,
         capturedAt: new Date().toISOString(),
+        location: location, // { lat, lng, name } または null
       };
       setNewMon(entry);
       const updated = [entry, ...collection];
@@ -1087,13 +1203,16 @@ function IshimonZukan() {
       updateMission('capture');
     } catch (err) {
       console.error('generateMon error:', err);
-      // Vision API失敗時のフォールバック: 画像の色からランダム生成
       try {
-        setLoadingMsg('しんちょうに しらべている...');
+        setLoadingMsg('もうすこし お待ちください...');
         const color = await analyzeImageColor(imageDataUrl);
         const mon = fallbackMon(color);
-        setLoadingMsg('AIで キャラを えがいてる...');
+        setLoadingMsg('AIで キャラを 描いています...');
         const { image: aiImage } = await getOrGenerateMonImage(mon);
+        const location = await Promise.race([
+          locationPromise,
+          new Promise(resolve => setTimeout(() => resolve(null), 1000)),
+        ]);
         const entry = {
           id: `mon-${Date.now()}`,
           ...mon,
@@ -1101,6 +1220,7 @@ function IshimonZukan() {
           imageDataUrl: aiImage || imageDataUrl,
           originalPhoto: imageDataUrl,
           capturedAt: new Date().toISOString(),
+          location: location,
         };
         setNewMon(entry);
         const updated = [entry, ...collection];
@@ -1109,7 +1229,7 @@ function IshimonZukan() {
         updateMission('capture');
       } catch (fallbackErr) {
         console.error('fallback error:', fallbackErr);
-        setError('しっぱい！ もういちど ためしてみてね');
+        setError('失敗しました。もう一度お試しください');
       }
     } finally {
       setIsLoading(false);
@@ -1194,7 +1314,7 @@ function IshimonZukan() {
           }
         });
       }
-    } catch (err) { setError('しんかに しっぱい...'); setShowEvolveAnim(null); }
+    } catch (err) { setError('進化に失敗しました...'); setShowEvolveAnim(null); }
   };
 
   // ===== 装備 =====
@@ -1219,7 +1339,7 @@ function IshimonZukan() {
   // ===== 装備購入 =====
   const buyEquip = async (eq) => {
     if (player.gems < eq.price) {
-      setError('きらめき石が たりないよ！');
+      setError('きらめき石が足りません！');
       return;
     }
     if (player.inventory.includes(eq.id)) {
@@ -1447,8 +1567,8 @@ function IshimonZukan() {
                 <Camera className="w-8 h-8" strokeWidth={2.5} />
               </div>
               <div className="flex-1 text-left">
-                <div className="text-2xl font-black leading-tight">
-                  石を 撮影する
+                <div className="text-xl font-black leading-tight">
+                  石を撮影する
                 </div>
                 <div className="text-xs opacity-90 font-bold mt-1">
                   カメラで 新しい 石モンを 召喚！
@@ -2290,7 +2410,7 @@ function IshimonZukan() {
     if (step === 'stage') {
       return (
         <div className="px-4 pt-6 pb-32 relative">
-          <h2 className="text-4xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>ステージ選択</h2>
+          <h2 className="text-3xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>ステージ選択</h2>
           <p className="text-center text-yellow-200 text-sm font-bold mb-6">どこでバトルしますか？</p>
           <div className="space-y-3">
             {STAGES_LIST.map(s => (
@@ -2409,8 +2529,8 @@ function IshimonZukan() {
         </div>
         {battlePhase === 'select' && (
           <div className="grid grid-cols-3 gap-2 p-3">
-            <ActionButton icon={Swords} label="こうげき" sublabel="とくぎに 強い" color="#FF6B35" onClick={() => battleResolve('kogeki')} />
-            <ActionButton icon={Shield} label="ぼうぎょ" sublabel="こうげきに 強い" color="#3DA5F5" onClick={() => battleResolve('bougyo')} />
+            <ActionButton icon={Swords} label="攻撃" sublabel="とくぎに 強い" color="#FF6B35" onClick={() => battleResolve('kogeki')} />
+            <ActionButton icon={Shield} label="防御" sublabel="こうげきに 強い" color="#3DA5F5" onClick={() => battleResolve('bougyo')} />
             <ActionButton icon={Sparkles} label="とくぎ" sublabel="ぼうぎょに 強い" color="#C77DFF" onClick={() => battleResolve('tokugi')} />
           </div>
         )}
@@ -2488,17 +2608,96 @@ function IshimonZukan() {
   // ===========================================
   // ローディングと進化アニメ
   // ===========================================
-  const LoadingView = () => (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: 'radial-gradient(circle, #FF6B35 0%, #1a0a05 70%)' }}>
-      <div className="relative">
-        <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 0deg, #FFD700, #FF6B35, #FF3D7F, #FFD700)', filter: 'blur(30px)', animation: 'spin 2s linear infinite' }} />
-        {previewImage && <img src={previewImage} className="relative w-52 h-52 object-cover rounded-full" style={{ border: '6px solid #FFD700', boxShadow: '0 0 60px #FFAA00' }} />}
+  const LoadingView = () => {
+    // 表示する豆知識・占い・予言（ローディング中にローテーション）
+    const tips = [
+      { icon: '🔮', title: '占い', text: 'この石モンは...おだやかな性格をしているようです' },
+      { icon: '📜', title: '伝説', text: '古の書物には「石は大地の記憶」と記されています' },
+      { icon: '⭐', title: '豆知識', text: '石は数億年かけて地球の中で生まれたものもあります' },
+      { icon: '🌙', title: '占い', text: '今夜、新しい仲間が夢に現れるかもしれません' },
+      { icon: '🌀', title: '予言', text: 'この石モンには、強い意志が宿っているようです' },
+      { icon: '✨', title: 'ささやき', text: '石モンが自分の名前を教えようとしています...' },
+      { icon: '🌟', title: '伝説', text: '7体の石モンを集めると、神秘の扉が開くという' },
+      { icon: '💎', title: '豆知識', text: 'レアな石モンほど、不思議な力を秘めています' },
+      { icon: '🔥', title: '占い', text: 'この子は、強くなる素質を持っているかもしれません' },
+      { icon: '🌿', title: 'ささやき', text: '土の精霊が祝福しているようです...' },
+    ];
+    const [tipIdx, setTipIdx] = useState(0);
+    const [walkPhase, setWalkPhase] = useState(0);
+
+    useEffect(() => {
+      const tipTimer = setInterval(() => {
+        setTipIdx(i => (i + 1) % tips.length);
+      }, 3500);
+      const walkTimer = setInterval(() => {
+        setWalkPhase(p => (p + 1) % 4);
+      }, 600);
+      return () => { clearInterval(tipTimer); clearInterval(walkTimer); };
+    }, []);
+
+    const tip = tips[tipIdx];
+    const walkX = [0, 30, 60, 30][walkPhase];
+    const walkRotate = [0, -5, 0, 5][walkPhase];
+
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={{ background: 'radial-gradient(circle, #FF6B35 0%, #1a0a05 70%)' }}>
+        {/* 石モンを"観察"中の演出 */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 0deg, #FFD700, #FF6B35, #FF3D7F, #FFD700)', filter: 'blur(30px)', animation: 'spin 3s linear infinite' }} />
+          {previewImage && (
+            <div className="relative">
+              <img src={previewImage}
+                className="relative w-44 h-44 object-cover rounded-full"
+                style={{ border: '5px solid #FFD700', boxShadow: '0 0 60px #FFAA00' }} />
+              {/* ルーペアイコン（観察中の表現） */}
+              <div className="absolute text-4xl"
+                style={{
+                  top: '20%',
+                  left: `calc(50% + ${walkX - 30}px)`,
+                  transform: `rotate(${walkRotate}deg)`,
+                  transition: 'all 0.6s ease-in-out',
+                  filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.8))',
+                }}>🔍</div>
+            </div>
+          )}
+        </div>
+
+        {/* メインメッセージ */}
+        <div className="text-yellow-300 text-lg font-black tracking-wider mb-4 text-center"
+          style={{ textShadow: '0 0 20px #FFAA00' }}>
+          {loadingMsg}
+        </div>
+
+        <Loader2 className="w-5 h-5 text-yellow-300 animate-spin mb-6" />
+
+        {/* 豆知識・占い枠 */}
+        <div key={tipIdx}
+          className="w-full max-w-xs rounded-2xl p-3 text-center"
+          style={{
+            background: 'rgba(0,0,0,0.5)',
+            border: '1px solid rgba(255,215,0,0.4)',
+            backdropFilter: 'blur(8px)',
+            animation: 'fadeIn 0.5s ease-in',
+          }}>
+          <div className="text-yellow-200 text-[10px] font-black tracking-widest mb-1">
+            {tip.icon} {tip.title}
+          </div>
+          <div className="text-white/90 text-xs font-bold leading-relaxed">
+            {tip.text}
+          </div>
+        </div>
+
+        <div className="text-white/40 text-[10px] font-bold mt-4">
+          AIが世界に1つだけの石モンを描いています...
+        </div>
+
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        `}</style>
       </div>
-      <div className="mt-8 text-yellow-300 text-2xl font-black tracking-wider" style={{ textShadow: '0 0 20px #FFAA00' }}>{loadingMsg}</div>
-      <Loader2 className="w-6 h-6 text-yellow-300 animate-spin mt-3" />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
+    );
+  };
 
   const EvolveAnimView = ({ mon }) => (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: '#000' }}>
@@ -2574,33 +2773,91 @@ function IshimonZukan() {
           </div>
           <div className="bg-white/90 rounded-2xl p-3 mb-3 space-y-2">
             <StatBar label="HP" cur={cur.hp} base={mon.baseStats?.hp} eqBoost={eq.hp} max={180} color="#52B788" />
-            <StatBar label="こうげき" cur={cur.kogeki} base={mon.baseStats?.kogeki} eqBoost={eq.kogeki} max={140} color="#FF6B35" />
-            <StatBar label="ぼうぎょ" cur={cur.bougyo} base={mon.baseStats?.bougyo} eqBoost={eq.bougyo} max={140} color="#3DA5F5" />
-            <StatBar label="すばやさ" cur={cur.speed} base={mon.baseStats?.speed} eqBoost={eq.speed} max={140} color="#FFC42B" />
+            <StatBar label="攻撃" cur={cur.kogeki} base={mon.baseStats?.kogeki} eqBoost={eq.kogeki} max={140} color="#FF6B35" />
+            <StatBar label="防御" cur={cur.bougyo} base={mon.baseStats?.bougyo} eqBoost={eq.bougyo} max={140} color="#3DA5F5" />
+            <StatBar label="素早さ" cur={cur.speed} base={mon.baseStats?.speed} eqBoost={eq.speed} max={140} color="#FFC42B" />
           </div>
           <div className="bg-black/40 rounded-2xl p-3 mb-3 backdrop-blur-sm" style={{ border: '2px dashed white' }}>
-            <div className="flex items-center gap-1 text-white/80 text-xs font-bold mb-1"><Zap className="w-3 h-3" /> とくぎ</div>
-            <div className="text-white font-black text-lg">{mon.skill}</div>
-            <div className="text-white/90 text-xs font-bold mt-0.5">「{mon.skillDesc}」</div>
+            <div className="flex items-center gap-1 text-white/80 text-[10px] font-bold mb-1"><Zap className="w-3 h-3" /> とくぎ</div>
+            <div className="text-white font-black text-base">{mon.skill}</div>
+            <div className="text-white/90 text-[11px] font-bold mt-1 leading-relaxed">{mon.skillDesc}</div>
           </div>
-          <div className="bg-white/90 rounded-2xl p-3 mb-3">
-            <div className="text-xs font-bold text-gray-600 mb-1">ずかん せつめい</div>
-            <p className="text-sm font-bold text-gray-800 leading-relaxed">{mon.description}</p>
+
+          {/* ずかん説明 */}
+          <div className="bg-white/95 rounded-2xl p-3 mb-2">
+            <div className="text-[10px] font-bold text-gray-600 mb-1">📖 ずかん説明</div>
+            <p className="text-[13px] font-bold text-gray-800 leading-relaxed">{mon.description}</p>
           </div>
+
+          {/* 性格・好きなもの・伝説（あれば） */}
+          {(mon.personality || mon.favorite) && (
+            <div className="bg-white/90 rounded-2xl p-3 mb-2 space-y-2">
+              {mon.personality && (
+                <div>
+                  <div className="text-[10px] font-bold text-gray-600">💭 性格</div>
+                  <p className="text-[12px] font-bold text-gray-700 leading-relaxed">{mon.personality}</p>
+                </div>
+              )}
+              {mon.favorite && (
+                <div>
+                  <div className="text-[10px] font-bold text-gray-600">💕 好きなもの</div>
+                  <p className="text-[12px] font-bold text-gray-700 leading-relaxed">{mon.favorite}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {mon.legend && (
+            <div className="rounded-2xl p-3 mb-2"
+              style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(199,125,255,0.15))', border: '1px solid rgba(255,215,0,0.4)' }}>
+              <div className="text-yellow-200 text-[10px] font-black tracking-widest mb-1">📜 伝説</div>
+              <p className="text-[12px] font-bold text-white/95 leading-relaxed italic">{mon.legend}</p>
+            </div>
+          )}
+
+          {/* 出会いの記録 */}
+          <div className="bg-black/30 rounded-2xl p-3 mb-3" style={{ border: '1px solid rgba(255,255,255,0.15)' }}>
+            <div className="text-yellow-200 text-[10px] font-black tracking-widest mb-2">✨ 出会いの記録</div>
+            <div className="space-y-1.5 text-[11px] font-bold">
+              <div className="flex items-start gap-1.5 text-white/80">
+                <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                <span>
+                  {mon.capturedAt
+                    ? new Date(mon.capturedAt).toLocaleString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : '不明'}
+                </span>
+              </div>
+              {mon.location && mon.location.name && (
+                <div className="flex items-start gap-1.5 text-white/80">
+                  <span className="text-xs leading-3">📍</span>
+                  <span>{mon.location.name}</span>
+                </div>
+              )}
+              {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
+                <div>
+                  <div className="text-white/60 text-[10px] mb-1 mt-1.5">出会った時の石</div>
+                  <img src={mon.originalPhoto}
+                    className="w-full h-24 object-cover rounded-lg"
+                    style={{ border: '1px solid rgba(255,255,255,0.2)' }} />
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-2 mb-2">
             <button onClick={() => setShowEquip(mon)}
-              className="py-3 rounded-2xl text-white font-black active:scale-95 transition-transform"
+              className="py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform"
               style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 4px 0 #4A0E78', border: '3px solid white' }}>
               ⚔️ 装備
             </button>
             {canEvolve ? (
               <button onClick={() => evolveMon(mon)}
-                className="py-3 rounded-2xl text-white font-black active:scale-95 transition-transform"
+                className="py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform"
                 style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 #5A1A4A', border: '3px solid white' }}>
                 ✨ 進化
               </button>
             ) : (
-              <div className="py-3 rounded-2xl text-yellow-200 font-black text-center text-sm" style={{ background: 'rgba(0,0,0,0.3)', border: '3px solid #FFD700' }}>
+              <div className="py-3 rounded-2xl text-yellow-200 font-black text-center text-xs" style={{ background: 'rgba(0,0,0,0.3)', border: '3px solid #FFD700' }}>
                 <Award className="w-4 h-4 inline mb-0.5" /> {mon.stage >= 3 ? '最強！' : '進化なし'}
               </div>
             )}
@@ -2612,7 +2869,7 @@ function IshimonZukan() {
             className="w-full py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ background: 'linear-gradient(135deg, #6A0DAD, #C77DFF, #FFD700)', boxShadow: '0 4px 0 #2E0068', border: '3px solid white' }}>
             <Wand2 className="w-4 h-4" />
-            {aiGenerating ? <>描いてる...</> : <>✨ AIで オリジナルアートに 変換！</>}
+            {aiGenerating ? <>描いています...</> : <>✨ AIで オリジナルアートに 変換！</>}
           </button>
         </div>
       </div>
@@ -2639,12 +2896,12 @@ function IshimonZukan() {
   // ===========================================
   const CollectionView = () => (
     <div className="px-4 pt-6 pb-32">
-      <h2 className="text-4xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
+      <h2 className="text-3xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
         図鑑
       </h2>
       <p className="text-center text-yellow-200 text-sm font-bold mb-6">{collection.length}体 収集済み！</p>
       {collection.length === 0 ? (
-        <div className="text-center mt-12 text-white/70 font-bold"><div className="text-6xl mb-3">📷</div>まだ 石モンが いません！</div>
+        <div className="text-center mt-12 text-white/70 font-bold"><div className="text-6xl mb-3">📷</div>まだ石モンがいません！</div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {collection.map((m) => {
@@ -2681,7 +2938,7 @@ function IshimonZukan() {
   const RankingView = () => (
     <div className="px-4 pt-6 pb-32 relative">
       <CloseButton onClick={() => setView('profile')} />
-      <h2 className="text-4xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>ランキング</h2>
+      <h2 className="text-3xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>ランキング</h2>
       <p className="text-center text-yellow-200 text-sm font-bold mb-6">強い順に表示！</p>
       {ranked.length === 0 ? (
         <div className="text-center mt-12 text-white/70 font-bold"><div className="text-6xl mb-3">🏆</div>石モンを 集めよう！</div>
@@ -3033,7 +3290,7 @@ function IshimonZukan() {
             </div>
           </div>
           <div className="mt-6 text-yellow-300 font-black text-xl" style={{ textShadow: '0 0 20px #FFAA00' }}>
-            AIが えがいてる...
+            AIが 描いています...
           </div>
           <div className="text-white/70 text-xs font-bold mt-1">5〜15びょう くらい かかるよ</div>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
