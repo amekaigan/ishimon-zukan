@@ -421,7 +421,7 @@ const fallbackMon = (color) => {
     },
     '土': {
       skill: 'ロックスマッシュ', skillDesc: '体を硬い岩に変えて勢いよく突進する。相手の防御を貫通することがある。',
-      description: '何億年も大地の鼓動を聞き続け敵た石モン。古い記憶を体内に刻み、時々それを夢として見せるという。',
+      description: '何億年も大地の鼓動を聞き続けてきた石モン。古い記憶を体内に刻み、時々それを夢として見せるという。',
       personality: 'おおらかで動じない、頼れる兄貴肌', favorite: '苔むした古い岩と、大地の静けさ',
       legend: '迷子になった旅人が、この石モンの夢を見ると、必ず帰り道が見つかるという伝説がある。',
     },
@@ -433,7 +433,7 @@ const fallbackMon = (color) => {
     },
     '空': {
       skill: 'スカイダンス', skillDesc: '空中を舞いながら風の刃を放つ。素早さが上がることがある。',
-      description: '高い山の頂で雲と戯れる石モン。雲の流れを読んで天気を察知する力を持ち、古来から旅人に愛され敵た。',
+      description: '高い山の頂で雲と戯れる石モン。雲の流れを読んで天気を察知する力を持ち、古来から旅人に愛されてきた。',
       personality: '自由気ままで、明るく前向き', favorite: '青空と、ふわふわした雲',
       legend: '羊の形の雲が空に浮かぶ日、この石モンが地上を散歩していると言われている。',
     },
@@ -553,24 +553,24 @@ const MAX_PLAYER_LEVEL = 50;
 // ===== 装備データ =====
 const EQUIPMENT = {
   // 剣 (こうげき+)
-  sword_1:  { id: 'sword_1',  type: 'sword',   name: 'きの けん',     emoji: '🗡️', boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1 },
+  sword_1:  { id: 'sword_1',  type: 'sword',   name: '木の剣',     emoji: '🗡️', boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1 },
   sword_2:  { id: 'sword_2',  type: 'sword',   name: '鉄の剣',   emoji: '⚔️', boost: { kogeki: 12 }, price: 150, rarity: 2, unlock: 3 },
   sword_3:  { id: 'sword_3',  type: 'sword',   name: '炎の剣', emoji: '🔥', boost: { kogeki: 22 }, price: 400, rarity: 3, unlock: 6 },
   sword_4:  { id: 'sword_4',  type: 'sword',   name: '竜の剣', emoji: '🐲', boost: { kogeki: 35 }, price: 900, rarity: 5, unlock: 12 },
   // 盾 (ぼうぎょ+)
-  shield_1: { id: 'shield_1', type: 'shield',  name: 'きの たて',     emoji: '🛡️', boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1 },
-  shield_2: { id: 'shield_2', type: 'shield',  name: '鉄の たて',   emoji: '🛡️', boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3 },
-  shield_3: { id: 'shield_3', type: 'shield',  name: 'みずの たて',   emoji: '💎', boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6 },
-  shield_4: { id: 'shield_4', type: 'shield',  name: 'せいなる たて', emoji: '✨', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12 },
+  shield_1: { id: 'shield_1', type: 'shield',  name: '木の盾',     emoji: '🛡️', boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1 },
+  shield_2: { id: 'shield_2', type: 'shield',  name: '鉄の盾',   emoji: '🛡️', boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3 },
+  shield_3: { id: 'shield_3', type: 'shield',  name: '水の盾',   emoji: '💎', boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6 },
+  shield_4: { id: 'shield_4', type: 'shield',  name: '聖なる盾', emoji: '✨', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12 },
   // お守り (HP+ / すばやさ+)
-  charm_1:  { id: 'charm_1',  type: 'charm',   name: 'はっぱの おま森', emoji: '🍀', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1 },
-  charm_2:  { id: 'charm_2',  type: 'charm',   name: 'ほしの おま森',   emoji: '⭐', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4 },
-  charm_3:  { id: 'charm_3',  type: 'charm',   name: 'つきの おま森',   emoji: '🌙', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7 },
-  charm_4:  { id: 'charm_4',  type: 'charm',   name: 'たいようの おま森', emoji: '☀️', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14 },
+  charm_1:  { id: 'charm_1',  type: 'charm',   name: 'はっぱの お守り', emoji: '🍀', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1 },
+  charm_2:  { id: 'charm_2',  type: 'charm',   name: 'ほしの お守り',   emoji: '⭐', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4 },
+  charm_3:  { id: 'charm_3',  type: 'charm',   name: 'つきの お守り',   emoji: '🌙', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7 },
+  charm_4:  { id: 'charm_4',  type: 'charm',   name: 'たいようの お守り', emoji: '☀️', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14 },
 };
 
 const EQUIP_SLOTS = ['sword', 'shield', 'charm'];
-const EQUIP_LABELS = { sword: 'けん', shield: 'たて', charm: 'おま森' };
+const EQUIP_LABELS = { sword: '剣', shield: '盾', charm: 'お守り' };
 
 // ===== ガチャ排出テーブル =====
 // gachaRoll() → { kind: 'mon'|'equip', rarity, data }
@@ -680,7 +680,7 @@ const SAMPLES = [
     growthBias: { hp: 0.18, kogeki: 0.18, bougyo: 0.15, speed: 0.15 },
     level: 5, exp: 80, wins: 5, losses: 2, equipped: {},
     skill: 'バブルクラッシュ', skillDesc: 'おおきな あわで 敵を つつむ！',
-    description: 'うみの そこから やっ敵た 石モン。あおく ひかる からだが きれい！',
+    description: 'うみの そこから やってきた 石モン。あおく ひかる からだが きれい！',
     imageDataUrl: makeDummyImage('水', 2, 'アクアン'), evolveTo: null,
   },
 ];
@@ -856,6 +856,17 @@ function IshimonZukan() {
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraError, setCameraError] = useState('');
 
+  // ===== 設定 =====
+  const [settings, setSettings] = useState({
+    difficulty: 'normal',      // 'easy' | 'normal' | 'hard'
+    soundEnabled: true,        // 効果音
+    vibrationEnabled: true,    // バイブレーション
+    animationReduced: false,   // アニメーション軽減
+    showLocation: true,        // 出会いの場所を記録
+    confirmGacha: true,        // ガチャ確認ダイアログ
+  });
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
   // ===== 共通: 閉じるボタン（全モーダル・画面で統一使用） =====
   const CloseButton = ({ onClick, position = 'absolute' }) => (
     <button onClick={onClick}
@@ -885,10 +896,15 @@ function IshimonZukan() {
       try {
         const colR = await window.storage.get('ishimon-collection-v3');
         const playerR = await window.storage.get('ishimon-player-v3');
+        const settingsR = await window.storage.get('ishimon-settings-v1').catch(() => null);
         const loadedCollection = colR?.value ? JSON.parse(colR.value) : SAMPLES;
         const loadedPlayer = playerR?.value ? JSON.parse(playerR.value) : null;
 
         setCollection(loadedCollection);
+        if (settingsR?.value) {
+          try { setSettings(prev => ({ ...prev, ...JSON.parse(settingsR.value) })); }
+          catch (e) { /* デフォルト維持 */ }
+        }
         if (loadedPlayer) {
           // 既存プレイヤー: ガチャカードが少ない場合は100枚まで補充
           const adjusted = (loadedPlayer.gachaCards || 0) < 100
@@ -928,6 +944,14 @@ function IshimonZukan() {
   const saveCollection = async (c) => {
     try { await window.storage.set('ishimon-collection-v3', JSON.stringify(c)); }
     catch (e) { console.error(e); }
+  };
+  const saveSettings = async (s) => {
+    setSettings(s);
+    try { await window.storage.set('ishimon-settings-v1', JSON.stringify(s)); }
+    catch (e) { console.error(e); }
+  };
+  const updateSetting = (key, value) => {
+    saveSettings({ ...settings, [key]: value });
   };
 
   // ===== ログインボーナス処理（ガチャカード配布） =====
@@ -1017,6 +1041,13 @@ function IshimonZukan() {
       if ((player.gems || 0) < cost) { setError('きらめき石が足りません！'); return; }
     } else {
       if ((player.gachaCards || 0) < count) { setError('ガチャカードが足りません！'); return; }
+    }
+
+    // 設定で有効なら確認ダイアログを表示
+    if (settings.confirmGacha) {
+      const costLabel = useGems ? `きらめき石 ${cost}個` : `ガチャカード ${count}枚`;
+      const ok = window.confirm(`${count === 10 ? '10連' : '1回'}ガチャを引きますか？\n消費: ${costLabel}`);
+      if (!ok) return;
     }
 
     // 10連は最後の1枚がレア以上保証
@@ -1200,14 +1231,14 @@ function IshimonZukan() {
   const generateMon = async (imageDataUrl) => {
     setIsLoading(true);
     setError('');
-    setLoadingMsg('石を 観察して今す...');
-    setTimeout(() => setLoadingMsg('魂の波動を 感じて今す...'), 5000);
-    setTimeout(() => setLoadingMsg('特徴を 分析して今す...'), 12000);
-    setTimeout(() => setLoadingMsg('伝説を 紐解いて今す...'), 20000);
-    setTimeout(() => setLoadingMsg('石モンが 目覚めようとして今す...'), 30000);
+    setLoadingMsg('石を 観察しています...');
+    setTimeout(() => setLoadingMsg('魂の波動を 感じています...'), 5000);
+    setTimeout(() => setLoadingMsg('特徴を 分析しています...'), 12000);
+    setTimeout(() => setLoadingMsg('伝説を 紐解いています...'), 20000);
+    setTimeout(() => setLoadingMsg('石モンが 目覚めようとしています...'), 30000);
 
-    // 並行して位置情報を取得（プライバシー配慮、失敗してもOK）
-    const locationPromise = getCurrentLocation();
+    // 並行して位置情報を取得（設定で無効ならスキップ、失敗してもOK）
+    const locationPromise = settings.showLocation ? getCurrentLocation() : Promise.resolve(null);
 
     try {
       // Pollinations Vision API（OpenAI互換）でJSON生成
@@ -1469,11 +1500,23 @@ function IshimonZukan() {
   };
 
   // ===== バトル =====
+  const DIFFICULTY_MULTIPLIER = { easy: 0.7, normal: 1.0, hard: 1.35 };
   const startBattle = (mon, stage) => {
     const enemy = createWildMon(stage);
-    const enemyStats = getCurrentStats(enemy);
+    const mult = DIFFICULTY_MULTIPLIER[settings.difficulty] || 1.0;
+    // baseStats に難易度倍率を適用（getCurrentStats での再計算でもステータス比率が保たれる）
+    const adjustedEnemy = mult === 1.0 ? enemy : {
+      ...enemy,
+      baseStats: {
+        hp:     Math.max(1, Math.round(enemy.baseStats.hp     * mult)),
+        kogeki: Math.max(1, Math.round(enemy.baseStats.kogeki * mult)),
+        bougyo: Math.max(1, Math.round(enemy.baseStats.bougyo * mult)),
+        speed:  Math.max(1, Math.round(enemy.baseStats.speed  * mult)),
+      },
+    };
+    const enemyStats = getCurrentStats(adjustedEnemy);
     const myStats = getCurrentStats(mon);
-    setBattleStage(stage); setMyMon(mon); setEnemyMon(enemy);
+    setBattleStage(stage); setMyMon(mon); setEnemyMon(adjustedEnemy);
     setMyHp(myStats.hp); setEnemyHp(enemyStats.hp);
     setTurn(1);
     setBattleLog([`野生の ${enemy.name} が 現れた！`]);
@@ -1706,7 +1749,6 @@ function IshimonZukan() {
                   カメラで 新しい 石モンを 召喚！
                 </div>
               </div>
-              <div className="text-3xl">📸</div>
             </div>
           </div>
         </button>
@@ -2959,65 +3001,62 @@ function IshimonZukan() {
             <div className="text-white/90 text-[11px] font-bold mt-1 leading-relaxed">{mon.skillDesc}</div>
           </div>
 
-          {/* ずかん説明 */}
-          <div className="bg-white/95 rounded-2xl p-3 mb-2">
-            <div className="text-[10px] font-bold text-gray-600 mb-1">📖 ずかん説明</div>
+          {/* 石モン情報（ずかん説明・性格・伝説・出会いの記録をひとつに） */}
+          <div className="bg-white/95 rounded-2xl p-3 mb-3">
             <p className="text-[13px] font-bold text-gray-800 leading-relaxed">{mon.description}</p>
-          </div>
 
-          {/* 性格・好きなもの・伝説（あれば） */}
-          {(mon.personality || mon.favorite) && (
-            <div className="bg-white/90 rounded-2xl p-3 mb-2 space-y-2">
-              {mon.personality && (
-                <div>
-                  <div className="text-[10px] font-bold text-gray-600">💭 性格</div>
-                  <p className="text-[12px] font-bold text-gray-700 leading-relaxed">{mon.personality}</p>
-                </div>
-              )}
-              {mon.favorite && (
-                <div>
-                  <div className="text-[10px] font-bold text-gray-600">💕 好きなもの</div>
-                  <p className="text-[12px] font-bold text-gray-700 leading-relaxed">{mon.favorite}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {mon.legend && (
-            <div className="rounded-2xl p-3 mb-2"
-              style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(199,125,255,0.15))', border: '1px solid rgba(255,215,0,0.4)' }}>
-              <div className="text-yellow-200 text-[10px] font-black tracking-widest mb-1">📜 伝説</div>
-              <p className="text-[12px] font-bold text-white/95 leading-relaxed italic">{mon.legend}</p>
-            </div>
-          )}
-
-          {/* 出会いの記録 */}
-          <div className="bg-black/30 rounded-2xl p-3 mb-3" style={{ border: '1px solid rgba(255,255,255,0.15)' }}>
-            <div className="text-yellow-200 text-[10px] font-black tracking-widest mb-2">✨ 出会いの記録</div>
-            <div className="space-y-1.5 text-[11px] font-bold">
-              <div className="flex items-start gap-1.5 text-white/80">
-                <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                <span>
-                  {mon.capturedAt
-                    ? new Date(mon.capturedAt).toLocaleString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                    : '不明'}
-                </span>
-              </div>
-              {mon.location && mon.location.name && (
-                <div className="flex items-start gap-1.5 text-white/80">
-                  <span className="text-xs leading-3">📍</span>
-                  <span>{mon.location.name}</span>
-                </div>
-              )}
-              {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
-                <div className="mt-2">
-                  <div className="text-white/60 text-[10px] font-bold mb-1.5">📷 出会った時の石</div>
-                  <div className="w-full rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.25)', aspectRatio: '4/3' }}>
-                    <img src={mon.originalPhoto}
-                      className="w-full h-full object-cover block" />
+            {(mon.personality || mon.favorite) && (
+              <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px dashed rgba(0,0,0,0.15)' }}>
+                {mon.personality && (
+                  <div>
+                    <div className="text-[10px] font-bold text-gray-600">💭 性格</div>
+                    <p className="text-[12px] font-bold text-gray-700 leading-relaxed">{mon.personality}</p>
                   </div>
+                )}
+                {mon.favorite && (
+                  <div>
+                    <div className="text-[10px] font-bold text-gray-600">💕 好きなもの</div>
+                    <p className="text-[12px] font-bold text-gray-700 leading-relaxed">{mon.favorite}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {mon.legend && (
+              <div className="mt-3 pt-3 rounded-xl p-2.5"
+                style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.18), rgba(199,125,255,0.18))', border: '1px solid rgba(255,215,0,0.5)' }}>
+                <div className="text-yellow-700 text-[10px] font-black tracking-widest mb-1">📜 伝説</div>
+                <p className="text-[12px] font-bold text-gray-800 leading-relaxed">{mon.legend}</p>
+              </div>
+            )}
+
+            <div className="mt-3 pt-3" style={{ borderTop: '1px dashed rgba(0,0,0,0.15)' }}>
+              <div className="text-gray-600 text-[10px] font-black tracking-widest mb-2">✨ 出会いの記録</div>
+              <div className="space-y-1.5 text-[11px] font-bold">
+                <div className="flex items-start gap-1.5 text-gray-700">
+                  <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                  <span>
+                    {mon.capturedAt
+                      ? new Date(mon.capturedAt).toLocaleString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : '不明'}
+                  </span>
                 </div>
-              )}
+                {mon.location && mon.location.name && (
+                  <div className="flex items-start gap-1.5 text-gray-700">
+                    <span className="text-xs leading-3">📍</span>
+                    <span>{mon.location.name}</span>
+                  </div>
+                )}
+                {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
+                  <div className="mt-2">
+                    <div className="text-gray-600 text-[10px] font-bold mb-1.5">📷 出会った時の石</div>
+                    <div className="w-full rounded-lg overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.15)', aspectRatio: '4/3' }}>
+                      <img src={mon.originalPhoto}
+                        className="w-full h-full object-cover block" />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -3189,7 +3228,7 @@ function IshimonZukan() {
                     <span className="text-xs font-black text-white">{'★'.repeat(m.rarity)}</span>
                   </div>
                   <div className="font-black text-white text-lg leading-tight" style={{ textShadow: `0 2px 0 ${t.dark}` }}>{m.name}</div>
-                  <div className="text-xs font-bold text-white/90">そうごう {total}</div>
+                  <div className="text-xs font-bold text-white/90">総合 {total}</div>
                 </div>
               </button>
             );
@@ -3229,14 +3268,14 @@ function IshimonZukan() {
               <User className="w-12 h-12 text-yellow-900" strokeWidth={3} />
             </div>
             {editingName ? (
-              <div className="flex gap-2 items-center mb-1">
+              <div className="flex gap-2 items-center mb-1 px-2">
                 <input
                   ref={nameInputRef}
                   defaultValue={player.name || 'トレーナー'}
                   onKeyDown={e => e.key === 'Enter' && saveName()}
                   maxLength={10}
                   autoFocus
-                  className="flex-1 rounded-xl px-3 py-2 text-center font-black text-gray-800 text-lg"
+                  className="flex-1 min-w-0 rounded-xl px-3 py-2 text-center font-black text-gray-800 text-lg"
                   style={{ border: '3px solid #FFD700', outline: 'none' }}
                 />
                 <button onClick={saveName}
@@ -3338,6 +3377,272 @@ function IshimonZukan() {
           </div>
           <ChevronRight className="w-5 h-5" />
         </button>
+
+        {/* 設定へのリンク */}
+        <button onClick={() => setView('settings')}
+          className="w-full mt-2 p-3 rounded-2xl text-white active:scale-95 flex items-center gap-2"
+          style={{ background: 'linear-gradient(135deg, #4A5568, #2D3748)', boxShadow: '0 4px 0 #1A202C', border: '2px solid #A0AEC0' }}>
+          <span className="text-xl">⚙️</span>
+          <div className="flex-1 text-left">
+            <div className="font-black text-sm">設定</div>
+            <div className="text-[10px] font-bold opacity-90">難易度・サウンド・データなど</div>
+          </div>
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+    );
+  };
+
+  // ===========================================
+  // 設定画面
+  // ===========================================
+  const SettingsView = () => {
+    const importFileRef = useRef(null);
+    const [importStatus, setImportStatus] = useState('');
+
+    const handleExport = async () => {
+      try {
+        const exportData = {
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          appName: 'IshimonZukan',
+          collection: collection,
+          player: player,
+          settings: settings,
+        };
+        const json = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dateStr = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `ishimon-backup-${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setImportStatus('✅ データを書き出しました！大切に保管してね');
+        setTimeout(() => setImportStatus(''), 4000);
+      } catch (e) {
+        console.error(e);
+        setImportStatus('❌ 書き出しに失敗しました');
+        setTimeout(() => setImportStatus(''), 4000);
+      }
+    };
+
+    const handleImportFile = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!data || data.appName !== 'IshimonZukan' || !data.collection || !data.player) {
+          setImportStatus('❌ 石モン図鑑のバックアップファイルではありません');
+          setTimeout(() => setImportStatus(''), 4000);
+          return;
+        }
+        const ok = window.confirm(
+          '読み込むと、現在のデータはすべて上書きされます。\n本当に復元しますか？\n\n' +
+          `バックアップ日時: ${data.exportedAt ? new Date(data.exportedAt).toLocaleString('ja-JP') : '不明'}\n` +
+          `石モン: ${data.collection.length}体\n` +
+          `プレイヤー: ${data.player.name || 'トレーナー'} (Lv.${data.player.level || 1})`
+        );
+        if (!ok) return;
+        setCollection(data.collection);
+        setPlayer(data.player);
+        if (data.settings) setSettings(prev => ({ ...prev, ...data.settings }));
+        await window.storage.set('ishimon-collection-v3', JSON.stringify(data.collection));
+        await window.storage.set('ishimon-player-v3', JSON.stringify(data.player));
+        if (data.settings) {
+          await window.storage.set('ishimon-settings-v1', JSON.stringify({ ...settings, ...data.settings }));
+        }
+        setImportStatus('✅ データを復元しました！');
+        setTimeout(() => setImportStatus(''), 4000);
+      } catch (err) {
+        console.error(err);
+        setImportStatus('❌ ファイルを読み込めませんでした');
+        setTimeout(() => setImportStatus(''), 4000);
+      } finally {
+        if (importFileRef.current) importFileRef.current.value = '';
+      }
+    };
+
+    const handleReset = async () => {
+      const ok1 = window.confirm('本当にすべてのデータを削除しますか？\nこの操作は取り消せません！');
+      if (!ok1) return;
+      const ok2 = window.confirm('最終確認：石モン・プレイヤー・設定すべてが消えます。よろしいですか？');
+      if (!ok2) return;
+      try {
+        await window.storage.delete('ishimon-collection-v3');
+        await window.storage.delete('ishimon-player-v3');
+        await window.storage.delete('ishimon-settings-v1');
+        await window.storage.delete('ishimon-image-cache-v1').catch(() => {});
+        location.reload();
+      } catch (e) {
+        console.error(e);
+        setImportStatus('❌ リセットに失敗しました');
+      }
+    };
+
+    // 各種スイッチの共通スタイル
+    const Toggle = ({ on, onClick }) => (
+      <button onClick={onClick}
+        className="active:scale-95 transition-transform"
+        style={{
+          width: '52px', height: '30px', borderRadius: '15px',
+          background: on ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'rgba(255,255,255,0.2)',
+          border: '2px solid white', position: 'relative',
+          boxShadow: on ? '0 2px 8px rgba(255,107,53,0.5)' : 'none',
+        }}>
+        <div style={{
+          position: 'absolute', top: '2px', left: on ? '24px' : '2px',
+          width: '22px', height: '22px', borderRadius: '50%',
+          background: 'white', transition: 'left 0.2s',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+        }} />
+      </button>
+    );
+
+    const SettingRow = ({ icon, label, desc, children }) => (
+      <div className="flex items-center gap-3 py-3 px-3 rounded-xl"
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <span className="text-xl flex-shrink-0">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-white font-black text-sm leading-tight">{label}</div>
+          {desc && <div className="text-white/60 text-[10px] font-bold mt-0.5 leading-tight">{desc}</div>}
+        </div>
+        <div className="flex-shrink-0">{children}</div>
+      </div>
+    );
+
+    const difficulties = [
+      { id: 'easy',   label: 'かんたん', desc: '敵が弱め', emoji: '🌱' },
+      { id: 'normal', label: 'ふつう',   desc: 'バランス', emoji: '⚔️' },
+      { id: 'hard',   label: 'むずかしい', desc: '敵が強い', emoji: '🔥' },
+    ];
+
+    return (
+      <div className="min-h-screen p-4 pb-32 relative">
+        <CloseButton onClick={() => setView('profile')} />
+
+        <h2 className="text-3xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>⚙️ 設定</h2>
+        <p className="text-center text-yellow-200 text-xs font-bold mb-4">ゲームの好みをカスタマイズ</p>
+
+        {/* 難易度 */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">⚔️ 難易度</div>
+          <div className="grid grid-cols-3 gap-2">
+            {difficulties.map(d => {
+              const active = settings.difficulty === d.id;
+              return (
+                <button key={d.id} onClick={() => updateSetting('difficulty', d.id)}
+                  className="p-3 rounded-2xl active:scale-95 transition-transform"
+                  style={{
+                    background: active ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'rgba(255,255,255,0.1)',
+                    border: active ? '2px solid white' : '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: active ? '0 4px 0 #B85C00' : 'none',
+                  }}>
+                  <div className="text-2xl mb-1">{d.emoji}</div>
+                  <div className={`font-black text-xs ${active ? 'text-white' : 'text-white/80'}`}>{d.label}</div>
+                  <div className={`text-[9px] font-bold mt-0.5 ${active ? 'text-white/90' : 'text-white/50'}`}>{d.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ゲームプレイ */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🎮 ゲームプレイ</div>
+          <div className="space-y-2">
+            <SettingRow icon="🔊" label="効果音" desc="ボタン操作・バトルなどの音">
+              <Toggle on={settings.soundEnabled} onClick={() => updateSetting('soundEnabled', !settings.soundEnabled)} />
+            </SettingRow>
+            <SettingRow icon="📳" label="バイブレーション" desc="iPhoneでは非対応の場合があります">
+              <Toggle on={settings.vibrationEnabled} onClick={() => updateSetting('vibrationEnabled', !settings.vibrationEnabled)} />
+            </SettingRow>
+            <SettingRow icon="✨" label="アニメーション軽減" desc="背景の動きを抑えて省電力に">
+              <Toggle on={settings.animationReduced} onClick={() => updateSetting('animationReduced', !settings.animationReduced)} />
+            </SettingRow>
+            <SettingRow icon="🎴" label="ガチャ確認ダイアログ" desc="ガチャを引く前に確認する">
+              <Toggle on={settings.confirmGacha} onClick={() => updateSetting('confirmGacha', !settings.confirmGacha)} />
+            </SettingRow>
+          </div>
+        </div>
+
+        {/* プライバシー */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔒 プライバシー</div>
+          <div className="space-y-2">
+            <SettingRow icon="📍" label="出会いの場所を記録" desc="石モンを撮影した場所を保存">
+              <Toggle on={settings.showLocation} onClick={() => updateSetting('showLocation', !settings.showLocation)} />
+            </SettingRow>
+          </div>
+        </div>
+
+        {/* データ管理 */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">💾 データ管理</div>
+
+          <div className="rounded-2xl p-3 mb-2"
+            style={{ background: 'rgba(255,193,7,0.15)', border: '1px solid rgba(255,193,7,0.4)' }}>
+            <div className="flex items-start gap-2">
+              <span className="text-base flex-shrink-0">⚠️</span>
+              <div className="text-yellow-100 text-[11px] font-bold leading-relaxed">
+                データはこの端末のブラウザに保存されています。キャッシュ削除や端末変更で消える可能性があるため、定期的にバックアップを保存しておくことをおすすめします。
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <button onClick={handleExport}
+              className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3"
+              style={{ background: 'linear-gradient(135deg, #00C896, #008060)', boxShadow: '0 4px 0 #004D3A', border: '2px solid #66E5C0' }}>
+              <span className="text-2xl">📤</span>
+              <div className="flex-1 text-left">
+                <div className="font-black text-sm">データを書き出す</div>
+                <div className="text-[10px] font-bold opacity-90">JSONファイルとして保存</div>
+              </div>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+
+            <button onClick={() => importFileRef.current?.click()}
+              className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3"
+              style={{ background: 'linear-gradient(135deg, #4A90E2, #2D5C8F)', boxShadow: '0 4px 0 #1A3A5C', border: '2px solid #7DB0E8' }}>
+              <span className="text-2xl">📥</span>
+              <div className="flex-1 text-left">
+                <div className="font-black text-sm">データを復元する</div>
+                <div className="text-[10px] font-bold opacity-90">バックアップファイルから読み込み</div>
+              </div>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <input ref={importFileRef} type="file" accept="application/json,.json"
+              onChange={handleImportFile} className="hidden" />
+
+            {importStatus && (
+              <div className="rounded-xl p-2.5 text-center text-xs font-bold text-white"
+                style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                {importStatus}
+              </div>
+            )}
+
+            <button onClick={handleReset}
+              className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3 mt-3"
+              style={{ background: 'linear-gradient(135deg, #E53E3E, #9B2C2C)', boxShadow: '0 4px 0 #5A1818', border: '2px solid #FC8181' }}>
+              <span className="text-2xl">🗑️</span>
+              <div className="flex-1 text-left">
+                <div className="font-black text-sm">すべてのデータをリセット</div>
+                <div className="text-[10px] font-bold opacity-90">石モン・プレイヤー情報を削除</div>
+              </div>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* バージョン情報 */}
+        <div className="text-center text-white/50 text-[10px] font-bold mt-6">
+          石モン図鑑 v1.0
+        </div>
       </div>
     );
   };
@@ -3348,7 +3653,7 @@ function IshimonZukan() {
   const BottomTabBar = () => {
     const tabs = [
       { id: 'home', icon: '🏠', label: 'ホーム', view: 'home', badge: claimableMissions || undefined },
-      { id: 'collection', icon: '📖', label: '図鑑', view: 'collection', badge: collection.length },
+      { id: 'collection', icon: '📖', label: '図鑑', view: 'collection' },
       { id: 'battle', icon: '⚔️', label: 'バトル', view: 'stages' },
       { id: 'gacha', icon: '🎴', label: 'ガチャ', view: 'gacha', badge: player.gachaCards },
       { id: 'profile', icon: '👤', label: 'プロフ', view: 'profile' },
@@ -3417,7 +3722,7 @@ function IshimonZukan() {
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap');
         body { -webkit-tap-highlight-color: transparent; }
       `}</style>
-      {view !== 'battle' && (
+      {view !== 'battle' && !settings.animationReduced && (
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(30)].map((_, i) => (
             <div key={i} className="absolute" style={{
@@ -3438,6 +3743,7 @@ function IshimonZukan() {
       {view === 'stages' && <StageSelectView />}
       {view === 'battle' && <BattleView />}
       {view === 'profile' && <ProfileView />}
+      {view === 'settings' && <SettingsView />}
       {view === 'gacha' && <GachaModal />}
 
       {/* 下部固定タブメニュー（バトル中・カメラ中以外で表示） */}
