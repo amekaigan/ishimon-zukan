@@ -808,23 +808,23 @@ const SAMPLES = [
 
 // ===== 野生モン =====
 const WILD_POOL = [
-  { name: 'イシコロン', type: '土', rarity: 1, baseStats: { hp: 50, kogeki: 35, bougyo: 50, speed: 25 }, skill: '体当たり', minLv: 1 },
-  { name: 'モエタン', type: '火', rarity: 1, baseStats: { hp: 45, kogeki: 55, bougyo: 30, speed: 50 }, skill: 'ひのこ', minLv: 1 },
-  { name: 'ミズマル', type: '水', rarity: 1, baseStats: { hp: 55, kogeki: 40, bougyo: 45, speed: 45 }, skill: 'みずでっぽう', minLv: 1 },
-  { name: 'ドガン', type: '土', rarity: 2, baseStats: { hp: 90, kogeki: 70, bougyo: 80, speed: 30 }, skill: 'いわなだれ', minLv: 3 },
-  { name: 'ビリック', type: '電気', rarity: 2, baseStats: { hp: 60, kogeki: 80, bougyo: 45, speed: 85 }, skill: 'でんげき', minLv: 3 },
-  { name: 'ソラット', type: '空', rarity: 2, baseStats: { hp: 65, kogeki: 60, bougyo: 50, speed: 90 }, skill: 'かぜきり', minLv: 4 },
-  { name: 'ボルテック', type: '電気', rarity: 3, baseStats: { hp: 80, kogeki: 100, bougyo: 60, speed: 105 }, skill: 'サンダーボルト', minLv: 6 },
-  { name: 'ガレオン', type: '土', rarity: 3, baseStats: { hp: 130, kogeki: 90, bougyo: 110, speed: 35 }, skill: 'メガクラッシュ', minLv: 6 },
-  { name: 'ドラグーン', type: 'ドラゴン', rarity: 4, baseStats: { hp: 120, kogeki: 110, bougyo: 90, speed: 80 }, skill: 'ドラゴンクロー', minLv: 10 },
-  { name: 'スピリオス', type: '精霊', rarity: 5, baseStats: { hp: 130, kogeki: 120, bougyo: 100, speed: 110 }, skill: 'ホーリーレイ', minLv: 14 },
+  { name: 'イシコロン', type: '土',     rarity: 1, baseStats: { hp: 50,  kogeki: 35,  bougyo: 50,  speed: 25  }, skill: '体当たり',       minLv: 1  },
+  { name: 'モエタン',   type: '火',     rarity: 1, baseStats: { hp: 45,  kogeki: 55,  bougyo: 30,  speed: 50  }, skill: 'ひのこ',         minLv: 1  },
+  { name: 'ミズマル',   type: '水',     rarity: 1, baseStats: { hp: 55,  kogeki: 40,  bougyo: 45,  speed: 45  }, skill: 'みずでっぽう',   minLv: 1  },
+  { name: 'ドガン',     type: '土',     rarity: 2, baseStats: { hp: 90,  kogeki: 70,  bougyo: 80,  speed: 30  }, skill: 'いわなだれ',     minLv: 3  },
+  { name: 'ビリック',   type: '電気',   rarity: 2, baseStats: { hp: 60,  kogeki: 80,  bougyo: 45,  speed: 85  }, skill: 'でんげき',       minLv: 3  },
+  { name: 'ソラット',   type: '空',     rarity: 2, baseStats: { hp: 65,  kogeki: 60,  bougyo: 50,  speed: 90  }, skill: 'かぜきり',       minLv: 4  },
+  { name: 'ボルテック', type: '電気',   rarity: 3, baseStats: { hp: 80,  kogeki: 100, bougyo: 60,  speed: 105 }, skill: 'サンダーボルト', minLv: 6  },
+  { name: 'ガレオン',   type: '土',     rarity: 3, baseStats: { hp: 130, kogeki: 90,  bougyo: 110, speed: 35  }, skill: 'メガクラッシュ', minLv: 6  },
+  { name: 'ドラグーン', type: 'ドラゴン', rarity: 4, baseStats: { hp: 160, kogeki: 145, bougyo: 120, speed: 100 }, skill: 'ドラゴンクロー', minLv: 12 },
+  { name: 'スピリオス', type: '精霊',   rarity: 5, baseStats: { hp: 175, kogeki: 160, bougyo: 140, speed: 145 }, skill: 'ホーリーレイ',   minLv: 14 },
 ];
 
 const STAGES_LIST = [
-  { id: 'shoshinsha', name: '初心者の森', emoji: '🌳', minLv: 1, maxLv: 3, color: '#52B788' },
-  { id: 'iwaba',      name: '岩場の道', emoji: '⛰️', minLv: 3, maxLv: 7, color: '#A0793F' },
-  { id: 'raiu',       name: '雷雨の塔', emoji: '⚡', minLv: 6, maxLv: 12, color: '#FFC42B' },
-  { id: 'densetsu',   name: '伝説の洞窟', emoji: '🔮', minLv: 10, maxLv: 20, color: '#7B2CBF' },
+  { id: 'shoshinsha', name: '初心者の森', emoji: '🌳', minLv: 1, maxLv: 3, color: '#52B788', reqLv: 1 },
+  { id: 'iwaba',      name: '岩場の道',   emoji: '⛰️', minLv: 3, maxLv: 7, color: '#A0793F', reqLv: 3 },
+  { id: 'raiu',       name: '雷雨の塔',   emoji: '⚡', minLv: 6, maxLv: 12, color: '#FFC42B', reqLv: 6 },
+  { id: 'densetsu',   name: '伝説の洞窟', emoji: '🔮', minLv: 14, maxLv: 20, color: '#7B2CBF', reqLv: 10 },
 ];
 
 const createWildMon = (stage) => {
@@ -959,6 +959,7 @@ function IshimonZukan() {
       totalEvolves: 0,
       consecutiveR1Count: 0,  // ガチャで★1が連続した回数
     },
+    lastBattleMonId: null, // 前回バトルで使った石モンID
   });
 
   // モーダル系
@@ -1771,6 +1772,10 @@ function IshimonZukan() {
     setView('battle');
     updateMission('battle');
     updateMission('battle_type', { type: mon.type });
+    // 前回使った石モンIDを保存
+    const updatedP = { ...player, lastBattleMonId: mon.id };
+    setPlayer(updatedP);
+    savePlayer(updatedP);
   };
 
   const battleResolve = (myAction) => {
@@ -1923,46 +1928,45 @@ function IshimonZukan() {
       <div className="px-5 pt-6 pb-32">
         {/* プレイヤーステータスバー */}
         <button onClick={() => setView('profile')}
-          className="flex items-center gap-3 mb-4 w-full active:scale-[0.98] transition-transform rounded-2xl p-2.5 backdrop-blur-sm"
+          className="flex items-center gap-3 mb-4 w-full active:scale-[0.98] transition-transform rounded-2xl px-3 py-2.5 backdrop-blur-sm"
           style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,215,0,0.35)' }}>
           {/* 左: アバター */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 self-center">
             {player.avatarPhoto ? (
               <img src={player.avatarPhoto}
-                className="w-10 h-10 rounded-xl object-cover"
+                className="w-11 h-11 rounded-xl object-cover"
                 style={{ border: '2px solid #FFD700' }} />
             ) : (
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', border: '2px solid #FFD700' }}>
-                <User className="w-5 h-5 text-yellow-900" strokeWidth={3} />
+                <User className="w-6 h-6 text-yellow-900" strokeWidth={3} />
               </div>
             )}
           </div>
-          {/* 右: 2段レイアウト */}
-          <div className="flex-1 min-w-0">
+          {/* 右: 2段レイアウト — アバターと同じ高さに収める */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center" style={{ height: '44px' }}>
             {/* 上段: 名前 + Lv */}
-            <div className="flex items-baseline gap-1.5 mb-0.5">
-              <span className="text-white font-black text-sm leading-tight truncate">{player.name || 'トレーナー'}</span>
-              <span className="text-yellow-300 font-black text-xs leading-tight flex-shrink-0">Lv.{player.level}</span>
+            <div className="flex items-baseline gap-1.5 leading-none mb-1">
+              <span className="text-white font-black text-base leading-none truncate">{player.name || 'トレーナー'}</span>
+              <span className="text-yellow-300 font-black text-sm leading-none flex-shrink-0">Lv.{player.level}</span>
             </div>
             {/* 下段: 称号 + きらめき石 */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 leading-none">
               {(() => {
                 const t = player.activeTitle ? getTitleById(player.activeTitle) : null;
                 const r = t ? (TITLE_RARITY[t.rarity] || TITLE_RARITY.common) : null;
                 return t ? (
-                  <span className="text-[10px] font-black leading-none truncate max-w-[110px]"
+                  <span className="text-[11px] font-black leading-none truncate max-w-[120px]"
                     style={{ color: r.color }}>
                     {t.emoji} {t.name}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold leading-none text-white/35">称号なし</span>
+                  <span className="text-[11px] font-bold leading-none text-white/30">称号なし</span>
                 );
               })()}
-              {/* きらめき石: アイコン + 数字のみ */}
               <div className="flex items-center gap-0.5 ml-auto flex-shrink-0">
                 <Gem className="w-3.5 h-3.5 text-purple-300" />
-                <span className="text-white font-black text-sm">{player.gems}</span>
+                <span className="text-white font-black text-sm leading-none">{player.gems}</span>
               </div>
             </div>
           </div>
@@ -3132,46 +3136,90 @@ function IshimonZukan() {
   const StageSelectView = () => {
     const [step, setStep] = useState('stage');
     const [chosenStage, setChosenStage] = useState(null);
+
     if (step === 'stage') {
       return (
         <div className="px-4 pt-4 pb-24 relative">
           <h2 className="text-2xl font-black text-white text-center mb-0.5" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>ステージ選択</h2>
           <p className="text-center text-yellow-200 text-xs font-bold mb-3">どこでバトルしますか？</p>
           <div className="space-y-2">
-            {STAGES_LIST.map(s => (
-              <button key={s.id} onClick={() => { setChosenStage(s); setStep('mon'); }}
-                className="w-full p-2.5 rounded-2xl text-white text-left active:scale-95 transition-transform flex items-center gap-2"
-                style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}aa)`, boxShadow: `0 4px 0 rgba(0,0,0,0.3)`, border: '2px solid white' }}>
-                <div className="text-3xl">{s.emoji}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-base font-black leading-tight">{s.name}</div>
-                  <div className="text-[10px] font-bold opacity-90">敵レベル {s.minLv}〜{s.maxLv}</div>
-                </div>
-                <ChevronRight className="w-5 h-5 flex-shrink-0" />
-              </button>
-            ))}
+            {STAGES_LIST.map(s => {
+              // 自分の最強モンのLvでロック判定
+              const maxMonLv = collection.length > 0 ? Math.max(...collection.map(m => m.level || 1)) : 0;
+              const locked = maxMonLv < s.reqLv;
+              return (
+                <button key={s.id}
+                  onClick={() => { if (!locked) { setChosenStage(s); setStep('mon'); } }}
+                  className="w-full p-2.5 rounded-2xl text-white text-left transition-transform flex items-center gap-2"
+                  style={{
+                    background: locked
+                      ? 'rgba(50,50,50,0.7)'
+                      : `linear-gradient(135deg, ${s.color}, ${s.color}aa)`,
+                    boxShadow: locked ? 'none' : `0 4px 0 rgba(0,0,0,0.3)`,
+                    border: locked ? '2px solid rgba(255,255,255,0.2)' : '2px solid white',
+                    opacity: locked ? 0.65 : 1,
+                    transform: locked ? 'none' : undefined,
+                  }}
+                  {...(!locked && { className: "w-full p-2.5 rounded-2xl text-white text-left active:scale-95 transition-transform flex items-center gap-2" })}
+                  >
+                  <div className="text-3xl">{locked ? '🔒' : s.emoji}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-black leading-tight">{s.name}</div>
+                    <div className="text-[10px] font-bold opacity-90">
+                      {locked
+                        ? `Lv.${s.reqLv} 以上の石モンが必要`
+                        : `敵レベル ${s.minLv}〜${s.maxLv}`}
+                    </div>
+                  </div>
+                  {locked
+                    ? <span className="text-white/50 text-xs font-bold">Lv.{s.reqLv}〜</span>
+                    : <ChevronRight className="w-5 h-5 flex-shrink-0" />}
+                </button>
+              );
+            })}
           </div>
         </div>
       );
     }
+
+    // 石モン選択: 前回使用モンを先頭に、残りは強さ（総合ステ）順
+    const sortedCollection = [...collection].sort((a, b) => {
+      const aIsLast = a.id === player.lastBattleMonId;
+      const bIsLast = b.id === player.lastBattleMonId;
+      if (aIsLast && !bIsLast) return -1;
+      if (!aIsLast && bIsLast) return 1;
+      // 強さ順: rarity → level → 総合ステ
+      const sa = getCurrentStats(a), sb = getCurrentStats(b);
+      const totalA = sa.hp + sa.kogeki + sa.bougyo + sa.speed;
+      const totalB = sb.hp + sb.kogeki + sb.bougyo + sb.speed;
+      return b.rarity - a.rarity || (b.level || 1) - (a.level || 1) || totalB - totalA;
+    });
+
     return (
       <div className="px-4 pt-6 pb-32 relative">
         <CloseButton onClick={() => setStep('stage')} />
         <h2 className="text-3xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
           {chosenStage.emoji} {chosenStage.name}
         </h2>
-        <p className="text-center text-yellow-200 text-sm font-bold mb-6">どの石モンでバトル？</p>
+        <p className="text-center text-yellow-200 text-sm font-bold mb-4">どの石モンでバトル？</p>
         {collection.length === 0 ? (
           <div className="text-center text-white/70 mt-12 font-bold">まずは石モンを集めよう！</div>
         ) : (
           <div className="space-y-2">
-            {collection.map(m => {
+            {sortedCollection.map(m => {
               const t = TYPES[m.type] || TYPES['土'];
               const cur = getCurrentStats(m);
+              const total = cur.hp + cur.kogeki + cur.bougyo + cur.speed;
+              const isLastUsed = m.id === player.lastBattleMonId;
               return (
                 <button key={m.id} onClick={() => startBattle(m, chosenStage)}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl active:scale-95 transition-transform"
-                  style={{ background: `linear-gradient(90deg, ${t.light}, ${t.bg})`, border: '3px solid white', boxShadow: `0 4px 0 ${t.dark}` }}>
+                  className="w-full flex items-center gap-3 p-3 rounded-2xl active:scale-95 transition-transform relative"
+                  style={{ background: `linear-gradient(90deg, ${t.light}, ${t.bg})`, border: `3px solid ${isLastUsed ? '#FFD700' : 'white'}`, boxShadow: `0 4px 0 ${t.dark}` }}>
+                  {isLastUsed && (
+                    <div className="absolute top-1 right-1 bg-yellow-400 rounded-full px-1.5 py-0.5 text-[8px] font-black text-yellow-900 leading-none">
+                      前回
+                    </div>
+                  )}
                   {m.imageDataUrl ? (
                     <img src={m.imageDataUrl} className="w-14 h-14 rounded-xl object-cover" style={{ border: '2px solid white' }} />
                   ) : (
@@ -3181,9 +3229,9 @@ function IshimonZukan() {
                   )}
                   <div className="flex-1 text-left">
                     <div className="font-black text-white text-lg leading-tight" style={{ textShadow: `0 2px 0 ${t.dark}` }}>{m.name}</div>
-                    <div className="text-xs font-bold text-white/95">Lv.{m.level || 1} ・ HP{cur.hp} ・ {t.emoji}{t.name}</div>
+                    <div className="text-xs font-bold text-white/95">Lv.{m.level || 1} ・ 総合 {total} ・ {t.emoji}{t.name}</div>
                   </div>
-                  <Swords className="w-5 h-5 text-white" />
+                  <Swords className="w-5 h-5 text-white flex-shrink-0" />
                 </button>
               );
             })}
@@ -3894,7 +3942,7 @@ function IshimonZukan() {
               ) : (
                 <button onClick={() => setEditingName(true)}
                   className="flex items-center gap-1.5 active:scale-95 mb-0.5 max-w-full">
-                  <div className="text-white font-black text-base leading-tight truncate max-w-[100px]">{player.name || 'トレーナー'}</div>
+                  <div className="text-white font-black text-base leading-tight truncate max-w-[150px]">{player.name || 'トレーナー'}</div>
                   <svg className="w-3.5 h-3.5 text-yellow-300 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
