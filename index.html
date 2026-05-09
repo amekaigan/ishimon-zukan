@@ -555,10 +555,10 @@ const getRarityLabel = (r) => {
 // ===========================================
 // レア度: common(誰でも) / rare(やや珍しい) / epic(自慢できる) / legendary(超レア)
 const TITLE_RARITY = {
-  common:    { color: '#ADB5BD', glow: '#6C757D', label: 'コモン' },
-  rare:      { color: '#52B788', glow: '#2D6A4F', label: 'レア' },
-  epic:      { color: '#C77DFF', glow: '#9D4EDD', label: 'エピック' },
-  legendary: { color: '#FFD700', glow: '#FFAA00', label: 'レジェンダリ' },
+  common:    { color: '#ADB5BD', glow: '#6C757D', label: '称号Lv.1', level: 1 },
+  rare:      { color: '#52B788', glow: '#2D6A4F', label: '称号Lv.2', level: 2 },
+  epic:      { color: '#C77DFF', glow: '#9D4EDD', label: '称号Lv.3', level: 3 },
+  legendary: { color: '#FFD700', glow: '#FFAA00', label: '称号Lv.4', level: 4 },
 };
 
 // 各称号: { id, emoji, name, desc, rarity, check(ctx) => bool }
@@ -1922,48 +1922,51 @@ function IshimonZukan() {
     return (
       <div className="px-5 pt-6 pb-32">
         {/* プレイヤーステータスバー */}
-        <div className="flex items-center justify-between mb-4 bg-black/30 rounded-2xl p-2 backdrop-blur-sm" style={{ border: '1px solid rgba(255,215,0,0.3)' }}>
-          <button onClick={() => setView('profile')} className="flex items-center gap-2 active:scale-95">
-            <div className="relative flex-shrink-0">
-              {player.avatarPhoto ? (
-                <img src={player.avatarPhoto}
-                  className="w-8 h-8 rounded-full object-cover"
-                  style={{ border: '2px solid #FFD700' }} />
-              ) : (
-                <div className="bg-yellow-400 rounded-full p-1.5"><User className="w-4 h-4 text-yellow-900" strokeWidth={3} /></div>
-              )}
+        <button onClick={() => setView('profile')}
+          className="flex items-center gap-3 mb-4 w-full active:scale-[0.98] transition-transform rounded-2xl p-2.5 backdrop-blur-sm"
+          style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,215,0,0.35)' }}>
+          {/* 左: アバター */}
+          <div className="flex-shrink-0">
+            {player.avatarPhoto ? (
+              <img src={player.avatarPhoto}
+                className="w-10 h-10 rounded-xl object-cover"
+                style={{ border: '2px solid #FFD700' }} />
+            ) : (
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', border: '2px solid #FFD700' }}>
+                <User className="w-5 h-5 text-yellow-900" strokeWidth={3} />
+              </div>
+            )}
+          </div>
+          {/* 右: 2段レイアウト */}
+          <div className="flex-1 min-w-0">
+            {/* 上段: 名前 + Lv */}
+            <div className="flex items-baseline gap-1.5 mb-0.5">
+              <span className="text-white font-black text-sm leading-tight truncate">{player.name || 'トレーナー'}</span>
+              <span className="text-yellow-300 font-black text-xs leading-tight flex-shrink-0">Lv.{player.level}</span>
             </div>
-            <div className="text-left">
-              <div className="text-yellow-300 font-black text-xs leading-tight truncate max-w-[80px]">{player.name || 'トレーナー'}</div>
+            {/* 下段: 称号 + きらめき石 */}
+            <div className="flex items-center gap-2">
               {(() => {
-                if (!player.activeTitle) return <div className="text-white font-black text-sm leading-tight">Lv.{player.level}</div>;
-                const t = getTitleById(player.activeTitle);
-                if (!t) return <div className="text-white font-black text-sm leading-tight">Lv.{player.level}</div>;
-                const r = TITLE_RARITY[t.rarity] || TITLE_RARITY.common;
-                return (
-                  <div className="flex items-center gap-1">
-                    <div className="text-white font-black text-sm leading-tight">Lv.{player.level}</div>
-                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full"
-                      style={{ background: `${r.color}33`, border: `1px solid ${r.color}`, lineHeight: 1 }}>
-                      <span className="text-[9px] leading-none">{t.emoji}</span>
-                      <span className="text-[8px] font-black leading-none" style={{ color: r.color }}>{t.name}</span>
-                    </div>
-                  </div>
+                const t = player.activeTitle ? getTitleById(player.activeTitle) : null;
+                const r = t ? (TITLE_RARITY[t.rarity] || TITLE_RARITY.common) : null;
+                return t ? (
+                  <span className="text-[10px] font-black leading-none truncate max-w-[110px]"
+                    style={{ color: r.color }}>
+                    {t.emoji} {t.name}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold leading-none text-white/35">称号なし</span>
                 );
               })()}
-            </div>
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 bg-purple-600/40 rounded-full px-2 py-1" style={{ border: '1px solid #C77DFF' }}>
-              <Gem className="w-3.5 h-3.5 text-purple-200" />
-              <span className="text-white font-black text-sm">{player.gems}</span>
-            </div>
-            <div className="flex items-center gap-1 bg-orange-600/40 rounded-full px-2 py-1" style={{ border: '1px solid #FF6B35' }}>
-              <Calendar className="w-3.5 h-3.5 text-orange-200" />
-              <span className="text-white font-black text-sm">{player.streak}日</span>
+              {/* きらめき石: アイコン + 数字のみ */}
+              <div className="flex items-center gap-0.5 ml-auto flex-shrink-0">
+                <Gem className="w-3.5 h-3.5 text-purple-300" />
+                <span className="text-white font-black text-sm">{player.gems}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </button>
 
         <div className="text-center mb-5">
           <h1 className="text-5xl font-black tracking-wider"
@@ -3794,10 +3797,12 @@ function IshimonZukan() {
   // ===========================================
   const ProfileView = () => {
     const expRatio = (player.exp || 0) / playerExpForNextLevel(player.level || 1);
+    const NAME_MAX = 8;
+    const [nameCount, setNameCount] = useState((player.name || '').length);
 
     const saveName = () => {
       const value = nameInputRef.current?.value || '';
-      const trimmed = value.trim().slice(0, 10);
+      const trimmed = value.trim().slice(0, NAME_MAX);
       if (!trimmed) { setEditingName(false); return; }
       const updated = { ...player, name: trimmed };
       setPlayer(updated);
@@ -3867,19 +3872,29 @@ function IshimonZukan() {
             {/* 名前・Lv・称号 */}
             <div className="flex-1 min-w-0">
               {editingName ? (
-                <div className="flex gap-1.5 items-center mb-1">
-                  <input ref={nameInputRef} defaultValue={player.name || 'トレーナー'}
-                    onKeyDown={e => e.key === 'Enter' && saveName()} maxLength={10} autoFocus
-                    className="flex-1 min-w-0 rounded-xl px-2 py-1 font-black text-gray-800 text-sm"
-                    style={{ border: '2px solid #FFD700', outline: 'none' }} />
-                  <button onClick={saveName}
-                    className="bg-yellow-400 rounded-xl px-2 py-1 font-black text-yellow-900 text-xs active:scale-95"
-                    style={{ border: '2px solid white' }}>OK</button>
+                <div className="mb-0.5">
+                  <div className="flex gap-1.5 items-center mb-1">
+                    <input ref={nameInputRef} defaultValue={player.name || 'トレーナー'}
+                      onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setEditingName(false); }}
+                      onChange={e => setNameCount(Math.min(e.target.value.length, NAME_MAX))}
+                      maxLength={NAME_MAX} autoFocus
+                      className="flex-1 min-w-0 rounded-xl px-2 py-1 font-black text-gray-800 text-sm"
+                      style={{ border: '2px solid #FFD700', outline: 'none' }} />
+                    <button onClick={saveName}
+                      className="bg-yellow-400 rounded-xl px-2 py-1 font-black text-yellow-900 text-xs active:scale-95 flex-shrink-0"
+                      style={{ border: '2px solid white' }}>OK</button>
+                    <button onClick={() => setEditingName(false)}
+                      className="rounded-xl px-2 py-1 font-black text-white/80 text-xs active:scale-95 flex-shrink-0"
+                      style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>✕</button>
+                  </div>
+                  <div className="text-right text-[10px] font-bold" style={{ color: nameCount >= NAME_MAX ? '#FF6B35' : 'rgba(255,255,255,0.5)' }}>
+                    {nameCount} / {NAME_MAX}
+                  </div>
                 </div>
               ) : (
                 <button onClick={() => setEditingName(true)}
                   className="flex items-center gap-1.5 active:scale-95 mb-0.5 max-w-full">
-                  <div className="text-white font-black text-base leading-tight truncate max-w-[120px]">{player.name || 'トレーナー'}</div>
+                  <div className="text-white font-black text-base leading-tight truncate max-w-[100px]">{player.name || 'トレーナー'}</div>
                   <svg className="w-3.5 h-3.5 text-yellow-300 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
@@ -4404,8 +4419,6 @@ function IshimonZukan() {
                   if (!t) return null;
                   const r = TITLE_RARITY[t.rarity] || TITLE_RARITY.common;
                   const active = player.activeTitle === t.id;
-                  // レア度スコア: common=1, rare=2, epic=3, legendary=4
-                  const rarityScore = { common: 1, rare: 2, epic: 3, legendary: 4 }[t.rarity] || 1;
                   const isLast = idx === (player.titles || []).length - 1;
                   return (
                     <button key={t.id}
@@ -4416,33 +4429,31 @@ function IshimonZukan() {
                       }}
                       className="w-full px-3 py-2.5 flex items-center gap-2.5 active:scale-[0.98] transition-all"
                       style={{
-                        background: active ? `${r.color}22` : 'transparent',
+                        background: active ? `${r.color}1A` : 'transparent',
                         borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.08)',
                         boxShadow: active ? `inset 3px 0 0 ${r.color}` : 'none',
                       }}>
-                      {/* アイコン */}
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${r.color}33`, border: `1.5px solid ${r.color}` }}>
-                        <span className="text-base leading-none">{t.emoji}</span>
+                      {/* 称号Lv バッジ（アイコンの代わり） */}
+                      <div className="w-10 flex-shrink-0 flex flex-col items-center gap-0.5">
+                        <div className="text-[8px] font-black leading-none" style={{ color: r.color }}>称号</div>
+                        <div className="text-base font-black leading-none" style={{ color: r.color }}>Lv.{r.level}</div>
                       </div>
                       {/* テキスト + レア度バー */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-white font-black text-sm leading-tight truncate">{t.name}</span>
-                        </div>
-                        {/* レア度をバーで表現（4段階） */}
-                        <div className="flex items-center gap-1">
+                        <div className="text-white font-black text-sm leading-tight truncate mb-1">{t.name}</div>
+                        {/* レア度バー: 4セグメント、塗りつぶし済みは色あり */}
+                        <div className="flex items-center gap-0.5 mb-0.5">
                           {[1,2,3,4].map(i => (
-                            <div key={i} className="h-1 rounded-full flex-1"
+                            <div key={i}
+                              className="h-1.5 rounded-sm"
                               style={{
-                                background: i <= rarityScore ? r.color : 'rgba(255,255,255,0.15)',
+                                flex: 1,
+                                background: i <= r.level ? r.color : 'rgba(255,255,255,0.12)',
+                                boxShadow: i <= r.level ? `0 0 4px ${r.color}88` : 'none',
                               }} />
                           ))}
-                          <span className="text-[9px] font-black ml-1" style={{ color: r.color }}>
-                            {r.label}
-                          </span>
                         </div>
-                        <div className="text-white/60 text-[9px] font-bold mt-0.5 truncate">{t.desc}</div>
+                        <div className="text-white/50 text-[9px] font-bold truncate">{t.desc}</div>
                       </div>
                       {/* 選択チェック */}
                       {active ? (
@@ -4452,7 +4463,7 @@ function IshimonZukan() {
                         </div>
                       ) : (
                         <div className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ border: `1.5px solid rgba(255,255,255,0.3)` }} />
+                          style={{ border: `1.5px solid rgba(255,255,255,0.25)` }} />
                       )}
                     </button>
                   );
