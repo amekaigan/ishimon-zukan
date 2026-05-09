@@ -835,6 +835,7 @@ function IshimonZukan() {
   const [showLoginBonus, setShowLoginBonus] = useState(null);
   const [showMissions, setShowMissions] = useState(false);
   const [showShop, setShowShop] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showEquip, setShowEquip] = useState(null);
   const [showGacha, setShowGacha] = useState(false);
@@ -1754,11 +1755,33 @@ function IshimonZukan() {
         </button>
 
         <button onClick={() => fileRef.current?.click()}
-          className="w-full mb-5 py-2 rounded-2xl text-white/60 text-xs font-bold active:text-white text-center underline">
+          className="w-full mb-3 py-2 rounded-2xl text-white/60 text-xs font-bold active:text-white text-center underline">
           📁 写真から 選ぶ
         </button>
 
         <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+
+        {/* ショップ・アイテムへのクイックアクセス */}
+        <div className="grid grid-cols-2 gap-2 mb-5">
+          <button onClick={() => setShowShop(true)}
+            className="p-3 rounded-2xl text-white active:scale-95 transition-transform flex items-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 4px 0 #4A0E78', border: '2px solid #E0AEFF' }}>
+            <span className="text-2xl flex-shrink-0">🛍️</span>
+            <div className="flex-1 text-left min-w-0">
+              <div className="font-black text-sm leading-tight">ショップ</div>
+              <div className="text-[10px] font-bold opacity-90 leading-tight">装備を購入</div>
+            </div>
+          </button>
+          <button onClick={() => setShowInventory(true)}
+            className="p-3 rounded-2xl text-white active:scale-95 transition-transform flex items-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #FFB347, #E67E22)', boxShadow: '0 4px 0 #8B4513', border: '2px solid #FFD699' }}>
+            <span className="text-2xl flex-shrink-0">🎒</span>
+            <div className="flex-1 text-left min-w-0">
+              <div className="font-black text-sm leading-tight">アイテム</div>
+              <div className="text-[10px] font-bold opacity-90 leading-tight">所持{player.inventory.length}個</div>
+            </div>
+          </button>
+        </div>
 
         {/* 最近の石モン（横スクロール） */}
         {recentMons.length > 0 && (
@@ -2045,7 +2068,174 @@ function IshimonZukan() {
   };
 
   // ===========================================
-  // プロフィール画面
+  // アイテム画面（道具箱）
+  // ===========================================
+  const InventoryModal = () => {
+    if (!showInventory) return null;
+    const [tab, setTab] = useState('all');
+
+    // 各装備を「誰が装備中か」マップ化
+    const equippedByMonMap = useMemo(() => {
+      const map = {};
+      for (const m of collection) {
+        if (!m.equipped) continue;
+        for (const slot of EQUIP_SLOTS) {
+          const id = m.equipped[slot];
+          if (id) {
+            if (!map[id]) map[id] = [];
+            map[id].push(m);
+          }
+        }
+      }
+      return map;
+    }, [collection]);
+
+    // 所持装備一覧（タブでフィルタ）
+    const ownedItems = (player.inventory || [])
+      .map(id => EQUIPMENT[id])
+      .filter(Boolean)
+      .filter(eq => tab === 'all' || eq.type === tab);
+
+    // タブ別の所持数（バッジ用）
+    const counts = {
+      all: (player.inventory || []).length,
+      sword: (player.inventory || []).filter(id => EQUIPMENT[id]?.type === 'sword').length,
+      shield: (player.inventory || []).filter(id => EQUIPMENT[id]?.type === 'shield').length,
+      charm: (player.inventory || []).filter(id => EQUIPMENT[id]?.type === 'charm').length,
+    };
+
+    const tabs = [
+      { id: 'all', label: 'すべて', emoji: '📦' },
+      { id: 'sword', label: '剣', emoji: '🗡️' },
+      { id: 'shield', label: '盾', emoji: '🛡️' },
+      { id: 'charm', label: 'お守り', emoji: '🍀' },
+    ];
+
+    return (
+      <div className="fixed inset-0 z-[55] overflow-y-auto p-3" style={{ background: 'rgba(0,0,0,0.85)' }}>
+        <div className="min-h-full flex items-start justify-center pt-3" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="w-full max-w-sm rounded-3xl p-4 relative"
+            style={{ background: 'linear-gradient(180deg, #8B4513, #5C2C0C)', border: '3px solid #FFD700', boxShadow: '0 0 40px rgba(255,179,71,0.4)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-yellow-300 text-[10px] font-black tracking-widest">持ち物</div>
+                <div className="text-2xl font-black text-white">アイテム</div>
+              </div>
+              <div className="flex items-center gap-1 bg-orange-700/50 rounded-full px-3 py-1.5" style={{ border: '2px solid #FFB347' }}>
+                <span className="text-base">📦</span>
+                <span className="text-white font-black">{counts.all}</span>
+              </div>
+            </div>
+
+            <CloseButton onClick={() => setShowInventory(false)} />
+
+            {/* タブ */}
+            <div className="grid grid-cols-4 gap-1 mb-3">
+              {tabs.map(tb => {
+                const active = tab === tb.id;
+                return (
+                  <button key={tb.id} onClick={() => setTab(tb.id)}
+                    className={`py-2 rounded-xl text-xs font-black transition-all relative ${active ? 'text-orange-900' : 'text-white/70'}`}
+                    style={{
+                      background: active ? 'linear-gradient(135deg, #FFE066, #FFD700)' : 'rgba(0,0,0,0.3)',
+                      border: active ? '2px solid white' : '2px solid rgba(255,255,255,0.2)',
+                    }}>
+                    <div className="text-base leading-none">{tb.emoji}</div>
+                    <div className="text-[10px] mt-0.5">{tb.label}</div>
+                    {counts[tb.id] > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-[9px] font-black leading-none px-1 py-0.5"
+                        style={{ border: '1.5px solid white', minWidth: '16px', textAlign: 'center' }}>
+                        {counts[tb.id]}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 中身 */}
+            {ownedItems.length === 0 ? (
+              <div className="rounded-2xl p-6 text-center"
+                style={{ background: 'rgba(0,0,0,0.3)', border: '2px dashed rgba(255,255,255,0.3)' }}>
+                <div className="text-5xl mb-2 opacity-50">📭</div>
+                <div className="text-white/80 font-black text-sm mb-1">まだアイテムがありません</div>
+                <div className="text-white/60 text-xs font-bold mb-3">ショップで装備を買ったり、ガチャを引いたりしてゲットしよう！</div>
+                <button onClick={() => { setShowInventory(false); setShowShop(true); }}
+                  className="px-4 py-2 rounded-xl text-white font-black text-sm active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 3px 0 #4A0E78', border: '2px solid white' }}>
+                  🛍️ ショップへ行く
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {ownedItems.map(eq => {
+                  const r = getRarityLabel(eq.rarity);
+                  const equippedBy = equippedByMonMap[eq.id] || [];
+                  const slotLabel = EQUIP_LABELS[eq.type];
+                  return (
+                    <div key={eq.id} className="rounded-2xl p-3"
+                      style={{ background: 'rgba(255,255,255,0.1)', border: `2px solid ${r.color}` }}>
+                      <div className="flex items-center gap-2">
+                        <div className="text-3xl flex-shrink-0">{eq.emoji}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-white font-black text-sm">{eq.name}</span>
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full text-white"
+                              style={{ background: 'rgba(0,0,0,0.4)' }}>{slotLabel}</span>
+                          </div>
+                          <div className="text-xs font-bold" style={{ color: r.color }}>{'★'.repeat(eq.rarity)} {r.label}</div>
+                          <div className="text-xs text-white/80 font-bold mt-0.5">
+                            {eq.boost.kogeki ? `こうげき +${eq.boost.kogeki} ` : ''}
+                            {eq.boost.bougyo ? `ぼうぎょ +${eq.boost.bougyo} ` : ''}
+                            {eq.boost.hp ? `HP +${eq.boost.hp} ` : ''}
+                            {eq.boost.speed ? `すばやさ +${eq.boost.speed}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      {equippedBy.length > 0 ? (
+                        <div className="mt-2 pt-2 flex items-center gap-1.5 flex-wrap"
+                          style={{ borderTop: '1px dashed rgba(255,255,255,0.25)' }}>
+                          <span className="text-[10px] font-black text-green-300">✓ 装備中:</span>
+                          {equippedBy.map(m => {
+                            const t = TYPES[m.type] || TYPES['土'];
+                            return (
+                              <button key={m.id} onClick={() => { setShowInventory(false); setSelected(m); }}
+                                className="flex items-center gap-1 rounded-full px-2 py-0.5 active:scale-95"
+                                style={{ background: `linear-gradient(135deg, ${t.bg}, ${t.dark})`, border: '1px solid rgba(255,255,255,0.4)' }}>
+                                <span className="text-xs">{t.emoji}</span>
+                                <span className="text-[10px] font-black text-white">{m.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="mt-2 pt-2 text-[10px] font-bold text-white/50"
+                          style={{ borderTop: '1px dashed rgba(255,255,255,0.25)' }}>
+                          石モンの詳細画面から装備できます
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ショップへの導線 */}
+            {ownedItems.length > 0 && (
+              <button onClick={() => { setShowInventory(false); setShowShop(true); }}
+                className="w-full mt-3 py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 3px 0 #4A0E78', border: '2px solid white' }}>
+                🛍️ ショップへ行く
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ===========================================
+  // マイページ画面
   // ===========================================
   const ProfileModal = () => {
     if (!showProfile) return null;
@@ -2066,7 +2256,7 @@ function IshimonZukan() {
         <div className="w-full max-w-sm rounded-3xl p-5 my-4"
           style={{ background: 'linear-gradient(180deg, #1976D2, #0D47A1)', border: '4px solid #FFD700' }}>
           <div className="flex items-center justify-between mb-4">
-            <div className="text-3xl font-black text-white">プロフィール</div>
+            <div className="text-3xl font-black text-white">マイページ</div>
             <CloseButton onClick={() => { setShowProfile(false); setEditingName(false); }} />
           </div>
 
@@ -2636,7 +2826,7 @@ function IshimonZukan() {
                   )}
                   <div className="flex-1 text-left">
                     <div className="font-black text-white text-lg leading-tight" style={{ textShadow: `0 2px 0 ${t.dark}` }}>{m.name}</div>
-                    <div className="text-xs font-bold text-white/95">Lv.{m.level || 1} ・ HP{cur.hp} ・ {t.emoji}{m.type}</div>
+                    <div className="text-xs font-bold text-white/95">Lv.{m.level || 1} ・ HP{cur.hp} ・ {t.emoji}{t.name}</div>
                   </div>
                   <Swords className="w-5 h-5 text-white" />
                 </button>
@@ -3181,9 +3371,18 @@ function IshimonZukan() {
                   </div>
                   <div className="p-1.5 bg-white/95">
                     <div className="font-black text-xs text-gray-800 truncate">{m.name}</div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-[9px] font-bold text-gray-500">{t.emoji}{m.type}</span>
-                      {m.evolveTo && m.stage < 3 && <span className="text-[9px] font-black" style={{ color: '#FF6B35' }}>進化</span>}
+                    <div className="flex items-center justify-between mt-1 gap-1">
+                      <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-black text-[10px] text-white"
+                        style={{
+                          background: `linear-gradient(135deg, ${t.bg}, ${t.dark})`,
+                          border: `1.5px solid white`,
+                          boxShadow: `0 1px 0 ${t.dark}`,
+                          textShadow: '0 1px 0 rgba(0,0,0,0.25)',
+                        }}>
+                        <span className="text-sm leading-none">{t.emoji}</span>
+                        <span className="leading-none">{t.name}</span>
+                      </span>
+                      {m.evolveTo && m.stage < 3 && <span className="text-[9px] font-black flex-shrink-0" style={{ color: '#FF6B35' }}>進化</span>}
                     </div>
                   </div>
                 </button>
@@ -3239,7 +3438,7 @@ function IshimonZukan() {
   );
 
   // ===========================================
-  // プロフィールView（タブから直接表示）
+  // マイページView（タブから直接表示）
   // ===========================================
   const ProfileView = () => {
     const expRatio = (player.exp || 0) / playerExpForNextLevel(player.level || 1);
@@ -3258,7 +3457,7 @@ function IshimonZukan() {
       <div className="px-4 pt-6 pb-32">
         <h2 className="text-3xl font-black text-white text-center mb-5"
           style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
-          プロフィール
+          マイページ
         </h2>
 
         <div className="rounded-3xl p-5 mb-4"
@@ -3374,6 +3573,18 @@ function IshimonZukan() {
           <div className="flex-1 text-left">
             <div className="font-black text-sm">ショップ</div>
             <div className="text-[10px] font-bold opacity-90">装備を購入</div>
+          </div>
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {/* アイテムへのリンク */}
+        <button onClick={() => setShowInventory(true)}
+          className="w-full mt-2 p-3 rounded-2xl text-white active:scale-95 flex items-center gap-2"
+          style={{ background: 'linear-gradient(135deg, #FFB347, #E67E22)', boxShadow: '0 4px 0 #8B4513', border: '2px solid #FFD699' }}>
+          <span className="text-xl">🎒</span>
+          <div className="flex-1 text-left">
+            <div className="font-black text-sm">アイテム</div>
+            <div className="text-[10px] font-bold opacity-90">所持中の装備を確認 ({player.inventory.length}個)</div>
           </div>
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -3656,7 +3867,7 @@ function IshimonZukan() {
       { id: 'collection', icon: '📖', label: '図鑑', view: 'collection' },
       { id: 'battle', icon: '⚔️', label: 'バトル', view: 'stages' },
       { id: 'gacha', icon: '🎴', label: 'ガチャ', view: 'gacha', badge: player.gachaCards },
-      { id: 'profile', icon: '👤', label: 'プロフ', view: 'profile' },
+      { id: 'profile', icon: '👤', label: 'マイページ', view: 'profile' },
     ];
 
     const isActive = (tab) => {
@@ -3801,6 +4012,7 @@ function IshimonZukan() {
       <LoginBonusModal />
       <MissionsModal />
       <ShopModal />
+      <InventoryModal />
       <ProfileModal />
       <EquipModal />
       <OnboardingModal />
