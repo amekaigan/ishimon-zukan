@@ -645,6 +645,10 @@ const evaluateTitles = (ctx) => {
 const getTitleById = (id) => TITLES.find(t => t.id === id);
 
 const expForNextLevel = (lv) => lv * 50;
+
+// ===== 石のかけら コスト定数 =====
+const CAPTURE_COST = 5;  // 撮影1回あたり
+const EVOLVE_COST = { 1: 10, 2: 20, 3: 40, 4: 80 }; // 進化元★ごとのコスト
 const playerExpForNextLevel = (lv) => lv * 100;
 const MAX_LEVEL = 20;
 const MAX_PLAYER_LEVEL = 50;
@@ -946,6 +950,7 @@ function IshimonZukan() {
   const [player, setPlayer] = useState({
     name: 'トレーナー',
     level: 1, exp: 0, gems: 0,
+    stoneFragments: 50,  // 石のかけら（撮影・進化に使用）
     inventory: [],
     inventoryNew: [],  // 新規入手で未確認の装備ID（バッジ用）
     lastLogin: null, streak: 0,
@@ -1047,6 +1052,7 @@ function IshimonZukan() {
           // 称号関連フィールドのデフォルト補完
           if (!Array.isArray(adjusted.titles)) adjusted = { ...adjusted, titles: [] };
           if (typeof adjusted.activeTitle === 'undefined') adjusted = { ...adjusted, activeTitle: null };
+          if (typeof adjusted.stoneFragments === 'undefined') adjusted = { ...adjusted, stoneFragments: 50 };
           if (!adjusted.stats) {
             adjusted = { ...adjusted, stats: { totalGacha: 0, totalEvolves: 0, consecutiveR1Count: 0 } };
           } else {
@@ -1076,6 +1082,7 @@ function IshimonZukan() {
           const initialPlayer = {
             name: '',
             level: 1, exp: 0, gems: 30,
+            stoneFragments: 50,
             inventory: ['sword_1', 'shield_1', 'charm_1'],
             inventoryNew: [],
             lastLogin: todayKey(), streak: 1,
@@ -1145,21 +1152,23 @@ function IshimonZukan() {
     // 連続日数でカード枚数が変わる
     let cardCount = 1;
     let label = `${newStreak}日目`;
-    if (newStreak === 30) { cardCount = 5; label = '30日 達成！🎉'; }
-    else if (newStreak === 20) { cardCount = 4; label = '20日 達成！'; }
-    else if (newStreak === 10) { cardCount = 3; label = '10日 達成！'; }
-    else if (newStreak === 7)  { cardCount = 3; label = '7日 連続！'; }
-    else if (newStreak >= 3)   { cardCount = 2; label = `${newStreak}日 連続！`; }
+    let fragmentBonus = 5; // 毎日5個
+    if (newStreak === 30) { cardCount = 5; label = '30日 達成！🎉'; fragmentBonus = 30; }
+    else if (newStreak === 20) { cardCount = 4; label = '20日 達成！'; fragmentBonus = 20; }
+    else if (newStreak === 10) { cardCount = 3; label = '10日 達成！'; fragmentBonus = 15; }
+    else if (newStreak === 7)  { cardCount = 3; label = '7日 連続！'; fragmentBonus = 15; }
+    else if (newStreak >= 3)   { cardCount = 2; label = `${newStreak}日 連続！`; fragmentBonus = 8; }
 
     const updatedPlayer = {
       ...p,
       lastLogin: today, streak: newStreak,
       gachaCards: (p.gachaCards || 0) + cardCount,
+      stoneFragments: (p.stoneFragments || 0) + fragmentBonus,
       missions: { date: today, list: getTodayMissions(today), progress: {}, claimed: {}, allClaimed: false },
     };
     setPlayer(updatedPlayer);
     savePlayer(updatedPlayer);
-    setShowLoginBonus({ streak: newStreak, cardCount, label });
+    setShowLoginBonus({ streak: newStreak, cardCount, label, fragmentBonus });
     // ログイン番長判定
     grantTitlesIfAny('tick', {}, updatedPlayer, currentCollection);
   };
@@ -1320,10 +1329,13 @@ function IshimonZukan() {
     // ===== 称号判定用：累計カウンタ更新 =====
     // 連続★1の判定: 全結果がr1なら累計、1つでも違えばリセット
     const allR1 = results.length > 0 && results.every(r => r.rarity === 1);
+    // ★5排出ボーナス（1枚につき10個）
+    const r5Count = results.filter(r => r.rarity === 5).length;
     setPlayer(prev => {
       const prevConsec = prev.stats?.consecutiveR1Count || 0;
       const updated = {
         ...prev,
+        stoneFragments: (prev.stoneFragments || 0) + r5Count * 10,
         stats: {
           ...(prev.stats || {}),
           totalGacha: (prev.stats?.totalGacha || 0) + results.length,
@@ -1434,6 +1446,16 @@ function IshimonZukan() {
   };
 
   const generateMon = async (imageDataUrl) => {
+    // 石のかけら コストチェック
+    if ((player.stoneFragments || 0) < CAPTURE_COST) {
+      setError(`石のかけらが 足りません！（${CAPTURE_COST}個 必要 / 現在 ${player.stoneFragments || 0}個）`);
+      return;
+    }
+    // コスト消費
+    const updatedPlayer = { ...player, stoneFragments: (player.stoneFragments || 0) - CAPTURE_COST };
+    setPlayer(updatedPlayer);
+    savePlayer(updatedPlayer);
+
     setIsLoading(true);
     setError('');
     setLoadingMsg('石を 観察しています...');
@@ -1640,6 +1662,15 @@ function IshimonZukan() {
   // ===== 進化 =====
   const evolveMon = async (mon) => {
     if (!mon.evolveTo || mon.stage >= 3) return;
+    const cost = EVOLVE_COST[mon.rarity] || EVOLVE_COST[4];
+    if ((player.stoneFragments || 0) < cost) {
+      alert(`石のかけらが 足りません！\n${cost}個 必要 / 現在 ${player.stoneFragments || 0}個`);
+      return;
+    }
+    // コスト消費
+    const updatedPlayer = { ...player, stoneFragments: (player.stoneFragments || 0) - cost };
+    setPlayer(updatedPlayer);
+    savePlayer(updatedPlayer);
     setShowEvolveAnim(mon);
     try {
       const newStage = mon.stage + 1;
@@ -1871,18 +1902,21 @@ function IshimonZukan() {
 
     // 勝利時にきらめき石報酬
     let gemsGained = 0;
+    let fragmentsGained = 0;
     if (result === 'win') {
       gemsGained = 5 + Math.floor(Math.random() * 6); // 5〜10
       if (wasSuperEffective) gemsGained += 3; // ボーナス
+      fragmentsGained = 2 + Math.floor(Math.random() * 3); // 2〜4個
       setPlayer(prev => {
-        const updated = { ...prev, gems: (prev.gems || 0) + gemsGained };
+        const updated = { ...prev, gems: (prev.gems || 0) + gemsGained, stoneFragments: (prev.stoneFragments || 0) + fragmentsGained };
         savePlayer(updated);
         return updated;
       });
     } else if (result === 'draw') {
       gemsGained = 2;
+      fragmentsGained = 1;
       setPlayer(prev => {
-        const updated = { ...prev, gems: (prev.gems || 0) + gemsGained };
+        const updated = { ...prev, gems: (prev.gems || 0) + gemsGained, stoneFragments: (prev.stoneFragments || 0) + fragmentsGained };
         savePlayer(updated);
         return updated;
       });
@@ -1898,7 +1932,7 @@ function IshimonZukan() {
     // 称号チェック（初陣・百戦錬磨・無敗の伝説 など）
     grantTitlesIfAny('battle', { result }, null, newCollection);
 
-    setBattleResult({ result, expGained, leveledUp, newLevel, updatedMon, playerExp, gemsGained });
+    setBattleResult({ result, expGained, leveledUp, newLevel, updatedMon, playerExp, gemsGained, fragmentsGained });
   };
 
   const closeBattle = () => {
@@ -2007,31 +2041,48 @@ function IshimonZukan() {
         )}
 
         {/* メイン: 撮影ボタン（一番でかく目立つ） */}
-        <button onClick={openCamera}
-          className="relative w-full mb-3 active:scale-95 transition-transform">
-          <div className="absolute inset-0 rounded-3xl"
-            style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', filter: 'blur(20px)', opacity: 0.6 }} />
-          <div className="relative rounded-3xl p-6 text-white"
-            style={{
-              background: 'linear-gradient(135deg, #FF8C42 0%, #FF3D7F 50%, #C71F8E 100%)',
-              boxShadow: '0 8px 0 #5A1A4A, inset 0 2px 0 rgba(255,255,255,0.4)',
-              border: '3px solid #FFE066',
-            }}>
-            <div className="flex items-center gap-3">
-              <div className="bg-white/30 rounded-2xl p-4 backdrop-blur-sm">
-                <Camera className="w-8 h-8" strokeWidth={2.5} />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="text-xl font-black leading-tight">
-                  石を撮影する
+        {(() => {
+          const frags = player.stoneFragments || 0;
+          const canCapture = frags >= CAPTURE_COST;
+          return (
+            <button onClick={openCamera}
+              className="relative w-full mb-3 active:scale-95 transition-transform">
+              <div className="absolute inset-0 rounded-3xl"
+                style={{ background: canCapture ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'rgba(100,100,100,0.5)', filter: 'blur(20px)', opacity: 0.6 }} />
+              <div className="relative rounded-3xl p-6 text-white"
+                style={{
+                  background: canCapture
+                    ? 'linear-gradient(135deg, #FF8C42 0%, #FF3D7F 50%, #C71F8E 100%)'
+                    : 'linear-gradient(135deg, #555, #333)',
+                  boxShadow: canCapture ? '0 8px 0 #5A1A4A, inset 0 2px 0 rgba(255,255,255,0.4)' : '0 4px 0 #111',
+                  border: canCapture ? '3px solid #FFE066' : '3px solid #666',
+                }}>
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/30 rounded-2xl p-4 backdrop-blur-sm">
+                    <Camera className="w-8 h-8" strokeWidth={2.5} />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="text-xl font-black leading-tight">
+                      石を撮影する
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-bold opacity-90">
+                        {canCapture ? 'カメラで 新しい 石モンを 召喚！' : '石のかけらが 足りません'}
+                      </span>
+                    </div>
+                  </div>
+                  {/* コスト表示 */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <div className="text-xl">🪨</div>
+                    <div className={`text-xs font-black leading-tight ${canCapture ? 'text-yellow-200' : 'text-red-300'}`}>
+                      {frags}/{CAPTURE_COST}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs opacity-90 font-bold mt-1">
-                  カメラで 新しい 石モンを 召喚！
-                </div>
               </div>
-            </div>
-          </div>
-        </button>
+            </button>
+          );
+        })()}
 
         <button onClick={() => fileRef.current?.click()}
           className="w-full mb-3 py-2 rounded-2xl text-white/60 text-xs font-bold active:text-white text-center underline">
@@ -2132,7 +2183,7 @@ function IshimonZukan() {
   // ===========================================
   const LoginBonusModal = () => {
     if (!showLoginBonus) return null;
-    const { streak, cardCount, label } = showLoginBonus;
+    const { streak, cardCount, label, fragmentBonus } = showLoginBonus;
     const isSpecial = [7,10,20,30].includes(streak);
     return (
       <div className="fixed inset-0 z-[55] overflow-y-auto p-3" style={{ background: 'rgba(0,0,0,0.9)' }}>
@@ -2165,10 +2216,15 @@ function IshimonZukan() {
               ))}
             </div>
 
-            <div className="bg-white/10 rounded-2xl p-2.5 mb-3 text-white" style={{ border: '1px solid #C77DFF' }}>
+            <div className="bg-white/10 rounded-2xl p-2.5 mb-2 text-white" style={{ border: '1px solid #C77DFF' }}>
               <div className="text-xs font-bold opacity-80">ガチャカード</div>
               <div className="text-2xl font-black">×{cardCount} GET！</div>
               <div className="text-[10px] font-bold opacity-70 mt-0.5">貯めておいていつでも使える！</div>
+            </div>
+            <div className="bg-white/10 rounded-2xl p-2.5 mb-3 text-white" style={{ border: '1px solid #8B6914' }}>
+              <div className="text-xs font-bold opacity-80">石のかけら 🪨</div>
+              <div className="text-2xl font-black">+{fragmentBonus || 5}個！</div>
+              <div className="text-[10px] font-bold opacity-70 mt-0.5">撮影・進化に使おう！</div>
             </div>
 
             <div className="flex gap-2">
@@ -3395,14 +3451,24 @@ function IshimonZukan() {
                 </div>
               )}
             </div>
-            {/* きらめき石報酬 */}
-            {result.gemsGained > 0 && (
+            {/* きらめき石・石のかけら報酬 */}
+            {(result.gemsGained > 0 || result.fragmentsGained > 0) && (
               <div className="rounded-2xl p-3 mb-3"
-                style={{ background: 'linear-gradient(135deg, rgba(199,125,255,0.4), rgba(106,13,173,0.4))', border: '1px solid #C77DFF' }}>
-                <div className="text-purple-200 text-[10px] font-black tracking-widest mb-1">獲得</div>
-                <div className="text-white text-2xl font-black flex items-center justify-center gap-2">
-                  <Gem className="w-6 h-6 text-purple-300" />
-                  +{result.gemsGained} <span className="text-sm">きらめき石</span>
+                style={{ background: 'linear-gradient(135deg, rgba(199,125,255,0.3), rgba(139,105,20,0.3))', border: '1px solid #C77DFF' }}>
+                <div className="text-purple-200 text-[10px] font-black tracking-widest mb-1.5">獲得</div>
+                <div className="flex items-center justify-center gap-4">
+                  {result.gemsGained > 0 && (
+                    <div className="text-white text-xl font-black flex items-center gap-1">
+                      <Gem className="w-5 h-5 text-purple-300" />
+                      +{result.gemsGained}
+                    </div>
+                  )}
+                  {result.fragmentsGained > 0 && (
+                    <div className="text-white text-xl font-black flex items-center gap-1">
+                      <span className="text-lg">🪨</span>
+                      +{result.fragmentsGained}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -3533,6 +3599,8 @@ function IshimonZukan() {
     const r = getRarityLabel(mon.rarity);
     const stage = STAGES[mon.stage] || STAGES[1];
     const canEvolve = mon.evolveTo && mon.stage < 3;
+    const evolveCost = canEvolve ? (EVOLVE_COST[mon.rarity] || EVOLVE_COST[4]) : 0;
+    const hasFragsForEvolve = (player.stoneFragments || 0) >= evolveCost;
     const cur = getCurrentStats(mon);
     const eq = getEquipBoost(mon);
     const lv = mon.level || 1;
@@ -3661,9 +3729,18 @@ function IshimonZukan() {
             </button>
             {canEvolve ? (
               <button onClick={() => evolveMon(mon)}
-                className="py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform"
-                style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 #5A1A4A', border: '3px solid white' }}>
-                ✨ 進化
+                className="py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform flex flex-col items-center justify-center gap-0.5"
+                style={{
+                  background: hasFragsForEvolve
+                    ? 'linear-gradient(135deg, #FFD700, #FF6B35)'
+                    : 'linear-gradient(135deg, #555, #333)',
+                  boxShadow: hasFragsForEvolve ? '0 4px 0 #5A1A4A' : '0 2px 0 #111',
+                  border: hasFragsForEvolve ? '3px solid white' : '3px solid #666',
+                }}>
+                <span>✨ 進化</span>
+                <span className={`text-[9px] font-bold leading-none ${hasFragsForEvolve ? 'text-yellow-100' : 'text-red-300'}`}>
+                  🪨 {evolveCost}個 {hasFragsForEvolve ? '' : `(あと${evolveCost - (player.stoneFragments || 0)})`}
+                </span>
               </button>
             ) : (
               <div className="py-3 rounded-2xl text-yellow-200 font-black text-center text-xs" style={{ background: 'rgba(0,0,0,0.3)', border: '3px solid #FFD700' }}>
@@ -3988,7 +4065,7 @@ function IshimonZukan() {
           </div>
 
           {/* ログイン・きらめき・装備 の3つ */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-2">
             <div className="bg-white/10 rounded-xl p-2 text-center" style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
               <Calendar className="w-4 h-4 text-orange-300 mx-auto mb-0.5" />
               <div className="text-white font-black text-lg leading-tight">{player.streak}</div>
@@ -4003,6 +4080,17 @@ function IshimonZukan() {
               <ShoppingBag className="w-4 h-4 text-purple-300 mx-auto mb-0.5" />
               <div className="text-white font-black text-lg leading-tight">{player.inventory.length}</div>
               <div className="text-white/70 text-[9px] font-bold">装備</div>
+            </div>
+          </div>
+          {/* 石のかけら */}
+          <div className="bg-white/10 rounded-xl p-2 mb-3 flex items-center gap-2" style={{ border: '1px solid rgba(139,105,20,0.5)' }}>
+            <span className="text-xl">🪨</span>
+            <div className="flex-1">
+              <div className="text-white font-black text-base leading-tight">{player.stoneFragments || 0}<span className="text-white/60 text-xs font-bold ml-1">個</span></div>
+              <div className="text-white/60 text-[9px] font-bold">石のかけら（撮影5個・進化10〜80個）</div>
+            </div>
+            <div className="text-right text-[9px] font-bold text-white/50 leading-snug">
+              <div>撮影 残{Math.floor((player.stoneFragments || 0) / CAPTURE_COST)}回</div>
             </div>
           </div>
 
