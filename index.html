@@ -76,6 +76,9 @@ window.storage = {
 
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
+// アプリバージョン（設定画面・キャッシュバスト等で使用）
+const APP_VERSION = '1.1';
+
 // lucide-react のアイコンを絵文字で代替
 const makeIcon = (emoji) => ({ className, strokeWidth, ...props }) =>
   React.createElement('span', { className: (className || '') + ' inline-flex items-center justify-center', style: { fontSize: '1em', lineHeight: 1 }, ...props }, emoji);
@@ -373,7 +376,7 @@ const guessTypeFromColor = ({ r, g, b }) => {
 };
 
 // フォールバック: ランダムな石モンを生成
-const fallbackMon = (color) => {
+const fallbackMon = (color, difficulty = 'normal') => {
   const type = guessTypeFromColor(color);
   // レア度: ドラゴン・精霊は高めに、その他は通常
   let rarity;
@@ -391,6 +394,8 @@ const fallbackMon = (color) => {
     else if (r < 0.95) rarity = 3;
     else rarity = 4;
   }
+  // 難易度バイアスを適用（かんたん:上振れ / むずかしい:下振れ）
+  rarity = adjustRarityByDifficulty(rarity, difficulty);
   const total = 180 + rarity * 50;
   const split = (total) => {
     const a = 0.2 + Math.random() * 0.4;
@@ -589,15 +594,37 @@ const GACHA_MON_POOL = [
   { name: 'ライトン',  type: '電気',   rarity: 4, baseStats: { hp: 75, kogeki: 110, bougyo: 60, speed: 110 }, skill: 'ライトニングアロー', skillDesc: 'かみなりの やを はなつ！', evolveTo: null },
 ];
 
-// 排出確率: ★5=3%, ★4=12%, ★3=25%, ★2=40%, ★1=20%
-const gachaRoll = (guaranteeRare = false) => {
+// ===== 難易度別レアリティ補正 =====
+// かんたん: レアが出やすい / むずかしい: レアが出にくい
+// gachaRoll/撮影 共通で使用。値は ★1〜★5 の累積確率（昇順）。
+const GACHA_RARITY_TABLE = {
+  easy:   { r5: 0.06,  r4: 0.22, r3: 0.50, r2: 0.85 }, // 残り0.15が★1
+  normal: { r5: 0.03,  r4: 0.15, r3: 0.40, r2: 0.80 }, // 残り0.20が★1
+  hard:   { r5: 0.015, r4: 0.09, r3: 0.30, r2: 0.72 }, // 残り0.28が★1
+};
+
+const rollRarityByDifficulty = (difficulty = 'normal', guaranteeRare = false) => {
+  const t = GACHA_RARITY_TABLE[difficulty] || GACHA_RARITY_TABLE.normal;
   const r = Math.random();
-  let rarity;
-  if (guaranteeRare || r < 0.03) rarity = 5;
-  else if (r < 0.15) rarity = 4;
-  else if (r < 0.40) rarity = 3;
-  else if (r < 0.80) rarity = 2;
-  else rarity = 1;
+  if (guaranteeRare || r < t.r5) return 5;
+  if (r < t.r4) return 4;
+  if (r < t.r3) return 3;
+  if (r < t.r2) return 2;
+  return 1;
+};
+
+// 撮影で AI が決めた rarity に難易度バイアスを掛ける
+// かんたん: たまに +1 / むずかしい: たまに -1
+const adjustRarityByDifficulty = (rarity, difficulty = 'normal') => {
+  const r = Math.random();
+  if (difficulty === 'easy' && r < 0.30 && rarity < 5) return rarity + 1;
+  if (difficulty === 'hard' && r < 0.30 && rarity > 1) return rarity - 1;
+  return rarity;
+};
+
+// 排出確率: 難易度に応じて変動
+const gachaRoll = (guaranteeRare = false, difficulty = 'normal') => {
+  const rarity = rollRarityByDifficulty(difficulty, guaranteeRare);
 
   // 50%でモン、50%で装備 (★1は70%モン)
   const isEquip = rarity === 1 ? Math.random() < 0.3 : Math.random() < 0.5;
@@ -826,6 +853,7 @@ function IshimonZukan() {
     name: 'トレーナー',
     level: 1, exp: 0, gems: 0,
     inventory: [],
+    inventoryNew: [],  // 新規入手で未確認の装備ID（バッジ用）
     lastLogin: null, streak: 0,
     gachaCards: 0,
     missions: { date: null, list: [], progress: {}, claimed: {}, allClaimed: false },
@@ -1053,7 +1081,7 @@ function IshimonZukan() {
 
     // 10連は最後の1枚がレア以上保証
     const results = Array.from({ length: count }, (_, i) =>
-      gachaRoll(count === 10 && i === count - 1)
+      gachaRoll(count === 10 && i === count - 1, settings.difficulty)
     ).map(r => ({ ...r, revealed: false }));
 
     setGachaResults(results);
@@ -1127,7 +1155,9 @@ function IshimonZukan() {
     if (newEquips.length) {
       setPlayer(prev => {
         const merged = [...new Set([...(prev.inventory || []), ...newEquips])];
-        const updated = { ...prev, inventory: merged };
+        // 新着フラグ用に未確認IDも追加（重複なし）
+        const mergedNew = [...new Set([...(prev.inventoryNew || []), ...newEquips])];
+        const updated = { ...prev, inventory: merged, inventoryNew: mergedNew };
         savePlayer(updated);
         return updated;
       });
@@ -1322,6 +1352,30 @@ function IshimonZukan() {
       }
       const mon = JSON.parse(jsonStr);
 
+      // 難易度バイアスを適用（rarity 補正＋ステ合計も再計算）
+      if (mon && typeof mon.rarity === 'number') {
+        const origRarity = Math.max(1, Math.min(5, Math.round(mon.rarity)));
+        const newRarity = adjustRarityByDifficulty(origRarity, settings.difficulty);
+        if (newRarity !== origRarity) {
+          mon.rarity = newRarity;
+          // ステも調整（★1=200、★2=260、★3=320、★4=380、★5=420 を目安）
+          if (mon.baseStats) {
+            const targetTotal = 140 + newRarity * 60;
+            const curTotal = (mon.baseStats.hp || 0) + (mon.baseStats.kogeki || 0)
+                           + (mon.baseStats.bougyo || 0) + (mon.baseStats.speed || 0);
+            if (curTotal > 0) {
+              const scale = targetTotal / curTotal;
+              mon.baseStats = {
+                hp:     Math.max(20, Math.round(mon.baseStats.hp * scale)),
+                kogeki: Math.max(20, Math.round(mon.baseStats.kogeki * scale)),
+                bougyo: Math.max(20, Math.round(mon.baseStats.bougyo * scale)),
+                speed:  Math.max(20, Math.round(mon.baseStats.speed * scale)),
+              };
+            }
+          }
+        }
+      }
+
       // === AI画像生成（キャッシュ優先、なければAnonymous Tierで生成） ===
       setLoadingMsg('AIで キャラを 描いています...');
       const { image: aiImage } = await getOrGenerateMonImage(mon);
@@ -1351,7 +1405,7 @@ function IshimonZukan() {
       try {
         setLoadingMsg('もうすこし お待ちください...');
         const color = await analyzeImageColor(imageDataUrl);
-        const mon = fallbackMon(color);
+        const mon = fallbackMon(color, settings.difficulty);
         setLoadingMsg('AIで キャラを 描いています...');
         const { image: aiImage } = await getOrGenerateMonImage(mon);
         const location = await Promise.race([
@@ -1495,7 +1549,12 @@ function IshimonZukan() {
       setError(`プレイヤー Lv.${eq.unlock} で つかえるよ`);
       return;
     }
-    const updated = { ...player, gems: player.gems - eq.price, inventory: [...player.inventory, eq.id] };
+    const updated = {
+      ...player,
+      gems: player.gems - eq.price,
+      inventory: [...player.inventory, eq.id],
+      inventoryNew: [...new Set([...(player.inventoryNew || []), eq.id])],
+    };
     setPlayer(updated);
     await savePlayer(updated);
   };
@@ -2096,13 +2155,29 @@ function IshimonZukan() {
       .filter(Boolean)
       .filter(eq => tab === 'all' || eq.type === tab);
 
-    // タブ別の所持数（バッジ用）
-    const counts = {
-      all: (player.inventory || []).length,
-      sword: (player.inventory || []).filter(id => EQUIPMENT[id]?.type === 'sword').length,
-      shield: (player.inventory || []).filter(id => EQUIPMENT[id]?.type === 'shield').length,
-      charm: (player.inventory || []).filter(id => EQUIPMENT[id]?.type === 'charm').length,
+    // タブ別の「新着のみ」数（バッジ用）
+    const newIds = player.inventoryNew || [];
+    const newCounts = {
+      all:    newIds.length,
+      sword:  newIds.filter(id => EQUIPMENT[id]?.type === 'sword').length,
+      shield: newIds.filter(id => EQUIPMENT[id]?.type === 'shield').length,
+      charm:  newIds.filter(id => EQUIPMENT[id]?.type === 'charm').length,
     };
+
+    // 表示中のタブに該当する新着IDをクリア（モーダル開いた時／タブ切替時）
+    useEffect(() => {
+      if (!showInventory) return;
+      const currentNew = player.inventoryNew || [];
+      if (currentNew.length === 0) return;
+      const toClear = tab === 'all'
+        ? currentNew
+        : currentNew.filter(id => EQUIPMENT[id]?.type === tab);
+      if (toClear.length === 0) return;
+      const remain = currentNew.filter(id => !toClear.includes(id));
+      const updated = { ...player, inventoryNew: remain };
+      setPlayer(updated);
+      savePlayer(updated);
+    }, [showInventory, tab]);
 
     const tabs = [
       { id: 'all', label: 'すべて', emoji: '📦' },
@@ -2121,9 +2196,10 @@ function IshimonZukan() {
                 <div className="text-yellow-300 text-[10px] font-black tracking-widest">持ち物</div>
                 <div className="text-2xl font-black text-white">アイテム</div>
               </div>
-              <div className="flex items-center gap-1 bg-orange-700/50 rounded-full px-3 py-1.5" style={{ border: '2px solid #FFB347' }}>
+              <div className="flex items-center gap-1 bg-orange-700/50 rounded-full px-3 py-1.5"
+                style={{ border: '2px solid #FFB347', marginRight: '46px' }}>
                 <span className="text-base">📦</span>
-                <span className="text-white font-black">{counts.all}</span>
+                <span className="text-white font-black">{(player.inventory || []).length}</span>
               </div>
             </div>
 
@@ -2142,10 +2218,10 @@ function IshimonZukan() {
                     }}>
                     <div className="text-base leading-none">{tb.emoji}</div>
                     <div className="text-[10px] mt-0.5">{tb.label}</div>
-                    {counts[tb.id] > 0 && (
+                    {newCounts[tb.id] > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-[9px] font-black leading-none px-1 py-0.5"
                         style={{ border: '1.5px solid white', minWidth: '16px', textAlign: 'center' }}>
-                        {counts[tb.id]}
+                        {newCounts[tb.id]}
                       </span>
                     )}
                   </button>
@@ -3520,7 +3596,7 @@ function IshimonZukan() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="bg-white/10 rounded-xl p-2 text-center">
               <BookOpen className="w-5 h-5 text-blue-300 mx-auto mb-1" />
               <div className="text-white font-black">{collection.length}</div>
@@ -3537,6 +3613,72 @@ function IshimonZukan() {
               <div className="text-white/70 text-[10px] font-bold">装備</div>
             </div>
           </div>
+
+          {/* バトル統計（バトル数 / 勝利 / 敗北） */}
+          {(() => {
+            const wins = collection.reduce((a, c) => a + (c.wins || 0), 0);
+            const losses = collection.reduce((a, c) => a + (c.losses || 0), 0);
+            const battles = wins + losses;
+            const winRate = battles > 0 ? Math.round((wins / battles) * 100) : 0;
+            return (
+              <div className="rounded-2xl p-3 mb-3"
+                style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-2">⚔️ バトル統計</div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="text-center">
+                    <div className="text-white/70 text-[9px] font-bold">バトル数</div>
+                    <div className="text-white font-black text-base">{battles}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-green-300 text-[9px] font-bold">勝利</div>
+                    <div className="text-green-200 font-black text-base">{wins}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-red-300 text-[9px] font-bold">敗北</div>
+                    <div className="text-red-200 font-black text-base">{losses}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-yellow-300 text-[9px] font-bold">勝率</div>
+                    <div className="text-yellow-200 font-black text-base">{winRate}%</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* タイプ別所持数 */}
+          {collection.length > 0 && (() => {
+            const typeCounts = {};
+            for (const m of collection) {
+              const t = m.type || '土';
+              typeCounts[t] = (typeCounts[t] || 0) + 1;
+            }
+            const typeKeys = Object.keys(TYPES);
+            return (
+              <div className="rounded-2xl p-3 mb-4"
+                style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-2">🌈 タイプ別 所持数</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {typeKeys.map(tk => {
+                    const t = TYPES[tk];
+                    const cnt = typeCounts[tk] || 0;
+                    return (
+                      <div key={tk} className="rounded-xl p-1.5 text-center"
+                        style={{
+                          background: cnt > 0 ? `${t.bg}33` : 'rgba(255,255,255,0.05)',
+                          border: cnt > 0 ? `1px solid ${t.light}` : '1px solid rgba(255,255,255,0.1)',
+                          opacity: cnt > 0 ? 1 : 0.5,
+                        }}>
+                        <div className="text-base leading-none">{t.emoji}</div>
+                        <div className="text-white text-[9px] font-bold mt-0.5">{t.name}</div>
+                        <div className="text-white font-black text-sm">{cnt}<span className="text-[9px] font-bold opacity-80">体</span></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* AI画像生成について（情報のみ） */}
           <div className="rounded-2xl p-3"
@@ -3610,6 +3752,11 @@ function IshimonZukan() {
   const SettingsView = () => {
     const importFileRef = useRef(null);
     const [importStatus, setImportStatus] = useState('');
+
+    // 開いたらページ上部にスクロール
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
 
     const handleExport = async () => {
       try {
@@ -3785,7 +3932,7 @@ function IshimonZukan() {
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔒 プライバシー</div>
           <div className="space-y-2">
-            <SettingRow icon="📍" label="出会いの場所を記録" desc="石モンを撮影した場所を保存">
+            <SettingRow icon="📍" label="GPSデータ" desc="石モンを撮影した場所を保存">
               <Toggle on={settings.showLocation} onClick={() => updateSetting('showLocation', !settings.showLocation)} />
             </SettingRow>
           </div>
@@ -3850,9 +3997,29 @@ function IshimonZukan() {
           </div>
         </div>
 
+        {/* アプリ更新 */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔄 アプリ更新</div>
+          <button
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('v', String(Date.now()));
+              window.location.replace(url.toString());
+            }}
+            className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3"
+            style={{ background: 'linear-gradient(135deg, #FFB347, #FF6B35)', boxShadow: '0 4px 0 #B85C00', border: '2px solid #FFD700' }}>
+            <span className="text-2xl">🔄</span>
+            <div className="flex-1 text-left">
+              <div className="font-black text-sm">最新版に更新</div>
+              <div className="text-[10px] font-bold opacity-90">キャッシュを無視して再読み込み</div>
+            </div>
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* バージョン情報 */}
         <div className="text-center text-white/50 text-[10px] font-bold mt-6">
-          石モン図鑑 v1.0
+          石モン図鑑 v{APP_VERSION}
         </div>
       </div>
     );
