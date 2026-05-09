@@ -77,7 +77,7 @@ window.storage = {
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
 // アプリバージョン（設定画面・キャッシュバスト等で使用）
-const APP_VERSION = '1.1';
+const APP_VERSION = '1.2';
 
 // lucide-react のアイコンを絵文字で代替
 const makeIcon = (emoji) => ({ className, strokeWidth, ...props }) =>
@@ -550,6 +550,100 @@ const getRarityLabel = (r) => {
   return { label: 'ノーマル', color: '#ADB5BD', glow: '#6C757D' };
 };
 
+// ===========================================
+// 称号システム
+// ===========================================
+// レア度: common(誰でも) / rare(やや珍しい) / epic(自慢できる) / legendary(超レア)
+const TITLE_RARITY = {
+  common:    { color: '#ADB5BD', glow: '#6C757D', label: 'コモン' },
+  rare:      { color: '#52B788', glow: '#2D6A4F', label: 'レア' },
+  epic:      { color: '#C77DFF', glow: '#9D4EDD', label: 'エピック' },
+  legendary: { color: '#FFD700', glow: '#FFAA00', label: 'レジェンダリ' },
+};
+
+// 各称号: { id, emoji, name, desc, rarity, check(ctx) => bool }
+// ctx = { player, collection, event, gachaResults, mon }
+// event: 'photo'|'gacha'|'evolve'|'battle'|'tick'
+const TITLES = [
+  // 撮影・図鑑系
+  { id: 'first_photo', emoji: '🥚', name: 'はじめての出会い', desc: '初めて石モンを撮影した', rarity: 'common',
+    check: ({ collection }) => collection.length >= 1 },
+  { id: 'collector_10', emoji: '📖', name: 'コレクター見習い', desc: '図鑑10体を達成', rarity: 'common',
+    check: ({ collection }) => collection.length >= 10 },
+  { id: 'collector_50', emoji: '📚', name: '図鑑マスター', desc: '図鑑50体を達成', rarity: 'epic',
+    check: ({ collection }) => collection.length >= 50 },
+  { id: 'all_types', emoji: '🌈', name: '全タイプ制覇', desc: '全7タイプを1体以上所持', rarity: 'epic',
+    check: ({ collection }) => {
+      const set = new Set(collection.map(c => c.type));
+      return ['火','水','土','電気','空','ドラゴン','精霊'].every(t => set.has(t));
+    }},
+  { id: 'fire_10', emoji: '🔥', name: '火の用心', desc: '火タイプを10体所持', rarity: 'rare',
+    check: ({ collection }) => collection.filter(c => c.type === '火').length >= 10 },
+  { id: 'water_10', emoji: '💧', name: '水の守り手', desc: '水タイプを10体所持', rarity: 'rare',
+    check: ({ collection }) => collection.filter(c => c.type === '水').length >= 10 },
+
+  // レアリティ・運系
+  { id: 'first_legendary', emoji: '👁️', name: '伝説の目撃者', desc: '初めて★5を入手した', rarity: 'epic',
+    check: ({ collection }) => collection.some(c => c.rarity === 5) },
+  { id: 'first_dragon', emoji: '🐉', name: '龍に選ばれし者', desc: '初めてドラゴンタイプを入手', rarity: 'epic',
+    check: ({ collection }) => collection.some(c => c.type === 'ドラゴン') },
+  { id: 'first_spirit', emoji: '✨', name: '精霊の語り部', desc: '初めて精霊タイプを入手', rarity: 'epic',
+    check: ({ collection }) => collection.some(c => c.type === '精霊') },
+  { id: 'double_legendary', emoji: '💪', name: '黄金の右腕', desc: '10連ガチャで★5を2枚以上同時入手', rarity: 'legendary',
+    check: ({ event, gachaResults }) => {
+      if (event !== 'gacha' || !gachaResults) return false;
+      return gachaResults.filter(r => r.rarity === 5).length >= 2;
+    }},
+  { id: 'legendary_5', emoji: '🌟', name: '奇跡の石', desc: '★5を累計5体所持', rarity: 'legendary',
+    check: ({ collection }) => collection.filter(c => c.rarity === 5).length >= 5 },
+  { id: 'unlucky_friend', emoji: '🪨', name: '石ころの友', desc: 'ガチャで★1が5連続出た（救済）', rarity: 'rare',
+    check: ({ player }) => (player.stats?.consecutiveR1Count || 0) >= 5 },
+
+  // バトル系
+  { id: 'first_win', emoji: '⚔️', name: '初陣', desc: '初めてバトルに勝利', rarity: 'common',
+    check: ({ collection }) => collection.reduce((a, c) => a + (c.wins || 0), 0) >= 1 },
+  { id: 'battle_100', emoji: '🛡️', name: '百戦錬磨', desc: 'バトル100回を達成', rarity: 'epic',
+    check: ({ collection }) => {
+      const total = collection.reduce((a, c) => a + (c.wins || 0) + (c.losses || 0), 0);
+      return total >= 100;
+    }},
+  { id: 'win_rate_90', emoji: '👑', name: '無敗の伝説', desc: '勝率90%以上（最低20戦）', rarity: 'legendary',
+    check: ({ collection }) => {
+      const wins = collection.reduce((a, c) => a + (c.wins || 0), 0);
+      const losses = collection.reduce((a, c) => a + (c.losses || 0), 0);
+      const total = wins + losses;
+      return total >= 20 && (wins / total) >= 0.9;
+    }},
+  { id: 'storm_caller', emoji: '⚡', name: '嵐を呼ぶ石', desc: '電気と空タイプを同時所持', rarity: 'rare',
+    check: ({ collection }) => {
+      const set = new Set(collection.map(c => c.type));
+      return set.has('電気') && set.has('空');
+    }},
+
+  // やり込み系
+  { id: 'evolver_10', emoji: '🦋', name: '進化の探求者', desc: '進化を10回達成', rarity: 'epic',
+    check: ({ player }) => (player.stats?.totalEvolves || 0) >= 10 },
+  { id: 'gacha_100', emoji: '🎴', name: 'ガチャ中毒', desc: 'ガチャを累計100回引いた', rarity: 'rare',
+    check: ({ player }) => (player.stats?.totalGacha || 0) >= 100 },
+  { id: 'login_30', emoji: '📅', name: 'ログイン番長', desc: '連続ログイン30日達成', rarity: 'epic',
+    check: ({ player }) => (player.streak || 0) >= 30 },
+];
+
+// 新規獲得した称号IDの配列を返す（未獲得 & 条件達成）
+const evaluateTitles = (ctx) => {
+  const owned = new Set(ctx.player?.titles || []);
+  const newly = [];
+  for (const t of TITLES) {
+    if (owned.has(t.id)) continue;
+    try {
+      if (t.check(ctx)) newly.push(t.id);
+    } catch (_) { /* 評価失敗は無視 */ }
+  }
+  return newly;
+};
+
+const getTitleById = (id) => TITLES.find(t => t.id === id);
+
 const expForNextLevel = (lv) => lv * 50;
 const playerExpForNextLevel = (lv) => lv * 100;
 const MAX_LEVEL = 20;
@@ -857,6 +951,14 @@ function IshimonZukan() {
     lastLogin: null, streak: 0,
     gachaCards: 0,
     missions: { date: null, list: [], progress: {}, claimed: {}, allClaimed: false },
+    // 称号システム
+    titles: [],          // 獲得済み称号ID配列
+    activeTitle: null,   // 選択中の称号ID（プロフィール表示用）
+    stats: {             // 累計カウンタ（称号判定用）
+      totalGacha: 0,
+      totalEvolves: 0,
+      consecutiveR1Count: 0,  // ガチャで★1が連続した回数
+    },
   });
 
   // モーダル系
@@ -877,6 +979,8 @@ function IshimonZukan() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
   const onboardingNameRef = useRef(null);
+  // 新規称号獲得モーダル（{ titles: [...] } または null）
+  const [newTitleAlert, setNewTitleAlert] = useState(null);
 
   const fileRef = useRef(null);
   const videoRef = useRef(null);
@@ -936,11 +1040,33 @@ function IshimonZukan() {
         }
         if (loadedPlayer) {
           // 既存プレイヤー: ガチャカードが少ない場合は100枚まで補充
-          const adjusted = (loadedPlayer.gachaCards || 0) < 100
+          let adjusted = (loadedPlayer.gachaCards || 0) < 100
             ? { ...loadedPlayer, gachaCards: 100 }
             : loadedPlayer;
+          // 称号関連フィールドのデフォルト補完
+          if (!Array.isArray(adjusted.titles)) adjusted = { ...adjusted, titles: [] };
+          if (typeof adjusted.activeTitle === 'undefined') adjusted = { ...adjusted, activeTitle: null };
+          if (!adjusted.stats) {
+            adjusted = { ...adjusted, stats: { totalGacha: 0, totalEvolves: 0, consecutiveR1Count: 0 } };
+          } else {
+            adjusted = {
+              ...adjusted,
+              stats: {
+                totalGacha: adjusted.stats.totalGacha || 0,
+                totalEvolves: adjusted.stats.totalEvolves || 0,
+                consecutiveR1Count: adjusted.stats.consecutiveR1Count || 0,
+              },
+            };
+          }
+          // 初回ロード時に既存データに基づいて過去獲得済みの称号を付与
+          // （新規称号がいきなり大量に出るのを防ぐため、モーダルは出さず黙って付与）
+          const ctx = { player: adjusted, collection: loadedCollection, event: 'tick' };
+          const grants = evaluateTitles(ctx);
+          if (grants.length > 0) {
+            adjusted = { ...adjusted, titles: [...new Set([...(adjusted.titles || []), ...grants])] };
+          }
           setPlayer(adjusted);
-          if (adjusted.gachaCards !== loadedPlayer.gachaCards) {
+          if (adjusted !== loadedPlayer) {
             await window.storage.set('ishimon-player-v3', JSON.stringify(adjusted));
           }
           checkLoginBonus(adjusted, loadedCollection);
@@ -950,9 +1076,13 @@ function IshimonZukan() {
             name: '',
             level: 1, exp: 0, gems: 30,
             inventory: ['sword_1', 'shield_1', 'charm_1'],
+            inventoryNew: [],
             lastLogin: todayKey(), streak: 1,
             gachaCards: 100,
             missions: { date: todayKey(), list: getTodayMissions(todayKey()), progress: {}, claimed: {}, allClaimed: false },
+            titles: [],
+            activeTitle: null,
+            stats: { totalGacha: 0, totalEvolves: 0, consecutiveR1Count: 0 },
           };
           setPlayer(initialPlayer);
           await window.storage.set('ishimon-player-v3', JSON.stringify(initialPlayer));
@@ -978,6 +1108,27 @@ function IshimonZukan() {
     setSettings(s);
     try { await window.storage.set('ishimon-settings-v1', JSON.stringify(s)); }
     catch (e) { console.error(e); }
+  };
+
+  // ===== 称号獲得チェック =====
+  // どんなイベント後でも呼ぶ。新規獲得があれば player を更新してモーダル表示。
+  // playerOverride: 直前に setPlayer したばかりで state が反映されてない場合に渡す
+  // collectionOverride: 同様
+  const grantTitlesIfAny = (event = 'tick', extra = {}, playerOverride = null, collectionOverride = null) => {
+    const p = playerOverride || player;
+    const c = collectionOverride || collection;
+    const ctx = { player: p, collection: c, event, ...extra };
+    const newlyGranted = evaluateTitles(ctx);
+    if (newlyGranted.length === 0) return;
+    const updated = {
+      ...p,
+      titles: [...new Set([...(p.titles || []), ...newlyGranted])],
+    };
+    setPlayer(updated);
+    savePlayer(updated);
+    // モーダル表示（新規獲得した称号オブジェクトの配列）
+    const titleObjs = newlyGranted.map(id => getTitleById(id)).filter(Boolean);
+    setNewTitleAlert({ titles: titleObjs });
   };
   const updateSetting = (key, value) => {
     saveSettings({ ...settings, [key]: value });
@@ -1008,6 +1159,8 @@ function IshimonZukan() {
     setPlayer(updatedPlayer);
     savePlayer(updatedPlayer);
     setShowLoginBonus({ streak: newStreak, cardCount, label });
+    // ログイン番長判定
+    grantTitlesIfAny('tick', {}, updatedPlayer, currentCollection);
   };
 
   const ensureTodayMissions = (p) => {
@@ -1162,6 +1315,26 @@ function IshimonZukan() {
         return updated;
       });
     }
+
+    // ===== 称号判定用：累計カウンタ更新 =====
+    // 連続★1の判定: 全結果がr1なら累計、1つでも違えばリセット
+    const allR1 = results.length > 0 && results.every(r => r.rarity === 1);
+    setPlayer(prev => {
+      const prevConsec = prev.stats?.consecutiveR1Count || 0;
+      const updated = {
+        ...prev,
+        stats: {
+          ...(prev.stats || {}),
+          totalGacha: (prev.stats?.totalGacha || 0) + results.length,
+          consecutiveR1Count: allR1 ? prevConsec + results.length : 0,
+        },
+      };
+      savePlayer(updated);
+      // 最新の collection は newMons 反映済みのものを使う
+      const latestCollection = newMons.length > 0 ? [...newMons, ...collection] : collection;
+      grantTitlesIfAny('gacha', { gachaResults: results }, updated, latestCollection);
+      return updated;
+    });
   };
 
   // ===== プレイヤーEXP追加 =====
@@ -1400,6 +1573,7 @@ function IshimonZukan() {
       setCollection(updated);
       await saveCollection(updated);
       updateMission('capture');
+      grantTitlesIfAny('photo', { mon: entry }, null, updated);
     } catch (err) {
       console.error('generateMon error:', err);
       try {
@@ -1426,6 +1600,7 @@ function IshimonZukan() {
         setCollection(updated);
         await saveCollection(updated);
         updateMission('capture');
+        grantTitlesIfAny('photo', { mon: entry }, null, updated);
       } catch (fallbackErr) {
         console.error('fallback error:', fallbackErr);
         setError('失敗しました。もう一度お試しください');
@@ -1501,6 +1676,18 @@ function IshimonZukan() {
       setShowEvolveAnim(null);
       setSelected(evolved);
       updateMission('evolve');
+
+      // 進化カウンタを更新 → 称号チェック
+      const updatedPlayer = {
+        ...player,
+        stats: {
+          ...(player.stats || {}),
+          totalEvolves: (player.stats?.totalEvolves || 0) + 1,
+        },
+      };
+      setPlayer(updatedPlayer);
+      savePlayer(updatedPlayer);
+      grantTitlesIfAny('evolve', {}, updatedPlayer, updated);
 
       // もしまだ画像が来てなかった場合、後で来たら反映
       if (!imageRace?.image) {
@@ -1702,6 +1889,9 @@ function IshimonZukan() {
       if (wasSuperEffective) updateMission('super_effective');
     }
     if (leveledUp) updateMission('levelup');
+
+    // 称号チェック（初陣・百戦錬磨・無敗の伝説 など）
+    grantTitlesIfAny('battle', { result }, null, newCollection);
 
     setBattleResult({ result, expGained, leveledUp, newLevel, updatedMon, playerExp, gemsGained });
   };
@@ -2035,6 +2225,69 @@ function IshimonZukan() {
               </div>
               {missions.allClaimed && <div className="text-yellow-300 text-[10px] font-black mt-0.5">✓ ボーナス獲得！</div>}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ===========================================
+  // 新規称号獲得アラート
+  // ===========================================
+  const NewTitleAlert = () => {
+    if (!newTitleAlert) return null;
+    const titles = newTitleAlert.titles || [];
+    if (titles.length === 0) return null;
+    return (
+      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+        style={{ background: 'rgba(0,0,0,0.85)' }}>
+        <div className="w-full max-w-sm rounded-3xl p-5 relative animate-bounce-in"
+          style={{
+            background: 'linear-gradient(180deg, #4A148C, #1A0033)',
+            border: '3px solid #FFD700',
+            boxShadow: '0 0 60px rgba(255,215,0,0.6)',
+          }}>
+          <div className="text-center mb-3">
+            <div className="text-5xl mb-1">🏆</div>
+            <div className="text-yellow-300 text-[10px] font-black tracking-widest">NEW TITLE</div>
+            <div className="text-2xl font-black text-white">称号を獲得！</div>
+          </div>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {titles.map(t => {
+              const r = TITLE_RARITY[t.rarity] || TITLE_RARITY.common;
+              return (
+                <div key={t.id} className="rounded-2xl p-3"
+                  style={{
+                    background: `linear-gradient(135deg, ${r.color}33, ${r.glow}33)`,
+                    border: `2px solid ${r.color}`,
+                    boxShadow: `0 0 20px ${r.color}66`,
+                  }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-3xl">{t.emoji}</span>
+                    <div className="flex-1">
+                      <div className="text-white font-black text-base leading-tight">{t.name}</div>
+                      <div className="text-[9px] font-black inline-block px-1.5 py-0.5 rounded mt-0.5"
+                        style={{ background: r.color, color: '#000' }}>
+                        {r.label.toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-white/90 text-xs font-bold">{t.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={() => setNewTitleAlert(null)}
+            className="w-full mt-4 py-3 rounded-2xl text-white font-black active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, #FFD700, #FF6B35)',
+              boxShadow: '0 4px 0 #B85C00',
+              border: '2px solid white',
+            }}>
+            やったー！
+          </button>
+          <div className="text-center text-white/60 text-[10px] font-bold mt-2">
+            設定画面の「称号」から表示する称号を選べます
           </div>
         </div>
       </div>
@@ -3570,6 +3823,24 @@ function IshimonZukan() {
                 </div>
               </button>
             )}
+            {/* 選択中称号 */}
+            {(() => {
+              if (!player.activeTitle) return null;
+              const t = getTitleById(player.activeTitle);
+              if (!t) return null;
+              const r = TITLE_RARITY[t.rarity] || TITLE_RARITY.common;
+              return (
+                <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${r.color}33, ${r.glow}33)`,
+                    border: `1.5px solid ${r.color}`,
+                    boxShadow: `0 0 12px ${r.color}66`,
+                  }}>
+                  <span className="text-base">{t.emoji}</span>
+                  <span className="text-white font-black text-xs">{t.name}</span>
+                </div>
+              );
+            })()}
             <div className="text-4xl font-black text-white mt-1">Lv.{player.level}</div>
             <div className="text-yellow-300 text-[10px] font-black tracking-widest">名前をタップで 変更</div>
           </div>
@@ -3997,6 +4268,88 @@ function IshimonZukan() {
           </div>
         </div>
 
+        {/* 称号 */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">
+            🏆 称号 ({(player.titles || []).length} / {TITLES.length})
+          </div>
+          {(player.titles || []).length === 0 ? (
+            <div className="rounded-2xl p-4 text-center"
+              style={{ background: 'rgba(0,0,0,0.3)', border: '2px dashed rgba(255,255,255,0.3)' }}>
+              <div className="text-4xl mb-1 opacity-50">🏆</div>
+              <div className="text-white/80 font-black text-sm mb-1">まだ称号がありません</div>
+              <div className="text-white/60 text-[11px] font-bold">石モンを集めたり、バトルで勝つと獲得できる！</div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* 「使用しない」オプション */}
+              <button
+                onClick={() => {
+                  const updated = { ...player, activeTitle: null };
+                  setPlayer(updated);
+                  savePlayer(updated);
+                }}
+                className="w-full p-2.5 rounded-2xl active:scale-[0.98] flex items-center gap-2"
+                style={{
+                  background: !player.activeTitle ? 'linear-gradient(135deg, #FFE066, #FFD700)' : 'rgba(255,255,255,0.08)',
+                  border: !player.activeTitle ? '2px solid white' : '2px solid rgba(255,255,255,0.15)',
+                }}>
+                <span className="text-xl">🚫</span>
+                <div className="flex-1 text-left">
+                  <div className={`font-black text-sm ${!player.activeTitle ? 'text-orange-900' : 'text-white'}`}>
+                    称号を表示しない
+                  </div>
+                </div>
+                {!player.activeTitle && <span className="text-orange-900 font-black text-xs">✓ 選択中</span>}
+              </button>
+
+              {/* 獲得済み称号 */}
+              {(player.titles || []).map(tid => {
+                const t = getTitleById(tid);
+                if (!t) return null;
+                const r = TITLE_RARITY[t.rarity] || TITLE_RARITY.common;
+                const active = player.activeTitle === t.id;
+                return (
+                  <button key={t.id}
+                    onClick={() => {
+                      const updated = { ...player, activeTitle: t.id };
+                      setPlayer(updated);
+                      savePlayer(updated);
+                    }}
+                    className="w-full p-2.5 rounded-2xl active:scale-[0.98] flex items-center gap-2"
+                    style={{
+                      background: active
+                        ? `linear-gradient(135deg, ${r.color}, ${r.glow})`
+                        : `linear-gradient(135deg, ${r.color}22, ${r.glow}22)`,
+                      border: active ? '2px solid white' : `2px solid ${r.color}66`,
+                      boxShadow: active ? `0 0 16px ${r.color}99` : 'none',
+                    }}>
+                    <span className="text-2xl">{t.emoji}</span>
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-white font-black text-sm leading-tight">{t.name}</span>
+                        <span className="text-[8px] font-black px-1 py-0.5 rounded"
+                          style={{ background: r.color, color: '#000' }}>
+                          {r.label.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="text-white/85 text-[10px] font-bold leading-tight mt-0.5">{t.desc}</div>
+                    </div>
+                    {active && <span className="text-white font-black text-xs flex-shrink-0">✓</span>}
+                  </button>
+                );
+              })}
+
+              {/* 未獲得の数 */}
+              {(player.titles || []).length < TITLES.length && (
+                <div className="text-center text-white/50 text-[10px] font-bold mt-2">
+                  あと {TITLES.length - (player.titles || []).length} 個 未獲得
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* アプリ更新 */}
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔄 アプリ更新</div>
@@ -4183,6 +4536,7 @@ function IshimonZukan() {
       <ProfileModal />
       <EquipModal />
       <OnboardingModal />
+      <NewTitleAlert />
 
       {/* AI画像生成中のローディング */}
       {aiGenerating && (
