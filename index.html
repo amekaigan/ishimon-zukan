@@ -77,7 +77,7 @@ window.storage = {
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
 // アプリバージョン（設定画面・キャッシュバスト等で使用）
-const APP_VERSION = '1.4.7';
+const APP_VERSION = '1.4.8';
 
 // lucide-react のアイコンを絵文字で代替
 const makeIcon = (emoji) => ({ className, strokeWidth, ...props }) =>
@@ -4886,7 +4886,12 @@ function IshimonZukan() {
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔄 アプリ更新</div>
           <button
-            onClick={() => {
+            onClick={async () => {
+              // リロード前にデータを確実に保存してから実行
+              try {
+                await savePlayer(player);
+                await saveCollection(collection);
+              } catch (e) { /* 保存失敗しても続行 */ }
               const url = new URL(window.location.href);
               url.searchParams.set('v', String(Date.now()));
               window.location.replace(url.toString());
