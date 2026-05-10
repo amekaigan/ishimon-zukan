@@ -77,7 +77,7 @@ window.storage = {
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
 // アプリバージョン（設定画面・キャッシュバスト等で使用）
-const APP_VERSION = '1.4.5';
+const APP_VERSION = '1.4.6';
 
 // lucide-react のアイコンを絵文字で代替
 const makeIcon = (emoji) => ({ className, strokeWidth, ...props }) =>
@@ -1477,14 +1477,9 @@ function IshimonZukan() {
           role: 'user',
           content: [
             { type: 'image_url', image_url: { url: imageDataUrl } },
-            { type: 'text', text: `あなたは非常に寛容な地質学者兼キャラクターデザイナーです。
+            { type: 'text', text: `この画像に写っているものから「石モン」というポケモン・デジモン風の架空のモンスターを生成してください。創造性豊かに、世界観のあるストーリーを持たせてください。
 
-コンクリート・砂利・レンガ・宝石・ガラス玉・子供用おもちゃの石・背景に手が少し映っていても、画像の主役が「石・岩・無機物の性質を持つ物体」であれば迷わず石モンを生成してください。
-
-明らかに石でない場合（人物の顔・食べ物・動物・スマホ画面が主役）のみ以下を返してください：
-{"error":"not_stone"}
-
-石モンを生成する場合、以下のJSONのみ返してください（コードブロック・説明不要）:
+以下のJSONのみ返してください（コードブロック・説明不要）:
 {
   "name": "カタカナ4-6文字のオリジナル名",
   "type": "火|水|土|電気|空|ドラゴン|精霊 のいずれか1つ",
@@ -1502,16 +1497,19 @@ function IshimonZukan() {
 }
 
 【ネーミングルール】
-- 石の色+生物パーツ合成: クリムゾン+牙→クリゾング / 翡翠+爪→ヒスイヅメ
+造語テクニックで世界に1つのオリジナル名を作ること:
+- 石・物体の色+生物パーツ合成: クリムゾン+牙→クリゾング / 翡翠+爪→ヒスイヅメ
 - 鉱物名を変形: ガーネット→ガルネガ / オパール→オパルゲン
-- 質感+擬音: ザラザラ→ザルガン / キラキラ→キラフィア
-- タイプを語感に反映: 火→フレイ/バーン系 / 水→アクア/マル系 / 電気→ボルト/ライ系
-- 避けること: イワン・イワゴン・ガンロック・ロックン など月並みな名前
+- 質感+擬音+語尾変形: ザラザラ→ザルガン / キラキラ→キラフィア
+- タイプを語感に反映: 火→フレイ/バーン系 / 水→アクア/マル系 / 電気→ボルト/ライ系 / ドラゴン→イラ/ガン系
+- 避けること: イワン・イワゴン・ガンロック・ロックン など月並みすぎる名前
+- 進化先はベース名より1〜2文字長く、より威厳ある響きに
 
 【ガイド】
-- 形が独特・色珍しい・特徴的→レア度4-5 / 普通の小石→レア度1-2
+- 形が独特・色珍しい・特徴的→レア度4-5 / 普通・地味→レア度1-2
 - ステータス合計はレア度に比例(★1≒200 ★2≒260 ★3≒320 ★4≒380 ★5≒420+)
 - growthBiasはタイプの個性を反映(火→攻撃寄り / 水→HP寄り / 空→素早さ寄り)
+- 説明文はストーリー性豊かに、子供にも大人にも楽しめる文体で
 - 日本語で。JSON以外は何も書かないこと。`}
           ]
         }],
@@ -1557,17 +1555,6 @@ function IshimonZukan() {
       }
       if (!jsonStr) throw new Error('JSON not found in response');
       const mon = JSON.parse(jsonStr);
-
-      // 石以外の画像チェック
-      if (mon && (mon.error === 'not_stone' || JSON.stringify(mon).includes('not_stone'))) {
-        // 消費したかけらを返却
-        const refunded = { ...player, stoneFragments: (player.stoneFragments || 0) + CAPTURE_COST };
-        setPlayer(refunded);
-        savePlayer(refunded);
-        setIsLoading(false);
-        setError('石・岩の写真を撮影してください！🪨');
-        return;
-      }
 
       // 難易度バイアスを適用（rarity 補正＋ステ合計も再計算）
       if (mon && typeof mon.rarity === 'number') {
