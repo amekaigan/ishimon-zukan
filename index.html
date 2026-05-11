@@ -77,7 +77,7 @@ window.storage = {
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
 // アプリバージョン（設定画面・キャッシュバスト等で使用）
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 
 // lucide-react のアイコンを絵文字で代替
 const makeIcon = (emoji) => ({ className, strokeWidth, ...props }) =>
@@ -3359,83 +3359,70 @@ function IshimonZukan() {
     const myStats = getCurrentStats(myMon);
     const enemyStats = getCurrentStats(enemyMon);
 
-    // ステージ別背景SVG（薄く・雰囲気重視）
+    // ステージ別背景SVG（雰囲気重視・区別しやすい色調）
     const stageBg = {
       shoshinsha: (
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <radialGradient id="bg1" cx="50%" cy="60%" r="70%"><stop offset="0%" stopColor="#1a3a1a"/><stop offset="100%" stopColor="#050f05"/></radialGradient>
+            <radialGradient id="bg1" cx="50%" cy="60%" r="70%"><stop offset="0%" stopColor="#0d3a0d"/><stop offset="100%" stopColor="#020a02"/></radialGradient>
           </defs>
           <rect width="100%" height="100%" fill="url(#bg1)"/>
-          {/* 遠景の木々 */}
-          {[10,22,35,50,63,75,88].map((x,i) => (
-            <g key={i} opacity="0.18">
-              <rect x={`${x}%`} y="52%" width="2%" height="30%" fill="#2d5a2d"/>
-              <ellipse cx={`${x+1}%`} cy="52%" rx="4%" ry="6%" fill="#1e4a1e"/>
+          {[8,20,32,46,58,70,84].map((x,i) => (
+            <g key={i} opacity="0.55">
+              <rect x={`${x}%`} y="48%" width="3%" height="36%" fill="#1a5a1a"/>
+              <ellipse cx={`${x+1.5}%`} cy="48%" rx="6%" ry="8%" fill="#124a12"/>
             </g>
           ))}
-          {/* 地面 */}
-          <rect x="0" y="75%" width="100%" height="25%" fill="#0d1f0d" opacity="0.6"/>
-          {/* 霧 */}
-          <ellipse cx="50%" cy="78%" rx="60%" ry="8%" fill="#1a3a1a" opacity="0.4"/>
+          <rect x="0" y="74%" width="100%" height="26%" fill="#061006"/>
+          <ellipse cx="50%" cy="76%" rx="65%" ry="7%" fill="#0a2a0a" opacity="0.8"/>
         </svg>
       ),
       iwaba: (
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <radialGradient id="bg2" cx="50%" cy="40%" r="70%"><stop offset="0%" stopColor="#2a1f0f"/><stop offset="100%" stopColor="#080503"/></radialGradient>
+            <radialGradient id="bg2" cx="50%" cy="40%" r="70%"><stop offset="0%" stopColor="#3a2810"/><stop offset="100%" stopColor="#0c0804"/></radialGradient>
           </defs>
           <rect width="100%" height="100%" fill="url(#bg2)"/>
-          {/* 遠景の岩山 */}
-          <polygon points="0,80 15,45 30,75 45,35 60,65 75,40 90,60 100,50 100,100 0,100" fill="#1a1208" opacity="0.5"/>
-          <polygon points="5,80 20,50 35,70 50,38 65,62 80,42 95,58 100,55 100,100 0,100" fill="#221808" opacity="0.35"/>
-          {/* 岩の影 */}
-          {[15,40,65,85].map((x,i) => (
-            <ellipse key={i} cx={`${x}%`} cy="78%" rx={`${6+i*2}%`} ry="3%" fill="#100c05" opacity="0.4"/>
+          <polygon points="0,100 0,68 15,40 30,65 45,28 60,55 75,32 90,52 100,44 100,100" fill="#261c08" opacity="0.85"/>
+          <polygon points="0,100 0,75 20,50 35,68 50,38 65,60 80,42 95,56 100,52 100,100" fill="#362408" opacity="0.6"/>
+          {[12,38,62,82].map((x,i) => (
+            <ellipse key={i} cx={`${x}%`} cy="78%" rx={`${8+i*2}%`} ry="4%" fill="#180e04" opacity="0.7"/>
           ))}
         </svg>
       ),
       raiu: (
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <radialGradient id="bg3" cx="50%" cy="30%" r="80%"><stop offset="0%" stopColor="#1a1a0a"/><stop offset="100%" stopColor="#050508"/></radialGradient>
+            <radialGradient id="bg3" cx="50%" cy="30%" r="80%"><stop offset="0%" stopColor="#22220e"/><stop offset="100%" stopColor="#06060c"/></radialGradient>
           </defs>
           <rect width="100%" height="100%" fill="url(#bg3)"/>
-          {/* 雷雲 */}
-          {[20,50,75].map((x,i) => (
-            <ellipse key={i} cx={`${x}%`} cy={`${12+i*5}%`} rx={`${18+i*4}%`} ry="6%" fill="#1a1a1a" opacity="0.5"/>
+          {[18,46,70].map((x,i) => (
+            <ellipse key={i} cx={`${x}%`} cy={`${8+i*6}%`} rx={`${22+i*4}%`} ry="8%" fill="#1a1a1a" opacity="0.75"/>
           ))}
-          {/* 雷 */}
-          <polyline points="45%,20% 48%,35% 44%,35% 47%,55%" stroke="#FFE066" strokeWidth="1.5" fill="none" opacity="0.15"/>
-          <polyline points="70%,15% 73%,28% 69%,28% 72%,45%" stroke="#FFE066" strokeWidth="1" fill="none" opacity="0.1"/>
-          {/* 塔のシルエット */}
-          <rect x="42%" y="55%" width="16%" height="45%" fill="#0a0a0a" opacity="0.5"/>
-          <polygon points="42%,55% 50%,42% 58%,55%" fill="#0a0a0a" opacity="0.5"/>
-          {/* 地面 */}
-          <rect x="0" y="78%" width="100%" height="22%" fill="#050508" opacity="0.6"/>
+          <polyline points="43%,16% 46%,30% 42%,30% 45%,50%" stroke="#FFE066" strokeWidth="2.5" fill="none" opacity="0.5"/>
+          <polyline points="68%,12% 71%,24% 67%,24% 70%,40%" stroke="#FFE066" strokeWidth="2" fill="none" opacity="0.35"/>
+          <rect x="40%" y="52%" width="20%" height="48%" fill="#080808" opacity="0.75"/>
+          <polygon points="40%,52% 50%,38% 60%,52%" fill="#080808" opacity="0.75"/>
+          <rect x="0" y="76%" width="100%" height="24%" fill="#06060c" opacity="0.85"/>
         </svg>
       ),
       densetsu: (
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
           <defs>
-            <radialGradient id="bg4" cx="50%" cy="50%" r="70%"><stop offset="0%" stopColor="#1a0a2a"/><stop offset="100%" stopColor="#020005"/></radialGradient>
-            <radialGradient id="glow1" cx="50%" cy="50%" r="50%"><stop offset="0%" stopColor="#6a0dad" stopOpacity="0.15"/><stop offset="100%" stopColor="#6a0dad" stopOpacity="0"/></radialGradient>
+            <radialGradient id="bg4" cx="50%" cy="50%" r="70%"><stop offset="0%" stopColor="#28084a"/><stop offset="100%" stopColor="#06000e"/></radialGradient>
+            <radialGradient id="glow4" cx="50%" cy="55%" r="40%"><stop offset="0%" stopColor="#9b2fff" stopOpacity="0.4"/><stop offset="100%" stopColor="#9b2fff" stopOpacity="0"/></radialGradient>
           </defs>
           <rect width="100%" height="100%" fill="url(#bg4)"/>
-          <rect width="100%" height="100%" fill="url(#glow1)"/>
-          {/* 洞窟の鍾乳石 */}
-          {[10,25,40,55,70,85].map((x,i) => (
-            <polygon key={i} points={`${x}%,0 ${x+2}%,0 ${x+1}%,${8+i%3*4}%`} fill="#1a0a2a" opacity="0.6"/>
+          <rect width="100%" height="100%" fill="url(#glow4)"/>
+          {[6,20,34,50,64,78].map((x,i) => (
+            <polygon key={i} points={`${x}%,0 ${x+4}%,0 ${x+2}%,${12+i%3*6}%`} fill="#16042e" opacity="0.9"/>
           ))}
-          {/* 石筍 */}
-          {[8,22,38,52,68,82].map((x,i) => (
-            <polygon key={i} points={`${x}%,100% ${x+2}%,100% ${x+1}%,${80-i%3*5}%`} fill="#12082a" opacity="0.4"/>
+          {[4,18,32,48,62,76].map((x,i) => (
+            <polygon key={i} points={`${x}%,100% ${x+4}%,100% ${x+2}%,${76-i%3*7}%`} fill="#100328" opacity="0.7"/>
           ))}
-          {/* 神秘の光 */}
-          <circle cx="50%" cy="60%" r="20%" fill="#4a0080" opacity="0.06"/>
-          <circle cx="50%" cy="60%" r="8%" fill="#8a00ff" opacity="0.05"/>
-          {/* 地面 */}
-          <rect x="0" y="78%" width="100%" height="22%" fill="#0a0015" opacity="0.7"/>
+          <circle cx="50%" cy="56%" r="24%" fill="#6600bb" opacity="0.18"/>
+          <circle cx="50%" cy="56%" r="10%" fill="#aa44ff" opacity="0.15"/>
+          <rect x="0" y="76%" width="100%" height="24%" fill="#08001c" opacity="0.9"/>
         </svg>
       ),
     };
