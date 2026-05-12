@@ -2763,7 +2763,10 @@ function IshimonZukan() {
             <div className="text-3xl font-black text-white">マイページ</div>
             <CloseButton onClick={() => { setShowProfile(false); setEditingName(false); }} />
           </div>
-
+<!-- index.htmlの適当な場所（<body>の中）に追加 -->
+<button onclick="loginWithGoogle()" style="position: fixed; top: 10px; left: 10px; z-index: 999;">
+  テストログイン
+</button>
           {/* アバター＋名前 */}
           <div className="text-center mb-4">
             <div className="inline-block bg-yellow-400 rounded-full p-5 mb-3">
@@ -4376,7 +4379,10 @@ function IshimonZukan() {
           style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
           マイページ
         </h2>
-
+<!-- index.htmlの適当な場所（<body>の中）に追加 -->
+<button onclick="loginWithGoogle()" style="position: fixed; top: 10px; left: 10px; z-index: 999;">
+  テストログイン
+</button>
         {/* ===== プロフィールカード ===== */}
         <div className="rounded-3xl p-4 mb-4"
           style={{ background: 'linear-gradient(180deg, rgba(25,118,210,0.6), rgba(13,71,161,0.6))', border: '4px solid #FFD700' }}>
