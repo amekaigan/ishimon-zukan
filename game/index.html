@@ -5226,8 +5226,57 @@ function IshimonZukan() {
   );
 }
 
-
 ReactDOM.render(React.createElement(IshimonZukan), document.getElementById("root"));
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyCvKcODF_Ge72avPgVERLGm-lw7ksMQrlg",
+  authDomain: "ishimonzukan.firebaseapp.com",
+  projectId: "ishimonzukan",
+  storageBucket: "ishimonzukan.firebasestorage.app",
+  messagingSenderId: "701083198465",
+  appId: "1:701083198465:web:9f81c6476394ba867d4c00"
+});
+
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const userInfo = document.getElementById("userInfo");
+
+loginBtn.onclick = async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    alert("ログイン失敗");
+    console.error(e);
+  }
+};
+
+logoutBtn.onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    userInfo.textContent = `ようこそ ${user.displayName}`;
+    loginBtn.hidden = true;
+    logoutBtn.hidden = false;
+  } else {
+    userInfo.textContent = "";
+    loginBtn.hidden = false;
+    logoutBtn.hidden = true;
+  }
+});
 </script>
 </body>
 </html>
