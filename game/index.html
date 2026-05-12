@@ -45,6 +45,24 @@
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
+ 
+  // ボタンここから
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+const auth = getAuth();
+const provider = new GoogleAuthProvider();
+// ボタンから呼べるように「window」につけます
+window.loginWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    alert(user.displayName + "さん、こんにちは！石モン図鑑へようこそ！");
+    console.log("ログイン成功:", user);
+  } catch (error) {
+    console.error("ログインエラー:", error);
+    alert("ログインに失敗しました。");
+  }
+};
+  // ボタンここまで
 </script>
 <div id="root">
   <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(180deg,#FF6B35,#C71F8E);color:white;font-family:'M PLUS Rounded 1c',sans-serif">
