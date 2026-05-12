@@ -47,21 +47,48 @@
   const app = initializeApp(firebaseConfig);
  
   // ボタンここから
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-const auth = getAuth();
-const provider = new GoogleAuthProvider();
-// ボタンから呼べるように「window」につけます
-window.loginWithGoogle = async () => {
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    alert(user.displayName + "さん、こんにちは！石モン図鑑へようこそ！");
-    console.log("ログイン成功:", user);
-  } catch (error) {
-    console.error("ログインエラー:", error);
-    alert("ログインに失敗しました。");
-  }
-};
+  import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  const auth = getAuth();
+  const provider = new GoogleAuthProvider();
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const userInfo = document.getElementById("userInfo");
+  // ログイン
+  loginBtn.addEventListener("click", async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      console.log("ログイン成功", result.user);
+    } catch (error) {
+      console.error("ログイン失敗", error);
+      alert("ログインに失敗しました");
+    }
+  });
+  // ログアウト
+  logoutBtn.addEventListener("click", async () => {
+    await signOut(auth);
+  });
+  // ログイン状態監視
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      userInfo.innerHTML = `
+        ようこそ！<br>
+        ${user.displayName}
+      `;
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+    } else {
+      userInfo.innerHTML = "";
+      loginBtn.style.display = "inline-block";
+      logoutBtn.style.display = "none";
+    }
+  });
+
   // ボタンここまで
 </script>
 <div id="root">
@@ -2763,7 +2790,17 @@ function IshimonZukan() {
             <div className="text-3xl font-black text-white">マイページ</div>
             <CloseButton onClick={() => { setShowProfile(false); setEditingName(false); }} />
           </div>
+<div id="auth-area">
+  <button id="loginBtn">
+    Googleでログイン
+  </button>
 
+  <button id="logoutBtn" style="display:none;">
+    ログアウト
+  </button>
+
+  <p id="userInfo"></p>
+</div>
           {/* アバター＋名前 */}
           <div className="text-center mb-4">
             <div className="inline-block bg-yellow-400 rounded-full p-5 mb-3">
@@ -4376,7 +4413,17 @@ function IshimonZukan() {
           style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
           マイページ
         </h2>
+<div id="auth-area">
+  <button id="loginBtn">
+    Googleでログイン
+  </button>
 
+  <button id="logoutBtn" style="display:none;">
+    ログアウト
+  </button>
+
+  <p id="userInfo"></p>
+</div>
         {/* ===== プロフィールカード ===== */}
         <div className="rounded-3xl p-4 mb-4"
           style={{ background: 'linear-gradient(180deg, rgba(25,118,210,0.6), rgba(13,71,161,0.6))', border: '4px solid #FFD700' }}>
