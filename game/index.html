@@ -182,7 +182,7 @@ window.storage = {
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
 // アプリバージョン（設定画面・キャッシュバスト等で使用）
-const APP_VERSION = '2.0.2';
+const APP_VERSION = '2.0.3';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1117,23 +1117,49 @@ function IshimonZukan() {
   useEffect(() => {
     const checkFirebase = () => {
       if (!window._firebase) {
-        // SDKがまだ読み込まれていない場合は待つ
         setTimeout(checkFirebase, 200);
         return;
       }
       const { auth, onAuthStateChanged } = window._firebase;
       setFirebaseReady(true);
+      let firstCall = true; // 初回のみFirestore復元を試みる
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           window._currentUid = user.uid;
           setFirebaseUser({ uid: user.uid, displayName: user.displayName, email: user.email, photoURL: user.photoURL });
-          // Firestoreからデータ復元を試みる
-          const restored = await window.storage.restoreFromFirestore();
-          if (restored) {
-            // 復元成功 → ページリロードして最新データを反映
-            window.location.reload();
+          // 初回ログイン検知時のみFirestoreからデータ復元
+          if (firstCall) {
+            firstCall = false;
+            try {
+              const keys = ['ishimon-player-v3', 'ishimon-collection-v3', 'ishimon-settings-v1'];
+              const results = {};
+              for (const key of keys) {
+                const { getDoc, doc } = window._firebase;
+                const { db } = window._firebase;
+                const ref = doc(db, 'users', user.uid, 'data', key.replace(/[\/\.]/g, '_'));
+                const snap = await getDoc(ref);
+                if (snap.exists()) {
+                  results[key] = snap.data().value;
+                  localStorage.setItem(key, snap.data().value);
+                }
+              }
+              // Reactのstateを直接更新（リロード不要）
+              if (results['ishimon-player-v3']) {
+                const p = JSON.parse(results['ishimon-player-v3']);
+                setPlayer(prev => ({ ...prev, ...p }));
+              }
+              if (results['ishimon-collection-v3']) {
+                setCollection(JSON.parse(results['ishimon-collection-v3']));
+              }
+              if (results['ishimon-settings-v1']) {
+                setSettings(prev => ({ ...prev, ...JSON.parse(results['ishimon-settings-v1']) }));
+              }
+            } catch (e) {
+              console.error('Firestore restore error:', e);
+            }
           }
         } else {
+          firstCall = true; // ログアウト後にリセット
           window._currentUid = null;
           setFirebaseUser(null);
         }
