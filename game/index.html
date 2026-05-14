@@ -182,7 +182,7 @@ window.storage = {
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
 // アプリバージョン（設定画面・キャッシュバスト等で使用）
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.0.2';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -3368,159 +3368,309 @@ function IshimonZukan() {
     const skipToPlay = () => finishOnboarding(true);
 
     const slides = [
-      // スライド1: タイトル
+      // スライド1: タイトル + 石モンイラスト2体
       {
-        bg: 'linear-gradient(160deg, #FF8C42 0%, #C71F8E 60%, #6B0F8E 100%)',
+        bg: 'linear-gradient(160deg, #3a0a6a 0%, #C71F8E 50%, #FF8C42 100%)',
         content: (
-          <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-            <div className="text-7xl mb-4" style={{ filter: 'drop-shadow(0 4px 16px rgba(255,215,0,0.6))' }}>🪨</div>
-            <h1 className="text-4xl font-black text-white mb-2" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.35)' }}>
-              石モン図鑑
-            </h1>
-            <div className="text-yellow-200 text-xs font-bold tracking-widest mb-6 opacity-90">STONE MONSTER COLLECTION</div>
-            <div className="bg-black/30 rounded-2xl px-5 py-4 mb-3 max-w-xs" style={{ border: '1.5px solid rgba(255,255,255,0.3)' }}>
-              <div className="text-white font-black text-lg leading-snug mb-2">
-                石の写真を撮ると<br/>世界に1体の石モンが生まれる
+          <div className="flex flex-col items-center justify-center h-full px-5 text-center">
+            <h1 className="text-4xl font-black text-white mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.35)' }}>石モン図鑑</h1>
+            <div className="text-yellow-200 text-[10px] font-bold tracking-widest mb-3 opacity-80">STONE MONSTER COLLECTION</div>
+            <div className="text-white font-black text-base leading-snug mb-4">
+              石の写真を撮ると<br/>
+              <span className="text-yellow-200 text-xl">世界に1体の石モンが生まれる</span>
+            </div>
+            {/* 石モンイラスト2体（SVG） */}
+            <div className="flex items-end justify-center gap-4 mb-4">
+              {/* ドラゴンタイプ */}
+              <div className="flex flex-col items-center">
+                <svg width="88" height="96" viewBox="0 0 88 96" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="44" cy="88" rx="28" ry="7" fill="rgba(0,0,0,0.3)"/>
+                  {/* 翼 */}
+                  <path d="M14,52 Q4,30 10,20 Q20,36 26,48Z" fill="#7B2CBF" opacity="0.9"/>
+                  <path d="M74,52 Q84,30 78,20 Q68,36 62,48Z" fill="#7B2CBF" opacity="0.9"/>
+                  {/* 体 */}
+                  <ellipse cx="44" cy="62" rx="22" ry="26" fill="#9D4EDD"/>
+                  <ellipse cx="44" cy="58" rx="18" ry="22" fill="#C77DFF"/>
+                  {/* 頭 */}
+                  <circle cx="44" cy="36" r="22" fill="#9D4EDD"/>
+                  <circle cx="44" cy="34" r="18" fill="#C77DFF"/>
+                  {/* 角 */}
+                  <polygon points="36,16 33,4 39,14" fill="#FFD700"/>
+                  <polygon points="52,16 55,4 49,14" fill="#FFD700"/>
+                  {/* 目 */}
+                  <circle cx="37" cy="33" r="5" fill="white"/>
+                  <circle cx="51" cy="33" r="5" fill="white"/>
+                  <circle cx="38" cy="33" r="3" fill="#1a0a3a"/>
+                  <circle cx="52" cy="33" r="3" fill="#1a0a3a"/>
+                  <circle cx="39" cy="32" r="1" fill="white"/>
+                  <circle cx="53" cy="32" r="1" fill="white"/>
+                  {/* 口 */}
+                  <path d="M39,42 Q44,47 49,42" stroke="#7B2CBF" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                  {/* キラキラ */}
+                  <text x="68" y="20" fontSize="12" fill="#FFD700">✦</text>
+                  <text x="10" y="28" fontSize="8" fill="#E0AEFF">✦</text>
+                </svg>
+                <div className="text-purple-200 text-[9px] font-black mt-1">🐉 ドラゴン</div>
               </div>
-              <div className="text-yellow-200 text-sm font-bold">キミだけの冒険と思い出を集めよう！</div>
-            </div>
-            <div className="text-white/50 text-xs font-bold mt-2">← スワイプして詳しく見る →</div>
-          </div>
-        ),
-      },
-      // スライド2: 撮影体験
-      {
-        bg: 'linear-gradient(160deg, #0a2a0a 0%, #1a4a1a 40%, #0a1a2a 100%)',
-        content: (
-          <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-            <div className="text-6xl mb-3">📸</div>
-            <div className="text-yellow-300 text-[11px] font-black tracking-widest mb-2">STEP 1</div>
-            <h2 className="text-2xl font-black text-white mb-2" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>
-              石を見つけて撮影
-            </h2>
-            <div className="text-white/80 text-sm font-bold leading-relaxed mb-5 max-w-xs">
-              旅行先・近所の公園・友達と遊んだ場所…<br/>どこで見つけた石でもOK！
-            </div>
-            <div className="space-y-2 w-full max-w-xs">
-              {[
-                { e: '🏖️', t: '海辺で拾った石' },
-                { e: '⛰️', t: '山で見つけた岩' },
-                { e: '💎', t: '宝石探しゲームの石' },
-                { e: '🌳', t: '公園の石ころ' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl px-3 py-2"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                  <span className="text-xl">{item.e}</span>
-                  <span className="text-white font-bold text-sm">{item.t}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-xl px-3 py-2 flex items-center gap-2 max-w-xs"
-              style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)' }}>
-              <span className="text-sm">🌿</span>
-              <div className="text-yellow-200 text-[10px] font-bold text-left leading-tight">
-                <span className="font-black">石はその場所に残してあげよう。</span><br/>
-                思い出は石モンと一緒に持ち帰ろう！
+              {/* 火タイプ */}
+              <div className="flex flex-col items-center">
+                <svg width="72" height="80" viewBox="0 0 72 80" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="36" cy="74" rx="22" ry="5" fill="rgba(0,0,0,0.3)"/>
+                  {/* 炎の後光 */}
+                  <ellipse cx="36" cy="40" rx="26" ry="28" fill="#FF6B35" opacity="0.4"/>
+                  {/* 体 */}
+                  <ellipse cx="36" cy="54" rx="17" ry="20" fill="#FF6B35"/>
+                  <ellipse cx="36" cy="51" rx="13" ry="16" fill="#FF8C42"/>
+                  {/* 頭 */}
+                  <circle cx="36" cy="30" r="18" fill="#FF6B35"/>
+                  <circle cx="36" cy="28" r="14" fill="#FFAA00"/>
+                  {/* 炎の頭頂 */}
+                  <path d="M28,16 Q32,4 36,12 Q40,4 44,16" fill="#FF4500" opacity="0.8"/>
+                  {/* 目 */}
+                  <circle cx="30" cy="27" r="4" fill="white"/>
+                  <circle cx="42" cy="27" r="4" fill="white"/>
+                  <circle cx="31" cy="27" r="2.5" fill="#5a0000"/>
+                  <circle cx="43" cy="27" r="2.5" fill="#5a0000"/>
+                  <circle cx="32" cy="26" r="0.8" fill="white"/>
+                  <circle cx="44" cy="26" r="0.8" fill="white"/>
+                  {/* ほっぺ */}
+                  <circle cx="25" cy="32" r="3" fill="#FF4500" opacity="0.5"/>
+                  <circle cx="47" cy="32" r="3" fill="#FF4500" opacity="0.5"/>
+                  {/* キラキラ */}
+                  <text x="54" y="16" fontSize="10" fill="#FFD700">✦</text>
+                </svg>
+                <div className="text-orange-200 text-[9px] font-black mt-1">🔥 ファイア</div>
               </div>
             </div>
+            <div className="text-white/60 text-xs font-bold flex items-center gap-2">
+              <span>←</span><span>スワイプして見る</span><span>→</span>
+            </div>
           </div>
         ),
       },
-      // スライド3: AI変換
+      // スライド2: 撮影（SVGイラスト）
       {
-        bg: 'linear-gradient(160deg, #1a0a3a 0%, #3a0a6a 50%, #0a0a2a 100%)',
+        bg: 'linear-gradient(160deg, #062a06 0%, #0d3a0d 50%, #061a26 100%)',
         content: (
-          <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-            <div className="text-6xl mb-3">🎨</div>
-            <div className="text-purple-300 text-[11px] font-black tracking-widest mb-2">STEP 2</div>
-            <h2 className="text-2xl font-black text-white mb-2" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>
-              AIが石モンに変換！
-            </h2>
-            <div className="text-white/80 text-sm font-bold leading-relaxed mb-5 max-w-xs">
-              石の色・形・質感からAIが自動で<br/>世界に1体だけのキャラクターを生成！<br/>
-              <span className="text-purple-300">同じ石でも毎回違う石モンが誕生✨</span>
+          <div className="flex flex-col items-center justify-center h-full px-5 text-center">
+            <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-1">STEP 1</div>
+            <h2 className="text-2xl font-black text-white mb-2" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>石を見つけて撮影</h2>
+            <div className="text-white/75 text-sm font-bold leading-relaxed mb-4">
+              旅行先・公園・友達と遊んだ場所…<br/>どこで見つけた石でもOK！
             </div>
-            <div className="flex gap-3 mb-4">
-              {['🪨','→','🐉'].map((e, i) => (
-                <div key={i} className="text-4xl font-black text-white"
-                  style={{ textShadow: i === 2 ? '0 0 20px rgba(199,125,255,0.8)' : 'none' }}>{e}</div>
+            {/* 撮影イラスト（SVG） */}
+            <svg width="220" height="160" viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg">
+              {/* 地面 */}
+              <ellipse cx="110" cy="148" rx="90" ry="10" fill="#0a1a08" opacity="0.6"/>
+              {/* 草 */}
+              {[30,55,80,140,165,190].map((x,i) => (
+                <g key={i}>
+                  <line x1={x} y1="138" x2={x-4} y2="126" stroke="#2d6a2d" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1={x} y1="138" x2={x+4} y2="124" stroke="#3a8a3a" strokeWidth="2" strokeLinecap="round"/>
+                </g>
               ))}
-            </div>
-            <div className="space-y-2 w-full max-w-xs">
-              {[
-                '赤い石 → 火タイプの石モン',
-                '青い石 → 水タイプの石モン',
-                'キラキラした石 → 精霊タイプ',
-              ].map((t, i) => (
-                <div key={i} className="rounded-xl px-3 py-2 text-sm font-bold text-white/90"
-                  style={{ background: 'rgba(199,125,255,0.15)', border: '1px solid rgba(199,125,255,0.3)' }}>
-                  {t}
-                </div>
-              ))}
+              {/* 石ころたち */}
+              <ellipse cx="75" cy="138" rx="14" ry="9" fill="#8a7a6a"/>
+              <ellipse cx="75" cy="136" rx="12" ry="7" fill="#a8987a"/>
+              <ellipse cx="95" cy="140" rx="9" ry="6" fill="#6a8a7a"/>
+              <ellipse cx="95" cy="138" rx="7" ry="4" fill="#8aaa9a"/>
+              <ellipse cx="145" cy="139" rx="11" ry="7" fill="#9a6a5a"/>
+              <ellipse cx="145" cy="137" rx="9" ry="5" fill="#ba8a7a"/>
+              {/* きらめく石（特別な石） */}
+              <ellipse cx="112" cy="136" rx="13" ry="8" fill="#4a3a7a"/>
+              <ellipse cx="112" cy="134" rx="11" ry="6" fill="#7a5aaa"/>
+              <text x="106" y="128" fontSize="10" fill="#FFD700" opacity="0.8">✦</text>
+              <text x="116" y="126" fontSize="7" fill="#E0AEFF" opacity="0.9">✦</text>
+              {/* スマホ（手に持っている） */}
+              <rect x="72" y="42" width="76" height="88" rx="10" fill="#1a1a2a" opacity="0.95"/>
+              <rect x="76" y="46" width="68" height="80" rx="7" fill="#2a2a4a"/>
+              {/* カメラプレビュー */}
+              <rect x="78" y="48" width="64" height="60" rx="5" fill="#0a1a0a"/>
+              {/* プレビュー内: 草と石 */}
+              <rect x="78" y="88" width="64" height="20" rx="0" fill="#0d280d"/>
+              <ellipse cx="105" cy="100" rx="8" ry="5" fill="#5a4a8a"/>
+              <ellipse cx="105" cy="98" rx="6" ry="3.5" fill="#8a6acc"/>
+              <text x="100" y="95" fontSize="6" fill="#FFD700">✦</text>
+              {/* フォーカス枠 */}
+              <rect x="94" y="60" width="32" height="32" rx="2" fill="none" stroke="#FFD700" strokeWidth="1.5" strokeDasharray="4,3"/>
+              {/* カメラUI */}
+              <circle cx="110" cy="116" r="8" fill="none" stroke="white" strokeWidth="1.5" opacity="0.6"/>
+              <circle cx="110" cy="116" r="5" fill="white" opacity="0.3"/>
+              {/* シャッターボタン */}
+              <rect x="82" y="122" width="56" height="8" rx="4" fill="rgba(255,255,255,0.1)"/>
+              <circle cx="110" cy="126" r="5" fill="white" opacity="0.8"/>
+            </svg>
+            <div className="text-yellow-300 text-xs font-bold mt-2">
+              🌿 石はその場所に残してあげよう
             </div>
           </div>
         ),
       },
-      // スライド4: バトル・育成
+      // スライド3: AI変換（大きなビジュアル）
       {
-        bg: 'linear-gradient(160deg, #1a0a00 0%, #3a1800 50%, #0a0510 100%)',
+        bg: 'linear-gradient(160deg, #0a0520 0%, #2a0a5a 50%, #0a0a20 100%)',
         content: (
-          <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-            <div className="text-6xl mb-3">⚔️</div>
-            <div className="text-orange-300 text-[11px] font-black tracking-widest mb-2">STEP 3</div>
-            <h2 className="text-2xl font-black text-white mb-2" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>
-              育てて・バトルして・進化！
-            </h2>
-            <div className="text-white/80 text-sm font-bold leading-relaxed mb-4 max-w-xs">
-              集めた石モンを育てて強くしよう。<br/>バトルに勝って経験値を稼ごう！
+          <div className="flex flex-col items-center justify-center h-full px-5 text-center">
+            <div className="text-purple-300 text-[10px] font-black tracking-widest mb-1">STEP 2</div>
+            <h2 className="text-2xl font-black text-white mb-1" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>AIが石モンに変換！</h2>
+            <div className="text-white/70 text-sm font-bold mb-4">同じ石でも毎回違う石モンが誕生✨</div>
+            {/* 変換ビジュアル（SVG大） */}
+            <svg width="260" height="130" viewBox="0 0 260 130" xmlns="http://www.w3.org/2000/svg">
+              {/* 石 */}
+              <g>
+                <ellipse cx="45" cy="80" rx="34" ry="22" fill="#5a5070"/>
+                <ellipse cx="45" cy="75" rx="30" ry="18" fill="#7a6a9a"/>
+                <ellipse cx="38" cy="68" rx="10" ry="6" fill="#9a8aba" opacity="0.5"/>
+                <ellipse cx="55" cy="78" rx="7" ry="4" fill="#9a8aba" opacity="0.3"/>
+                {/* 石のテクスチャ */}
+                <line x1="32" y1="70" x2="44" y2="68" stroke="#5a4a7a" strokeWidth="1.5" opacity="0.5"/>
+                <line x1="46" y1="74" x2="58" y2="76" stroke="#5a4a7a" strokeWidth="1" opacity="0.4"/>
+                <text x="28" y="58" fontSize="10" fill="#C77DFF" opacity="0.6">✦</text>
+              </g>
+              {/* 矢印・変換エフェクト */}
+              <g>
+                {[0,1,2,3,4].map(i => (
+                  <circle key={i} cx={105 + i*12} cy={75} r="3" fill="#FFD700" opacity={0.3 + i*0.15}/>
+                ))}
+                <path d="M100,68 L160,68 L155,60 M160,68 L155,76" stroke="#FFD700" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                <text x="112" y="62" fontSize="9" fill="#FFD700" fontWeight="bold">AI✨</text>
+              </g>
+              {/* 石モン（完成） */}
+              <g>
+                {/* グロー */}
+                <circle cx="215" cy="65" r="40" fill="#9D4EDD" opacity="0.15"/>
+                {/* 体 */}
+                <ellipse cx="215" cy="90" rx="20" ry="25" fill="#7B2CBF"/>
+                <ellipse cx="215" cy="86" rx="16" ry="20" fill="#C77DFF"/>
+                {/* 頭 */}
+                <circle cx="215" cy="55" r="24" fill="#7B2CBF"/>
+                <circle cx="215" cy="53" r="19" fill="#C77DFF"/>
+                {/* 角 */}
+                <polygon points="207,34 204,20 211,33" fill="#FFD700"/>
+                <polygon points="223,34 226,20 219,33" fill="#FFD700"/>
+                {/* 翼 */}
+                <path d="M196,72 Q182,55 188,44 Q198,58 202,68Z" fill="#6a1fa8" opacity="0.85"/>
+                <path d="M234,72 Q248,55 242,44 Q232,58 228,68Z" fill="#6a1fa8" opacity="0.85"/>
+                {/* 目 */}
+                <circle cx="208" cy="52" r="5" fill="white"/>
+                <circle cx="222" cy="52" r="5" fill="white"/>
+                <circle cx="209" cy="52" r="3" fill="#1a0a3a"/>
+                <circle cx="223" cy="52" r="3" fill="#1a0a3a"/>
+                <circle cx="210" cy="51" r="1" fill="white"/>
+                <circle cx="224" cy="51" r="1" fill="white"/>
+                {/* キラキラ */}
+                <text x="238" y="30" fontSize="12" fill="#FFD700">✦</text>
+                <text x="188" y="25" fontSize="8" fill="#E0AEFF">✦</text>
+                <text x="244" y="50" fontSize="7" fill="#FFD700">✦</text>
+              </g>
+            </svg>
+            <div className="text-purple-200 text-sm font-bold mt-2">石の個性がそのままキャラクターに！</div>
+          </div>
+        ),
+      },
+      // スライド4: 図鑑・バトル・進化（SVGイラスト）
+      {
+        bg: 'linear-gradient(160deg, #1a0800 0%, #2a1200 50%, #0a0510 100%)',
+        content: (
+          <div className="flex flex-col items-center justify-center h-full px-5 text-center">
+            <div className="text-orange-300 text-[10px] font-black tracking-widest mb-1">STEP 3</div>
+            <h2 className="text-2xl font-black text-white mb-3" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>育てて・バトル・進化！</h2>
+            <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
+              {/* 図鑑 */}
+              <div className="flex flex-col items-center">
+                <svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="8" y="6" width="56" height="60" rx="6" fill="#1565C0"/>
+                  <rect x="12" y="10" width="48" height="52" rx="4" fill="#1976D2"/>
+                  {/* 石モンカード×4 */}
+                  {[[14,14],[38,14],[14,38],[38,38]].map(([x,y],i) => (
+                    <g key={i}>
+                      <rect x={x} y={y} width="20" height="20" rx="3" fill={['#7B2CBF','#FF6B35','#3DA5F5','#52B788'][i]} opacity="0.9"/>
+                      <text x={x+6} y={y+14} fontSize="10">{['🐉','🔥','💧','🌿'][i]}</text>
+                    </g>
+                  ))}
+                </svg>
+                <div className="text-orange-200 text-[10px] font-black mt-1">図鑑</div>
+              </div>
+              {/* バトル */}
+              <div className="flex flex-col items-center">
+                <svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+                  {/* 左モン */}
+                  <circle cx="20" cy="38" r="14" fill="#C77DFF" opacity="0.9"/>
+                  <circle cx="20" cy="36" r="11" fill="#E0AEFF"/>
+                  <circle cx="16" cy="34" r="2.5" fill="#1a0a3a"/>
+                  <circle cx="24" cy="34" r="2.5" fill="#1a0a3a"/>
+                  {/* 右モン（敵・色違い） */}
+                  <circle cx="52" cy="38" r="14" fill="#FF4444" opacity="0.9"/>
+                  <circle cx="52" cy="36" r="11" fill="#FF8888"/>
+                  <circle cx="48" cy="34" r="2.5" fill="#1a0a0a"/>
+                  <circle cx="56" cy="34" r="2.5" fill="#1a0a0a"/>
+                  {/* VS */}
+                  <text x="28" y="42" fontSize="14" fontWeight="900" fill="#FFD700">VS</text>
+                  {/* 衝突エフェクト */}
+                  {[[36,14],[28,20],[44,18]].map(([x,y],i) => (
+                    <line key={i} x1={x-5} y1={y} x2={x+5} y2={y+8} stroke="#FFD700" strokeWidth="2" strokeLinecap="round"/>
+                  ))}
+                </svg>
+                <div className="text-orange-200 text-[10px] font-black mt-1">バトル</div>
+              </div>
+              {/* 進化 */}
+              <div className="flex flex-col items-center">
+                <svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+                  {/* 進化前（小） */}
+                  <circle cx="18" cy="50" r="12" fill="#52B788" opacity="0.9"/>
+                  <circle cx="18" cy="48" r="9" fill="#74C69D"/>
+                  <circle cx="15" cy="46" r="2" fill="#1a2a1a"/>
+                  <circle cx="21" cy="46" r="2" fill="#1a2a1a"/>
+                  {/* 矢印 */}
+                  <path d="M32,46 L42,46 L39,42 M42,46 L39,50" stroke="#FFD700" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                  {/* 進化後（大・輝く） */}
+                  <circle cx="56" cy="44" r="16" fill="#FFD700" opacity="0.15"/>
+                  <circle cx="56" cy="44" r="13" fill="#40916C" opacity="0.9"/>
+                  <circle cx="56" cy="42" r="10" fill="#74C69D"/>
+                  <circle cx="52" cy="40" r="2.5" fill="#1a2a1a"/>
+                  <circle cx="60" cy="40" r="2.5" fill="#1a2a1a"/>
+                  {/* 王冠 */}
+                  <polygon points="50,30 52,22 56,28 60,22 62,30" fill="#FFD700"/>
+                  <text x="48" y="20" fontSize="8" fill="#FFD700">✦</text>
+                </svg>
+                <div className="text-orange-200 text-[10px] font-black mt-1">進化</div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 w-full max-w-xs mb-4">
-              {[
-                { e: '⚔️', t: 'バトル', d: '野生の石モンと対決' },
-                { e: '🦋', t: '進化', d: '石モンが強く変身' },
-                { e: '🎴', t: 'ガチャ', d: 'レア石モンを引こう' },
-                { e: '🏆', t: '称号', d: '実績を達成しよう' },
-              ].map((item, i) => (
-                <div key={i} className="rounded-xl p-2.5 text-center"
-                  style={{ background: 'rgba(255,140,66,0.15)', border: '1px solid rgba(255,140,66,0.3)' }}>
-                  <div className="text-2xl mb-0.5">{item.e}</div>
-                  <div className="text-white font-black text-xs">{item.t}</div>
-                  <div className="text-white/60 text-[9px] font-bold">{item.d}</div>
-                </div>
-              ))}
-            </div>
-            <div className="text-white/60 text-[10px] font-bold">
-              思い出の石モン図鑑を完成させよう！
+            <div className="text-white/70 text-sm font-bold mt-4 leading-relaxed">
+              石モンを育てて、バトルで経験を積み<br/>進化で最強を目指そう！
             </div>
           </div>
         ),
       },
-      // スライド5: 名前入力
+      // スライド5: 名前入力 + Googleログイン
       {
         bg: 'linear-gradient(160deg, #0D47A1 0%, #1565C0 50%, #0a0a2a 100%)',
         content: (
-          <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-            <div className="inline-block bg-yellow-400 rounded-full p-4 mb-3">
-              <User className="w-10 h-10 text-yellow-900" strokeWidth={3} />
-            </div>
+          <div className="flex flex-col items-center justify-center h-full px-5 text-center">
+            <div className="text-5xl mb-2">🪨✨</div>
             <h2 className="text-2xl font-black text-white mb-1">さあ、冒険を始めよう！</h2>
-            <p className="text-white/80 text-sm font-bold mb-5 leading-relaxed">
-              あなたの名前を教えてください<br/>
-              <span className="text-white/50 text-xs">（後で変更できます）</span>
-            </p>
+            <p className="text-white/70 text-xs font-bold mb-4">名前は後で変更できます</p>
             <input
               ref={onboardingNameRef}
               defaultValue=""
               maxLength={8}
               placeholder="名前を入力（8文字まで）"
-              className="w-full max-w-xs rounded-xl px-4 py-3 text-center font-black text-gray-800 text-lg mb-5"
+              className="w-full max-w-xs rounded-xl px-4 py-3 text-center font-black text-gray-800 text-base mb-3"
               style={{ border: '3px solid #FFD700', outline: 'none' }}
               onKeyDown={e => e.key === 'Enter' && finishOnboarding(false)}
             />
             <button onClick={() => finishOnboarding(false)}
-              className="w-full max-w-xs py-4 rounded-2xl text-white font-black text-lg active:scale-95"
+              className="w-full max-w-xs py-3.5 rounded-2xl text-white font-black text-base active:scale-95 mb-3"
               style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 5px 0 #5A1A4A', border: '3px solid white' }}>
               石モン図鑑を始める！
+            </button>
+            {/* Googleログインも誘導 */}
+            <div className="text-white/50 text-[10px] font-bold mb-2">またはGoogleでログインして始める</div>
+            <button onClick={async () => { finishOnboarding(false); setTimeout(signInWithGoogle, 300); }}
+              className="w-full max-w-xs py-3 rounded-xl font-black text-sm active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: 'white', color: '#333' }}>
+              <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 01-7.18-2.54H1.83v2.07A8 8 0 008.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 010-3.04V5.41H1.83a8 8 0 000 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 001.83 5.4L4.5 7.49a4.77 4.77 0 014.48-3.31z"/></svg>
+              Googleでログイン
             </button>
           </div>
         ),
@@ -3529,18 +3679,15 @@ function IshimonZukan() {
 
     return (
       <div className="fixed inset-0 z-[90] flex flex-col overflow-hidden"
-        style={{ background: slides[slideIdx].bg, transition: 'background 0.4s ease' }}>
+        style={{ background: slides[slideIdx].bg, transition: 'background 0.5s ease' }}>
 
-        {/* スライドエリア（上下に固定余白） */}
+        {/* スライドエリア */}
         <div className="flex-1 min-h-0 relative overflow-hidden"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}>
-
-          {/* スライドコンテンツ */}
           <div className="absolute inset-0 overflow-hidden">
-            <div ref={sliderRef}
-              className="flex h-full transition-transform duration-350"
-              style={{ transform: `translateX(${-slideIdx * 100}%)`, transitionTimingFunction: 'cubic-bezier(.4,0,.2,1)' }}>
+            <div className="flex h-full"
+              style={{ transform: `translateX(${-slideIdx * 100}%)`, transition: 'transform 0.35s cubic-bezier(.4,0,.2,1)' }}>
               {slides.map((s, i) => (
                 <div key={i} className="flex-shrink-0 w-full h-full" style={{ width: '100%' }}>
                   {s.content}
@@ -3548,50 +3695,40 @@ function IshimonZukan() {
               ))}
             </div>
           </div>
+          {/* 左右スワイプヒント（最初のスライドのみ） */}
+          {slideIdx === 0 && (
+            <div className="absolute inset-y-0 right-0 w-8 flex items-center justify-center pointer-events-none">
+              <div className="text-white/30 text-xl animate-pulse">›</div>
+            </div>
+          )}
         </div>
 
         {/* 下部固定エリア */}
-        <div className="flex-shrink-0 px-5 pb-8 pt-3"
-          style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 32px))' }}>
+        <div className="flex-shrink-0 px-5 pb-safe pt-3"
+          style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom, 24px))' }}>
 
-          {/* ドットインジケーター */}
-          <div className="flex justify-center gap-2 mb-4">
-            {slides.map((_, i) => (
-              <button key={i} onClick={() => setSlideIdx(i)}
-                className="rounded-full transition-all duration-200"
-                style={{
-                  width: i === slideIdx ? '20px' : '8px',
-                  height: '8px',
-                  background: i === slideIdx ? '#FFD700' : 'rgba(255,255,255,0.35)',
-                }} />
-            ))}
+          {/* n/N インジケーター + ドット */}
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="flex gap-1.5 items-center">
+              {slides.map((_, i) => (
+                <button key={i} onClick={() => setSlideIdx(i)}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === slideIdx ? '24px' : '7px',
+                    height: '7px',
+                    background: i === slideIdx ? '#FFD700' : 'rgba(255,255,255,0.3)',
+                  }} />
+              ))}
+            </div>
+            <div className="text-white/50 text-[10px] font-black">{slideIdx + 1}/{totalSlides}</div>
           </div>
 
-          {/* 「今すぐ石モンをつくる」ボタン（常時表示） */}
+          {/* 「今すぐ石モンをつくる」- 小さめ */}
           <button onClick={skipToPlay}
-            className="w-full py-4 rounded-2xl text-white font-black text-base active:scale-95 mb-2"
-            style={{
-              background: 'linear-gradient(135deg, #FF8C42, #C71F8E)',
-              boxShadow: '0 5px 0 rgba(0,0,0,0.4)',
-              border: '3px solid rgba(255,255,255,0.6)',
-            }}>
-            🪨 今すぐ石モンをつくる！
+            className="w-full py-2.5 rounded-xl text-white/85 font-black text-sm active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)' }}>
+            今すぐ石モンをつくる →
           </button>
-
-          {/* 次へ / 説明を読む */}
-          {slideIdx < totalSlides - 1 ? (
-            <button onClick={() => setSlideIdx(i => i + 1)}
-              className="w-full py-2.5 rounded-2xl text-white/70 font-black text-sm active:scale-95"
-              style={{ background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)' }}>
-              次へ → ({slideIdx + 1}/{totalSlides - 1})
-            </button>
-          ) : (
-            <button onClick={() => finishOnboarding(false)}
-              className="w-full py-2.5 rounded-2xl text-white/70 font-black text-sm active:scale-95"
-              style={{ background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)' }}>
-              ← 戻る
-            </button>
-          )}
         </div>
       </div>
     );
