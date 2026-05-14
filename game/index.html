@@ -77,7 +77,17 @@ window.storage = {
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
 // アプリバージョン（設定画面・キャッシュバスト等で使用）
-const APP_VERSION = '1.5.1';
+const APP_VERSION = '1.5.2';
+
+// ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCvKcODF_Ge72avPgVERLGm-lw7ksMQrlg",
+  authDomain: "ishimonzukan.firebaseapp.com",
+  projectId: "ishimonzukan",
+  storageBucket: "ishimonzukan.firebasestorage.app",
+  messagingSenderId: "701083198465",
+  appId: "1:701083198465:web:9f81c6476394ba867d4c00"
+};
 
 // lucide-react のアイコンを絵文字で代替
 const makeIcon = (emoji) => ({ className, strokeWidth, ...props }) =>
@@ -297,15 +307,16 @@ const buildMonPrompt = (mon, options = {}) => {
     'cute monster character, original mascot design',
     'Bikkuriman sticker style mixed with Digimon anime style',
     'cel-shaded illustration with thick black outlines',
-    'big shiny anime eyes with two highlight dots, both eyes same color',
+    'exactly two eyes only, big shiny anime eyes with two highlight dots, both eyes same color, symmetrical face',
     typeMap[mon.type] || typeMap['土'],
     stageMap[mon.stage] || stageMap[1],
     rarityMap[mon.rarity] || rarityMap[1],
     `${timeOfDay} atmosphere`,
     'centered front-facing pose, full body visible',
     'gradient background, magical particles',
-    'high quality, vibrant colors, kid-friendly',
-    'no text, no logos, no watermark, no humans',
+    'high quality, vibrant colors, kid-friendly, family-safe, all ages',
+    'no text, no logos, no watermark, no humans, no extra eyes, no multiple faces',
+    'safe for children, no violence, no blood, no weapons, no scary expressions, no sexual content, no nudity, no adult themes',
   ];
 
   return parts.filter(Boolean).join(', ');
@@ -1691,10 +1702,19 @@ function IshimonZukan() {
   // ===== AI画像で再生成（既存の石モンの絵柄を変える、キャッシュ更新）=====
   const regenerateMonImage = async (mon) => {
     setAiGenerating(true);
+    let timedOut = false;
+    // 90秒タイムアウト
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      setAiGenerating(false);
+      setError('AI生成がタイムアウトしました。スキップするか後で再試行してください');
+    }, 90000);
     try {
       const prompt = buildMonPrompt(mon);
       // 強制的に新しいseedで生成（既存キャッシュは新画像で上書き）
       const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
+      if (timedOut) return; // タイムアウト後は無視
+      clearTimeout(timeoutId);
       if (aiImage) {
         await saveCachedImage(mon, aiImage); // キャッシュも更新
         const updated = collection.map(c => c.id === mon.id ? { ...c, imageDataUrl: aiImage } : c);
@@ -1706,10 +1726,10 @@ function IshimonZukan() {
         setError('AI生成に失敗しました。15秒後に再度お試しください');
       }
     } catch (e) {
-      console.error(e);
-      setError('AI生成エラー');
+      clearTimeout(timeoutId);
+      if (!timedOut) setError('AI生成エラー');
     } finally {
-      setAiGenerating(false);
+      if (!timedOut) setAiGenerating(false);
     }
   };
 
@@ -3159,38 +3179,70 @@ function IshimonZukan() {
         <div className="w-full max-w-md my-4">
           {/* ステップ0: ようこそ */}
           {onboardingStep === 0 && (
-            <div className="rounded-3xl p-6 text-center"
-              style={{ background: 'linear-gradient(135deg, #FF8C42, #C71F8E)', border: '4px solid #FFD700', boxShadow: '0 0 60px rgba(255,215,0,0.4)' }}>
-              <div className="text-7xl mb-3">🪨✨</div>
-              <h1 className="text-4xl font-black text-white mb-2"
-                style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
-                石モン図鑑
-              </h1>
-              <div className="text-yellow-200 text-sm font-bold mb-4 tracking-widest">STONE MONSTER COLLECTION</div>
-              <div className="bg-black/30 rounded-2xl p-4 mb-4 text-white text-left text-sm font-bold space-y-2"
-                style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
-                <div className="flex items-start gap-2">
-                  <span className="text-2xl">📸</span>
-                  <span>身近な石を撮影すると AIが石モンに変えてくれる</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-2xl">⚔️</span>
-                  <span>育ててバトルし、進化させて強くしよう</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-2xl">🎴</span>
-                  <span>ガチャや装備でコレクションを充実！</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-2xl">🎨</span>
-                  <span>AIが世界に1つだけのオリジナル石モンを描く</span>
+            <div className="rounded-3xl overflow-hidden"
+              style={{ border: '4px solid #FFD700', boxShadow: '0 0 60px rgba(255,215,0,0.4)' }}>
+              {/* ヘッダー */}
+              <div className="px-6 pt-7 pb-5 text-center"
+                style={{ background: 'linear-gradient(135deg, #FF8C42, #C71F8E)' }}>
+                <div className="text-6xl mb-2">🪨✨</div>
+                <h1 className="text-3xl font-black text-white leading-tight mb-1"
+                  style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>
+                  石モン図鑑
+                </h1>
+                <div className="text-yellow-100 text-xs font-bold tracking-widest mb-3 opacity-90">STONE MONSTER COLLECTION</div>
+                {/* キャッチコピー */}
+                <div className="bg-black/25 rounded-2xl px-4 py-3" style={{ border: '1px solid rgba(255,255,255,0.25)' }}>
+                  <div className="text-white font-black text-base leading-snug mb-1">
+                    石の写真を撮ると<br/>世界に1体の石モンが生まれる
+                  </div>
+                  <div className="text-yellow-200 text-xs font-bold">キミだけの冒険と思い出を集めよう！</div>
                 </div>
               </div>
-              <button onClick={() => setOnboardingStep(1)}
-                className="w-full py-4 rounded-2xl text-white font-black text-lg active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 5px 0 #5A1A4A', border: '3px solid white' }}>
-                始める →
-              </button>
+
+              {/* 説明 */}
+              <div className="px-5 py-4" style={{ background: 'linear-gradient(180deg, #1a0a3a, #0a0a1a)' }}>
+                <div className="text-white/70 text-[10px] font-black tracking-widest text-center mb-3">どんなゲーム？</div>
+                <div className="space-y-2.5 mb-4">
+                  <div className="flex items-center gap-3 bg-white/8 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                    <span className="text-2xl flex-shrink-0">📍</span>
+                    <div>
+                      <div className="text-white font-black text-sm leading-tight">旅先や公園で石を見つけて撮影</div>
+                      <div className="text-white/60 text-[10px] font-bold mt-0.5">その場所の思い出が石モンとして図鑑に残る</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                    <span className="text-2xl flex-shrink-0">🎨</span>
+                    <div>
+                      <div className="text-white font-black text-sm leading-tight">AIが世界に1体のキャラに変換</div>
+                      <div className="text-white/60 text-[10px] font-bold mt-0.5">同じ石でも毎回違う石モンが誕生！</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                    <span className="text-2xl flex-shrink-0">⚔️</span>
+                    <div>
+                      <div className="text-white font-black text-sm leading-tight">育てて・バトルして・進化させよう</div>
+                      <div className="text-white/60 text-[10px] font-bold mt-0.5">ガチャや装備でコレクションを充実！</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 石は持ち帰らない注意 */}
+                <div className="rounded-xl px-3 py-2 mb-4 flex items-start gap-2"
+                  style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.35)' }}>
+                  <span className="text-base flex-shrink-0 mt-0.5">🌿</span>
+                  <div className="text-yellow-200 text-[10px] font-bold leading-relaxed">
+                    <span className="font-black">石はその場所に残してあげよう。</span><br/>
+                    思い出は石モンと一緒に持ち帰ろう！<br/>
+                    <span className="text-white/50">自然の石は大切に。持ち帰るのはやめよう。</span>
+                  </div>
+                </div>
+
+                <button onClick={() => setOnboardingStep(1)}
+                  className="w-full py-4 rounded-2xl text-white font-black text-lg active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 5px 0 #5A1A4A', border: '3px solid white' }}>
+                  冒険を始める →
+                </button>
+              </div>
             </div>
           )}
 
@@ -3739,6 +3791,15 @@ function IshimonZukan() {
 
         <div className="text-white/40 text-[10px] font-bold mt-4">
           AIが世界に1つだけの石モンを描いています...
+        </div>
+
+        {/* 石は持ち帰らない注意（生成中に自然に読んでもらう） */}
+        <div className="mt-4 px-4 py-2 rounded-xl text-center max-w-xs"
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}>
+          <div className="text-white/60 text-[10px] font-bold leading-relaxed">
+            🪨 石はその場所に残してあげよう<br/>
+            思い出は石モンと一緒に持ち帰ろう！
+          </div>
         </div>
 
         <style>{`
@@ -5210,7 +5271,12 @@ function IshimonZukan() {
           <div className="mt-6 text-yellow-300 font-black text-xl" style={{ textShadow: '0 0 20px #FFAA00' }}>
             AIが 描いています...
           </div>
-          <div className="text-white/70 text-xs font-bold mt-1">5〜15びょう くらい かかるよ</div>
+          <div className="text-white/70 text-xs font-bold mt-1">5〜90びょう かかることがあります</div>
+          <button onClick={() => setAiGenerating(false)}
+            className="mt-6 px-6 py-2 rounded-full text-white/80 font-black text-sm active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>
+            スキップ（後で再生成できます）
+          </button>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
