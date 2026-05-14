@@ -5417,6 +5417,22 @@ function IshimonZukan() {
           )}
         </div>
 
+        {/* タイトル画面 */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🪨 タイトル画面</div>
+          <button
+            onClick={() => { setShowOnboarding(true); setView('home'); }}
+            className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3"
+            style={{ background: 'linear-gradient(135deg, #FF8C42, #C71F8E)', boxShadow: '0 4px 0 #5A1A4A', border: '2px solid rgba(255,255,255,0.4)' }}>
+            <span className="text-2xl">🪨</span>
+            <div className="flex-1 text-left">
+              <div className="font-black text-sm">タイトル画面を見る</div>
+              <div className="text-[10px] font-bold opacity-90">ゲームの説明スライドを再表示</div>
+            </div>
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* アプリ更新 */}
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔄 アプリ更新</div>
