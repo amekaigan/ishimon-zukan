@@ -67,6 +67,9 @@
 <script>
 // ユーザーのUID（ログイン後に設定される）
 window._currentUid = null;
+window._authReadyPromise = new Promise(function(resolve) {
+  window._authReadyResolve = resolve;
+});
 
 // Firestoreのパス: users/{uid}/data/{key}
 const _fsDocRef = (key) => {
@@ -391,27 +394,22 @@ const getOrGenerateMonImage = async (mon, seed) => {
 // 石モン用プロンプト構築（時刻・場所・特徴を含む豊かなプロンプト）
 const buildMonPrompt = (mon, options = {}) => {
   const typeMap = {
-    '火': 'fire element creature, warm flame-colored body in red orange and gold, gentle ember glow, small flame tufts',
-    '水': 'water element creature, glossy translucent aqua-blue body, smooth droplet shapes, soft water shimmer',
-    '土': 'earth element creature, rounded rocky body in warm brown and tan, tiny moss patches, cute pebble texture',
-    '電気': 'electric element creature, bright sunny-yellow body, soft lightning-bolt markings, tiny energy sparks',
-    '空': 'sky element creature, fluffy cloud-like body in white and sky-blue, gentle wind swirls, airy and light',
-    'ドラゴン': 'baby dragon creature, smooth pastel-purple scales, small rounded horns, tiny soft wings, big friendly eyes',
-    '精霊': 'spirit fairy creature, soft glowing pastel body, delicate floating sparkles, dreamy ethereal aura',
+    '火': 'fire element, flame-colored, orange red',
+    '水': 'water element, aqua blue, droplet shapes',
+    '土': 'earth element, brown rocky, moss pebble',
+    '電気': 'electric element, yellow, lightning bolt',
+    '空': 'sky element, sky blue, cloud fluffy wings',
+    'ドラゴン': 'dragon element, purple scales, small horns, tiny wings',
+    '精霊': 'spirit element, glowing halo, pink ethereal',
   };
-  // ステージ: 進化が見た目で明確にわかるよう差別化
   const stageMap = {
-    1: 'baby form, tiny 2-head-tall chibi proportions, extra round and soft, oversized head, innocent newborn charm, no accessories',
-    2: 'evolved teen form, 2.5-head-tall, slightly sleeker body, a few small natural accents, growing confidence in pose',
-    3: 'final majestic form, 3-head-tall, elegant detailed silhouette, refined regal presence, powerful yet still cute',
+    1: '2-head-tall chibi baby form, simple cute',
+    2: '3-head-tall champion form, balanced proportions',
+    3: '3.5-head-tall ultimate form, majestic crown',
   };
-  // レア度: 装飾の豪華さで希少感を表現（王冠などは上位のみ）
   const rarityMap = {
-    1: 'plain natural look, no decorations, simple matte finish',
-    2: 'one or two tiny crystal specks, very subtle accent',
-    3: 'a few small embedded gemstones, soft gentle glow outline',
-    4: 'multiple shining gemstones, vivid radiant aura, glossy magical highlights',
-    5: 'legendary appearance, golden crown and royal ornaments, brilliant rainbow halo, divine sparkling aura, breathtaking presence',
+    1: 'simple plain', 2: 'small crystals', 3: 'large crystals glow',
+    4: 'gemstones magical sparkles', 5: 'crown rainbow aura divine',
   };
 
   // 時刻を入れて毎回違う絵柄に
@@ -420,24 +418,19 @@ const buildMonPrompt = (mon, options = {}) => {
   const timeOfDay = hour < 6 ? 'dawn' : hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
 
   const parts = [
-    // --- スタイルの核（テイスト統一） ---
-    'adorable original collectible monster mascot, single character',
-    'kawaii chibi creature, Bikkuriman sticker art crossed with classic Digimon anime style',
-    'clean cel-shaded illustration, bold thick black outlines, smooth flat shading with soft gradients',
-    'large glossy sparkling anime eyes with two bright highlight dots, both eyes the exact same color, sweet expressive face',
-    'soft rounded plush-like body, charming friendly pose, full body visible and centered',
-    // --- 個体の特徴 ---
+    'cute monster character, original mascot',
+    'Bikkuriman sticker style, Digimon anime style',
+    'cel-shaded, thick black outlines, big shiny eyes',
     typeMap[mon.type] || typeMap['土'],
     stageMap[mon.stage] || stageMap[1],
     rarityMap[mon.rarity] || rarityMap[1],
-    `${timeOfDay} lighting atmosphere`,
-    // --- 仕上げ ---
-    'dreamy gradient background with floating magical particles, gentle rim light',
-    'professional character design, polished, vibrant harmonious colors, high detail, wholesome and heartwarming',
-    'no text, no logo, no watermark, no human figures',
+    `${timeOfDay} atmosphere`,
+    'centered front pose, gradient background',
+    'kid-friendly, vibrant, no text, no watermark',
   ];
 
   return parts.filter(Boolean).join(', ');
+};
 };
 
 // 画像解析失敗時のフォールバック（色からランダム生成）
@@ -1141,46 +1134,41 @@ function IshimonZukan() {
       }
       const { auth, onAuthStateChanged } = window._firebase;
       setFirebaseReady(true);
-      let firstCall = true; // 初回のみFirestore復元を試みる
+      let authResolved = false;
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           window._currentUid = user.uid;
           setFirebaseUser({ uid: user.uid, displayName: user.displayName, email: user.email, photoURL: user.photoURL });
-          // 初回ログイン検知時のみFirestoreからデータ復元
-          if (firstCall) {
-            firstCall = false;
+          if (!authResolved) {
+            authResolved = true;
             try {
               const keys = ['ishimon-player-v3', 'ishimon-collection-v3', 'ishimon-settings-v1'];
-              const results = {};
               for (const key of keys) {
-                const { getDoc, doc } = window._firebase;
-                const { db } = window._firebase;
+                const { getDoc, doc, db } = window._firebase;
                 const ref = doc(db, 'users', user.uid, 'data', key.replace(/[\/\.]/g, '_'));
                 const snap = await getDoc(ref);
                 if (snap.exists()) {
-                  results[key] = snap.data().value;
-                  localStorage.setItem(key, snap.data().value);
+                  try { localStorage.setItem(key, snap.data().value); } catch (_) {}
                 }
               }
-              // Reactのstateを直接更新（リロード不要）
-              if (results['ishimon-player-v3']) {
-                const p = JSON.parse(results['ishimon-player-v3']);
-                setPlayer(prev => ({ ...prev, ...p }));
-              }
-              if (results['ishimon-collection-v3']) {
-                setCollection(JSON.parse(results['ishimon-collection-v3']));
-              }
-              if (results['ishimon-settings-v1']) {
-                setSettings(prev => ({ ...prev, ...JSON.parse(results['ishimon-settings-v1']) }));
-              }
             } catch (e) {
-              console.error('Firestore restore error:', e);
+              console.error('Firestore prefetch error:', e);
+            }
+            if (window._authReadyResolve) {
+              window._authReadyResolve({ uid: user.uid });
+              window._authReadyResolve = null;
             }
           }
         } else {
-          firstCall = true; // ログアウト後にリセット
           window._currentUid = null;
           setFirebaseUser(null);
+          if (!authResolved) {
+            authResolved = true;
+            if (window._authReadyResolve) {
+              window._authReadyResolve({ uid: null });
+              window._authReadyResolve = null;
+            }
+          }
         }
       });
       return unsubscribe;
@@ -1304,10 +1292,17 @@ function IshimonZukan() {
     </button>
   );
 
-  // ロード
+  // ロード（認証確定を待ってから実行）
   useEffect(() => {
     (async () => {
       try {
+        // ★ 認証確定まで待機（レースコンディション解消）タイムアウト5秒
+        const authResult = await Promise.race([
+          window._authReadyPromise,
+          new Promise(resolve => setTimeout(() => resolve({ uid: null }), 5000)),
+        ]);
+        console.log('[初期ロード] 認証確定:', authResult);
+
         const colR = await window.storage.get('ishimon-collection-v3');
         const playerR = await window.storage.get('ishimon-player-v3');
         const settingsR = await window.storage.get('ishimon-settings-v1').catch(() => null);
@@ -1341,8 +1336,6 @@ function IshimonZukan() {
               },
             };
           }
-          // 初回ロード時に既存データに基づいて過去獲得済みの称号を付与
-          // （新規称号がいきなり大量に出るのを防ぐため、モーダルは出さず黙って付与）
           const ctx = { player: adjusted, collection: loadedCollection, event: 'tick' };
           const grants = evaluateTitles(ctx);
           if (grants.length > 0) {
@@ -1354,7 +1347,7 @@ function IshimonZukan() {
           }
           checkLoginBonus(adjusted, loadedCollection);
         } else {
-          // 初回起動 → オンボーディング表示
+          // ★ バグ修正: loadedPlayer=nullでもログイン済みならFirestoreを上書きしない
           const initialPlayer = {
             name: '',
             level: 1, exp: 0, gems: 30,
@@ -1369,8 +1362,14 @@ function IshimonZukan() {
             stats: { totalGacha: 0, totalEvolves: 0, consecutiveR1Count: 0 },
           };
           setPlayer(initialPlayer);
-          await window.storage.set('ishimon-player-v3', JSON.stringify(initialPlayer));
-          await window.storage.set('ishimon-collection-v3', JSON.stringify(loadedCollection));
+          if (!authResult.uid) {
+            // 未ログイン時のみストレージへ保存
+            await window.storage.set('ishimon-player-v3', JSON.stringify(initialPlayer));
+            await window.storage.set('ishimon-collection-v3', JSON.stringify(loadedCollection));
+          } else {
+            // ログイン済みでlocalStorageが空 = 別デバイスor初回 → Firestoreを守る
+            try { localStorage.setItem('ishimon-player-v3', JSON.stringify(initialPlayer)); } catch(_) {}
+          }
           setShowOnboarding(true);
         }
       } catch (e) {
