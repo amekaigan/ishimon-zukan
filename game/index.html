@@ -431,7 +431,6 @@ const buildMonPrompt = (mon, options = {}) => {
 
   return parts.filter(Boolean).join(', ');
 };
-};
 
 // 画像解析失敗時のフォールバック（色からランダム生成）
 const analyzeImageColor = async (imageDataUrl) => {
