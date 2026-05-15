@@ -249,7 +249,7 @@ const buildImageUrl = (prompt, seed) => {
     height: '512',
     seed: String(seed || Math.floor(Math.random() * 1000000)),
     nologo: 'true',
-    model: 'flux',
+    model: 'turbo',
     key: POLLINATIONS_APP_KEY,
   });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
@@ -1342,10 +1342,11 @@ function IshimonZukan() {
   useEffect(() => {
     (async () => {
       try {
-        // ★ 認証確定まで待機（レースコンディション解消）タイムアウト5秒
+        // ★ 認証確定まで待機（レースコンディション解消）タイムアウト15秒
+        // ※ Babelコンパイルが遅い環境でも対応できるよう余裕を持たせる
         const authResult = await Promise.race([
           window._authReadyPromise,
-          new Promise(resolve => setTimeout(() => resolve({ uid: null }), 5000)),
+          new Promise(resolve => setTimeout(() => resolve({ uid: null }), 15000)),
         ]);
         console.log('[初期ロード] 認証確定:', authResult);
 
