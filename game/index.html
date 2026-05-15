@@ -68,6 +68,12 @@
 // ユーザーのUID（ログイン後に設定される）
 window._currentUid = null;
 
+// 認証状態確定フラグ（初期ロードはこれを待つ）
+// resolve関数: { uid: string|null }
+window._authReadyPromise = new Promise(function(resolve) {
+  window._authReadyResolve = resolve;
+});
+
 // Firestoreのパス: users/{uid}/data/{key}
 const _fsDocRef = (key) => {
   const { db, doc } = window._firebase || {};
@@ -1139,14 +1145,15 @@ function IshimonZukan() {
       }
       const { auth, onAuthStateChanged } = window._firebase;
       setFirebaseReady(true);
-      let firstCall = true; // 初回のみFirestore復元を試みる
+      let authResolved = false; // 初回確定フラグ（_authReadyPromise用）
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           window._currentUid = user.uid;
           setFirebaseUser({ uid: user.uid, displayName: user.displayName, email: user.email, photoURL: user.photoURL });
-          // 初回ログイン検知時のみFirestoreからデータ復元
-          if (firstCall) {
-            firstCall = false;
+          // 認証確定（ログイン済み）→ 初期ロードuseEffectへ通知
+          if (!authResolved) {
+            authResolved = true;
+            // Firestoreからデータを読み込んでlocalStorageにキャッシュし、その後resolveする
             try {
               const keys = ['ishimon-player-v3', 'ishimon-collection-v3', 'ishimon-settings-v1'];
               const results = {};
@@ -1157,28 +1164,30 @@ function IshimonZukan() {
                 const snap = await getDoc(ref);
                 if (snap.exists()) {
                   results[key] = snap.data().value;
-                  localStorage.setItem(key, snap.data().value);
+                  // localStorageにキャッシュしておく（初期ロードで読み取れるように）
+                  try { localStorage.setItem(key, snap.data().value); } catch (_) {}
                 }
               }
-              // Reactのstateを直接更新（リロード不要）
-              if (results['ishimon-player-v3']) {
-                const p = JSON.parse(results['ishimon-player-v3']);
-                setPlayer(prev => ({ ...prev, ...p }));
-              }
-              if (results['ishimon-collection-v3']) {
-                setCollection(JSON.parse(results['ishimon-collection-v3']));
-              }
-              if (results['ishimon-settings-v1']) {
-                setSettings(prev => ({ ...prev, ...JSON.parse(results['ishimon-settings-v1']) }));
-              }
             } catch (e) {
-              console.error('Firestore restore error:', e);
+              console.error('Firestore prefetch error:', e);
+            }
+            // UID確定を通知 → 初期ロードuseEffectがここで解放される
+            if (window._authReadyResolve) {
+              window._authReadyResolve({ uid: user.uid });
+              window._authReadyResolve = null;
             }
           }
         } else {
-          firstCall = true; // ログアウト後にリセット
           window._currentUid = null;
           setFirebaseUser(null);
+          // 未ログイン確定を通知
+          if (!authResolved) {
+            authResolved = true;
+            if (window._authReadyResolve) {
+              window._authReadyResolve({ uid: null });
+              window._authReadyResolve = null;
+            }
+          }
         }
       });
       return unsubscribe;
@@ -1302,10 +1311,18 @@ function IshimonZukan() {
     </button>
   );
 
-  // ロード
+  // ロード（認証確定を待ってから実行）
   useEffect(() => {
     (async () => {
       try {
+        // ★ 認証確定まで待機（レースコンディション解消）
+        // タイムアウト5秒でフォールバック（未ログインとして扱う）
+        const authResult = await Promise.race([
+          window._authReadyPromise,
+          new Promise(resolve => setTimeout(() => resolve({ uid: null }), 5000)),
+        ]);
+        console.log('[初期ロード] 認証確定:', authResult);
+
         const colR = await window.storage.get('ishimon-collection-v3');
         const playerR = await window.storage.get('ishimon-player-v3');
         const settingsR = await window.storage.get('ishimon-settings-v1').catch(() => null);
@@ -1352,7 +1369,9 @@ function IshimonZukan() {
           }
           checkLoginBonus(adjusted, loadedCollection);
         } else {
-          // 初回起動 → オンボーディング表示
+          // ★ バグ修正: loadedPlayer=nullの場合は「このデバイスに未保存」なだけ
+          // 認証済みユーザー（authResult.uid あり）の場合は Firestore を正とするので
+          // SAMPLES 3体でFirestoreを上書きしてはいけない → storage.set をスキップ
           const initialPlayer = {
             name: '',
             level: 1, exp: 0, gems: 30,
@@ -1367,8 +1386,15 @@ function IshimonZukan() {
             stats: { totalGacha: 0, totalEvolves: 0, consecutiveR1Count: 0 },
           };
           setPlayer(initialPlayer);
-          await window.storage.set('ishimon-player-v3', JSON.stringify(initialPlayer));
-          await window.storage.set('ishimon-collection-v3', JSON.stringify(loadedCollection));
+          if (!authResult.uid) {
+            // 未ログインの場合のみ初期データをストレージへ保存（Firestoreには書かない）
+            await window.storage.set('ishimon-player-v3', JSON.stringify(initialPlayer));
+            await window.storage.set('ishimon-collection-v3', JSON.stringify(loadedCollection));
+          } else {
+            // ログイン済みだがこのデバイスにデータがない場合 → Firestoreにデータあり（prefetch済）
+            // の可能性が高いので上書き保存しない。localStorageのみに書く（次回Firestore取得まで）
+            try { localStorage.setItem('ishimon-player-v3', JSON.stringify(initialPlayer)); } catch(_) {}
+          }
           setShowOnboarding(true);
         }
       } catch (e) {
