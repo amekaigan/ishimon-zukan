@@ -236,7 +236,7 @@ const Wand2 = makeIcon('🪄');
 // ===== Pollinations Anonymous API =====
 // APIキー不要・認証不要・URLベース直接アクセス
 // Pollinations App Key（pk_...）を使用 → レート制限なし・ウォーターマークなし
-const POLLINATIONS_APP_KEY = 'pk_7gVUkfXwTLDGS1Uu'; // ← pk_から始まるキーを貼り付け
+const POLLINATIONS_APP_KEY = 'POLLINATIONS_APP_KEY_HERE'; // ← pk_から始まるキーを貼り付け
 
 // Hugging Face API Token（hf_...）← Hugging Face使用時に設定
 const HF_API_TOKEN = 'HF_API_TOKEN_HERE'; // ← hf_から始まるトークンを貼り付け（任意）
@@ -2045,15 +2045,17 @@ function IshimonZukan() {
       return;
     }
     // コスト消費
-    const updatedPlayer = { ...player, stoneFragments: (player.stoneFragments || 0) - cost };
-    setPlayer(updatedPlayer);
-    savePlayer(updatedPlayer);
+    const costDeductedPlayer = { ...player, stoneFragments: (player.stoneFragments || 0) - cost };
+    setPlayer(costDeductedPlayer);
+    savePlayer(costDeductedPlayer);
     setShowEvolveAnim(mon);
     try {
       const newStage = mon.stage + 1;
       const newRarity = Math.min(5, mon.rarity + 1);
       const evolved = {
-        ...mon, name: mon.evolveTo, stage: newStage, rarity: newRarity,
+        ...mon,
+        id: `${mon.id}_stage${newStage}`, // 進化後は新しいキャッシュキーに
+        name: mon.evolveTo, stage: newStage, rarity: newRarity,
         baseStats: {
           hp: Math.round(mon.baseStats.hp * 1.4), kogeki: Math.round(mon.baseStats.kogeki * 1.4),
           bougyo: Math.round(mon.baseStats.bougyo * 1.4), speed: Math.round(mon.baseStats.speed * 1.3),
@@ -2087,16 +2089,16 @@ function IshimonZukan() {
       updateMission('evolve');
 
       // 進化カウンタを更新 → 称号チェック
-      const updatedPlayer = {
+      const evolvedPlayer = {
         ...player,
         stats: {
           ...(player.stats || {}),
           totalEvolves: (player.stats?.totalEvolves || 0) + 1,
         },
       };
-      setPlayer(updatedPlayer);
-      savePlayer(updatedPlayer);
-      grantTitlesIfAny('evolve', {}, updatedPlayer, updated);
+      setPlayer(evolvedPlayer);
+      savePlayer(evolvedPlayer);
+      grantTitlesIfAny('evolve', {}, evolvedPlayer, updated);
 
       // もしまだ画像が来てなかった場合、後で来たら反映
       if (!imageRace?.image) {
