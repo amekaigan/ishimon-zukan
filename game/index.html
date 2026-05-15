@@ -235,9 +235,10 @@ const Wand2 = makeIcon('🪄');
 
 // ===== Pollinations Anonymous API =====
 // APIキー不要・認証不要・URLベース直接アクセス
-// Anonymous Tier: 15秒に1回まで、ウォーターマーク有り
+// Pollinations App Key（pk_...）を使用 → レート制限なし・ウォーターマークなし
+const POLLINATIONS_APP_KEY = 'pk_7gVUkfXwTLDGS1Uu'; // ← pk_から始まるキーを貼り付け
 
-// AI画像生成URL構築（fetch不要、imgタグに直接渡せる）
+// AI画像生成URL構築
 const buildImageUrl = (prompt, seed) => {
   const params = new URLSearchParams({
     width: '512',
@@ -245,6 +246,7 @@ const buildImageUrl = (prompt, seed) => {
     seed: String(seed || Math.floor(Math.random() * 1000000)),
     nologo: 'true',
     model: 'flux',
+    key: POLLINATIONS_APP_KEY,
   });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
 };
