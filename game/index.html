@@ -81,6 +81,13 @@ const _fsDocRef = (key) => {
 window.storage = {
   async get(key) {
     try {
+      // ★ Firebase SDK準備＆認証確定まで待機（レースコンディション防止）
+      if (window._authReadyPromise) {
+        await Promise.race([
+          window._authReadyPromise,
+          new Promise(resolve => setTimeout(resolve, 20000)),
+        ]);
+      }
       // Firestore優先
       const ref = _fsDocRef(key);
       if (ref) {
@@ -239,51 +246,20 @@ const Wand2 = makeIcon('🪄');
 const POLLINATIONS_APP_KEY = 'POLLINATIONS_APP_KEY_HERE'; // ← pk_から始まるキーを貼り付け
 
 // Hugging Face API Token（hf_...）← Hugging Face使用時に設定
-const HF_API_TOKEN = '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'; // ← hf_から始まるトークンを貼り付け（任意）
+const HF_API_TOKEN = 'HF_API_TOKEN_HERE'; // ← hf_から始まるトークンを貼り付け（任意）
 const HF_MODEL = 'black-forest-labs/FLUX.1-schnell'; // Fluxモデル（無料）
 
 // AI画像生成（エンジン切り替え対応）
-// Pollinationsモデル優先順位（失敗したら次へ）
-const POLLINATIONS_MODELS = ['flux', 'turbo', 'flux-schnell', 'flux-anime'];
-
-const buildImageUrl = (prompt, seed, model = 'flux') => {
+const buildImageUrl = (prompt, seed) => {
   const params = new URLSearchParams({
     width: '512',
     height: '512',
     seed: String(seed || Math.floor(Math.random() * 1000000)),
     nologo: 'true',
-    model,
+    model: 'turbo',
     key: POLLINATIONS_APP_KEY,
   });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
-};
-
-// Pollinations フォールバック付き生成
-const generateImagePollinations = async (prompt, seed) => {
-  for (const model of POLLINATIONS_MODELS) {
-    const url = buildImageUrl(prompt, seed, model);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
-    try {
-      console.log(`[Pollinations] モデル試行: ${model}`);
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      if (blob.size < 1000) throw new Error('画像サイズが小さすぎる');
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      clearTimeout(timeout);
-      console.warn(`[Pollinations] ${model} 失敗:`, e.message);
-      // 次のモデルへ
-    }
-  }
-  throw new Error('Pollinationsの全モデルが失敗');
 };
 
 // Hugging Face画像生成
@@ -301,7 +277,6 @@ const generateImageHuggingFace = async (prompt, seed) => {
   });
   if (!res.ok) throw new Error(`HF API ${res.status}`);
   const blob = await res.blob();
-  if (blob.size < 1000) throw new Error('HF画像サイズが小さすぎる');
   return await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
@@ -343,7 +318,7 @@ const getCurrentLocation = async () => {
   });
 };
 
-// AI画像をfetchしてbase64で返す（エンジン切り替え＆自動フォールバック対応）
+// AI画像をfetchしてbase64で返す（エンジン切り替え対応）
 const generateAiImageRaw = async (prompt, seed) => {
   // 現在のエンジン設定を取得（settingsはReact外なのでlocalStorageから読む）
   let engine = 'pollinations';
@@ -353,21 +328,32 @@ const generateAiImageRaw = async (prompt, seed) => {
   } catch (_) {}
 
   if (engine === 'huggingface') {
-    // HF選択時: HF失敗したらPollinationsへフォールバック
-    try {
-      return await generateImageHuggingFace(prompt, seed);
-    } catch (e) {
-      console.warn('[HF] 失敗、Pollinationsへフォールバック:', e.message);
-      return await generateImagePollinations(prompt, seed);
-    }
+    return await generateImageHuggingFace(prompt, seed);
   }
 
-  // Pollinations選択時: 全モデル失敗したらHFへフォールバック
+  // Pollinations
+  const url = buildImageUrl(prompt, seed);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
   try {
-    return await generateImagePollinations(prompt, seed);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) {
+      const err = new Error(`API ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   } catch (e) {
-    console.warn('[Pollinations] 全モデル失敗、HFへフォールバック:', e.message);
-    return await generateImageHuggingFace(prompt, seed);
+    clearTimeout(timeout);
+    console.error('AI generation failed:', e);
+    throw e;
   }
 };
 
@@ -1363,11 +1349,16 @@ function IshimonZukan() {
   useEffect(() => {
     (async () => {
       try {
-        // ★ 認証確定まで待機（レースコンディション解消）タイムアウト15秒
-        // ※ Babelコンパイルが遅い環境でも対応できるよう余裕を持たせる
+        // ★ まずFirebase SDKの準備を待つ（type=moduleの非同期ロード対策）
+        await new Promise(resolve => {
+          const check = () => window._firebase ? resolve() : setTimeout(check, 100);
+          check();
+        });
+        // ★ 認証確定まで待機（レースコンディション解消）タイムアウト30秒
+        // ※ Babelコンパイル(500KB超)が遅い環境でも対応できるよう余裕を持たせる
         const authResult = await Promise.race([
           window._authReadyPromise,
-          new Promise(resolve => setTimeout(() => resolve({ uid: null }), 15000)),
+          new Promise(resolve => setTimeout(() => resolve({ uid: null }), 30000)),
         ]);
         console.log('[初期ロード] 認証確定:', authResult);
 
