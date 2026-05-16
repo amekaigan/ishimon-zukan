@@ -81,6 +81,13 @@ const _fsDocRef = (key) => {
 window.storage = {
   async get(key) {
     try {
+      // ★ 認証確定まで待機してからFirestoreを読む（レースコンディション防止）
+      if (window._authReadyPromise) {
+        await Promise.race([
+          window._authReadyPromise,
+          new Promise(resolve => setTimeout(resolve, 10000)),
+        ]);
+      }
       // Firestore優先
       const ref = _fsDocRef(key);
       if (ref) {
