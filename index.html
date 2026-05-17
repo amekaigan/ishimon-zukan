@@ -147,6 +147,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 footer{background:#0f0820;padding:40px 24px;text-align:center;border-top:1px solid rgba(199,125,255,0.15);}
 .footer-logo{margin-bottom:20px;}
 .footer-logo img{height:40px;width:auto;}
+.footer-sns{display:flex;gap:14px;justify-content:center;margin-bottom:20px;}
+.footer-sns-link{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(199,125,255,0.25);color:rgba(255,255,255,0.8);font-size:18px;text-decoration:none;transition:transform 0.2s,background 0.2s,border-color 0.2s;}
+.footer-sns-link:hover{transform:translateY(-3px) scale(1.08);background:rgba(199,125,255,0.18);border-color:var(--glow);}
 .footer-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;}
 .footer-links a{color:rgba(255,255,255,0.4);font-size:12px;text-decoration:none;transition:color 0.2s;}
 .footer-links a:hover{color:rgba(255,255,255,0.8);}
@@ -389,8 +392,13 @@ footer{background:#0f0820;padding:40px 24px;text-align:center;border-top:1px sol
   <div class="footer-logo">
     <img src="/images/logo-color.png" alt="石モン図鑑">
   </div>
+  <div class="footer-sns">
+    <a class="footer-sns-link" href="https://x.com/ishimonzukan" target="_blank" rel="noopener noreferrer" aria-label="X（旧Twitter）@ishimonzukan">𝕏</a>
+    <a class="footer-sns-link" href="https://www.instagram.com/ishimonzukan/" target="_blank" rel="noopener noreferrer" aria-label="Instagram @ishimonzukan">📷</a>
+  </div>
   <div class="footer-links">
     <a href="/game/">ゲームをプレイ</a>
+    <a href="/sitemap.html">サイトマップ</a>
     <a href="mailto:ishimonzukan@gmail.com">お問い合わせ</a>
   </div>
   <p class="footer-copy">© 2025 石モン図鑑. All rights reserved.</p>
