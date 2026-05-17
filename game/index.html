@@ -1441,6 +1441,7 @@ function IshimonZukan() {
     animationReduced: false,   // アニメーション軽減
     showLocation: true,        // 出会いの場所を記録
     confirmGacha: true,        // ガチャ確認ダイアログ
+    shadowEnabled: true,        // シャドウエフェクト（古いiPhoneはOFFで軽量化）
     imageEngine: 'pollinations', // 'pollinations' | 'huggingface'
   });
   const [isOwner, setIsOwner] = useState(false); // オーナーモード
@@ -5499,6 +5500,108 @@ function IshimonZukan() {
           <ChevronRight className="w-5 h-5" />
         </button>
 
+        {/* ===== 称号 ===== */}
+        <div className="mt-4 mb-2">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">
+            🏆 称号 <span className="text-white/60 font-bold">({(player.titles || []).length} / {TITLES.length})</span>
+          </div>
+          {(player.titles || []).length === 0 ? (
+            <div className="rounded-2xl p-4 text-center"
+              style={{ background: 'rgba(0,0,0,0.3)', border: '2px dashed rgba(255,255,255,0.3)' }}>
+              <div className="text-4xl mb-1 opacity-50">🏆</div>
+              <div className="text-white/80 font-black text-sm mb-1">まだ称号がありません</div>
+              <div className="text-white/60 text-[11px] font-bold">石モンを集めたり、バトルで勝つと獲得できる！</div>
+            </div>
+          ) : (
+            <div className="rounded-2xl overflow-hidden"
+              style={{ border: '2px solid rgba(255,215,0,0.4)', background: 'rgba(0,0,0,0.3)' }}>
+              <div className="overflow-y-auto" style={{ maxHeight: '280px' }}>
+                <button
+                  onClick={() => {
+                    const updated = { ...player, activeTitle: null };
+                    setPlayer(updated);
+                    savePlayer(updated);
+                  }}
+                  className="w-full px-3 py-2.5 flex items-center gap-2.5 active:scale-[0.98] transition-all"
+                  style={{
+                    background: !player.activeTitle ? 'rgba(255,215,0,0.2)' : 'transparent',
+                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                  }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.3)' }}>
+                    <span className="text-sm">🚫</span>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="text-white font-black text-sm">称号を表示しない</div>
+                  </div>
+                  {!player.activeTitle && (
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: '#FFD700' }}>
+                      <span className="text-[8px] text-yellow-900 font-black">✓</span>
+                    </div>
+                  )}
+                </button>
+                {(player.titles || []).map((tid, idx) => {
+                  const t = getTitleById(tid);
+                  if (!t) return null;
+                  const r = TITLE_RARITY[t.rarity] || TITLE_RARITY.common;
+                  const active = player.activeTitle === t.id;
+                  const isLast = idx === (player.titles || []).length - 1;
+                  return (
+                    <button key={t.id}
+                      onClick={() => {
+                        const updated = { ...player, activeTitle: t.id };
+                        setPlayer(updated);
+                        savePlayer(updated);
+                      }}
+                      className="w-full px-3 py-2.5 flex items-center gap-2.5 active:scale-[0.98] transition-all"
+                      style={{
+                        background: active ? `${r.color}1A` : 'transparent',
+                        borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                        boxShadow: active ? `inset 3px 0 0 ${r.color}` : 'none',
+                      }}>
+                      <div className="w-10 flex-shrink-0 flex flex-col items-center gap-0.5">
+                        <div className="text-[8px] font-black leading-none" style={{ color: r.color }}>称号</div>
+                        <div className="text-base font-black leading-none" style={{ color: r.color }}>Lv.{r.level}</div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-black text-sm leading-tight truncate mb-1">{t.name}</div>
+                        <div className="flex items-center gap-0.5 mb-0.5">
+                          {[1,2,3,4].map(i => (
+                            <div key={i}
+                              className="h-1.5 rounded-sm"
+                              style={{
+                                flex: 1,
+                                background: i <= r.level ? r.color : 'rgba(255,255,255,0.12)',
+                                boxShadow: i <= r.level ? `0 0 4px ${r.color}88` : 'none',
+                              }} />
+                          ))}
+                        </div>
+                        <div className="text-white/50 text-[9px] font-bold truncate">{t.desc}</div>
+                      </div>
+                      {active ? (
+                        <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ background: r.color }}>
+                          <span className="text-[8px] text-black font-black">✓</span>
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 rounded-full flex-shrink-0"
+                          style={{ border: '1.5px solid rgba(255,255,255,0.25)' }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {(player.titles || []).length < TITLES.length && (
+                <div className="px-3 py-2 text-center text-white/40 text-[10px] font-bold"
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  残り {TITLES.length - (player.titles || []).length} 個 未獲得
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* ===== アカウント＆データ管理 ===== */}
         {(() => {
           const [saveStatus, setSaveStatus] = React.useState('');
@@ -5749,7 +5852,7 @@ function IshimonZukan() {
         <h2 className="text-3xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>⚙️ 設定</h2>
         <p className="text-center text-yellow-200 text-xs font-bold mb-4">ゲームの好みをカスタマイズ</p>
 
-        {/* Googleアカウント連携 */}
+        {/* 🔐 アカウント */}
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔐 アカウント</div>
           {firebaseUser ? (
@@ -5794,146 +5897,7 @@ function IshimonZukan() {
           )}
         </div>
 
-        {/* 難易度 */}
-        <div className="mb-4">
-          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">⚔️ 難易度</div>
-          <div className="grid grid-cols-3 gap-2">
-            {difficulties.map(d => {
-              const active = settings.difficulty === d.id;
-              return (
-                <button key={d.id} onClick={() => updateSetting('difficulty', d.id)}
-                  className="p-3 rounded-2xl active:scale-95 transition-transform"
-                  style={{
-                    background: active ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'rgba(255,255,255,0.1)',
-                    border: active ? '2px solid white' : '2px solid rgba(255,255,255,0.2)',
-                    boxShadow: active ? '0 4px 0 #B85C00' : 'none',
-                  }}>
-                  <div className="text-2xl mb-1">{d.emoji}</div>
-                  <div className={`font-black text-xs ${active ? 'text-white' : 'text-white/80'}`}>{d.label}</div>
-                  <div className={`text-[9px] font-bold mt-0.5 ${active ? 'text-white/90' : 'text-white/50'}`}>{d.desc}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ゲームプレイ */}
-        <div className="mb-4">
-          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🎮 ゲームプレイ</div>
-          <div className="space-y-2">
-            <SettingRow icon="🔊" label="効果音" desc="ボタン操作・バトルなどの音">
-              <Toggle on={settings.soundEnabled} onClick={() => updateSetting('soundEnabled', !settings.soundEnabled)} />
-            </SettingRow>
-            <SettingRow icon="📳" label="バイブレーション" desc="iPhoneでは非対応の場合があります">
-              <Toggle on={settings.vibrationEnabled} onClick={() => updateSetting('vibrationEnabled', !settings.vibrationEnabled)} />
-            </SettingRow>
-            <SettingRow icon="✨" label="アニメーション軽減" desc="背景の動きを抑えて省電力に">
-              <Toggle on={settings.animationReduced} onClick={() => updateSetting('animationReduced', !settings.animationReduced)} />
-            </SettingRow>
-            <SettingRow icon="🎴" label="ガチャ確認ダイアログ" desc="ガチャを引く前に確認する">
-              <Toggle on={settings.confirmGacha} onClick={() => updateSetting('confirmGacha', !settings.confirmGacha)} />
-            </SettingRow>
-          </div>
-        </div>
-
-        {/* プライバシー */}
-        <div className="mb-4">
-          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔒 プライバシー</div>
-          <div className="space-y-2">
-            <SettingRow icon="📍" label="GPSデータ" desc="石モンを撮影した場所を保存">
-              <Toggle on={settings.showLocation} onClick={() => updateSetting('showLocation', !settings.showLocation)} />
-            </SettingRow>
-          </div>
-        </div>
-
-        {/* 画像生成エンジン（オーナーのみ） */}
-        {isOwner && (
-        <div className="mb-4">
-          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🎨 画像生成エンジン</div>
-          <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="flex gap-2 mb-2">
-              {[
-                { id: 'pollinations', label: 'Pollinations', desc: '高速・無料' },
-                { id: 'huggingface', label: 'Hugging Face', desc: '安定・無料' },
-              ].map(e => (
-                <button key={e.id} onClick={() => updateSetting('imageEngine', e.id)}
-                  className="flex-1 py-2 px-2 rounded-xl text-center active:scale-95 transition-transform"
-                  style={{
-                    background: settings.imageEngine === e.id ? 'rgba(255,224,102,0.25)' : 'rgba(255,255,255,0.06)',
-                    border: `1.5px solid ${settings.imageEngine === e.id ? '#FFD700' : 'rgba(255,255,255,0.15)'}`,
-                  }}>
-                  <div className="text-white font-black text-xs">{e.label}</div>
-                  <div className="text-white/50 text-[10px]">{e.desc}</div>
-                </button>
-              ))}
-            </div>
-            {settings.imageEngine === 'huggingface' && (
-              <div className="text-white/40 text-[10px] leading-relaxed mt-1">
-                ⚠️ 混雑時は生成に30秒〜かかる場合があります
-              </div>
-            )}
-          </div>
-        </div>
-        )}
-
-        {/* オーナーモード */}
-        <div className="mb-4">
-          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔑 オーナーモード</div>
-          <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            {isOwner ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-white font-black text-sm">✅ オーナーとして認証済み</div>
-                  <div className="text-white/50 text-[11px] mt-0.5">テイスト登録機能が有効です</div>
-                </div>
-                <button onClick={() => setIsOwner(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-black active:scale-95"
-                  style={{ background: 'rgba(255,100,100,0.2)', border: '1px solid rgba(255,100,100,0.4)', color: '#fca5a5' }}>
-                  解除
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="text-white/60 text-[11px] mb-2">パスワードを入力してオーナーモードを解除</div>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    placeholder="パスワード"
-                    className="flex-1 px-3 py-2 rounded-xl text-sm text-white"
-                    style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)' }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        if (e.target.value === 'ishimon2026') {
-                          setIsOwner(true);
-                          e.target.value = '';
-                        } else {
-                          e.target.style.borderColor = '#ff6b6b';
-                          setTimeout(() => { e.target.style.borderColor = 'rgba(255,255,255,0.2)'; }, 1000);
-                        }
-                      }
-                    }}
-                  />
-                  <button
-                    className="px-3 py-2 rounded-xl text-xs font-black active:scale-95"
-                    style={{ background: 'rgba(255,224,102,0.2)', border: '1px solid rgba(255,224,102,0.4)', color: '#fde68a' }}
-                    onClick={(e) => {
-                      const input = e.target.previousSibling;
-                      if (input.value === 'ishimon2026') {
-                        setIsOwner(true);
-                        input.value = '';
-                      } else {
-                        input.style.borderColor = '#ff6b6b';
-                        setTimeout(() => { input.style.borderColor = 'rgba(255,255,255,0.2)'; }, 1000);
-                      }
-                    }}
-                  >解除</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* データ管理 */}
+        {/* 💾 データ管理 */}
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">💾 データ管理</div>
 
@@ -6004,118 +5968,62 @@ function IshimonZukan() {
           </div>
         </div>
 
-        {/* 称号 */}
+        {/* 🎮 ゲームプレイ */}
         <div className="mb-4">
-          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">
-            🏆 称号 <span className="text-white/60 font-bold">({(player.titles || []).length} / {TITLES.length})</span>
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🎮 ゲームプレイ</div>
+          <div className="space-y-2">
+            <SettingRow icon="🔊" label="効果音" desc="ボタン操作・バトルなどの音">
+              <Toggle on={settings.soundEnabled} onClick={() => updateSetting('soundEnabled', !settings.soundEnabled)} />
+            </SettingRow>
+            <SettingRow icon="📳" label="バイブレーション" desc="iPhoneでは非対応の場合があります">
+              <Toggle on={settings.vibrationEnabled} onClick={() => updateSetting('vibrationEnabled', !settings.vibrationEnabled)} />
+            </SettingRow>
+            <SettingRow icon="✨" label="アニメーション軽減" desc="背景の動きを抑えて省電力に">
+              <Toggle on={settings.animationReduced} onClick={() => updateSetting('animationReduced', !settings.animationReduced)} />
+            </SettingRow>
+            <SettingRow icon="🌑" label="シャドウエフェクト" desc="OFFにすると古い端末で動作が軽くなります">
+              <Toggle on={settings.shadowEnabled !== false} onClick={() => updateSetting('shadowEnabled', settings.shadowEnabled === false ? true : false)} />
+            </SettingRow>
+            <SettingRow icon="🎴" label="ガチャ確認ダイアログ" desc="ガチャを引く前に確認する">
+              <Toggle on={settings.confirmGacha} onClick={() => updateSetting('confirmGacha', !settings.confirmGacha)} />
+            </SettingRow>
           </div>
-          {(player.titles || []).length === 0 ? (
-            <div className="rounded-2xl p-4 text-center"
-              style={{ background: 'rgba(0,0,0,0.3)', border: '2px dashed rgba(255,255,255,0.3)' }}>
-              <div className="text-4xl mb-1 opacity-50">🏆</div>
-              <div className="text-white/80 font-black text-sm mb-1">まだ称号がありません</div>
-              <div className="text-white/60 text-[11px] font-bold">石モンを集めたり、バトルで勝つと獲得できる！</div>
-            </div>
-          ) : (
-            <div className="rounded-2xl overflow-hidden"
-              style={{ border: '2px solid rgba(255,215,0,0.4)', background: 'rgba(0,0,0,0.3)' }}>
-              {/* スクロールコンテナ（最大4件分の高さ） */}
-              <div className="overflow-y-auto" style={{ maxHeight: '280px' }}>
-                {/* 「使用しない」オプション */}
-                <button
-                  onClick={() => {
-                    const updated = { ...player, activeTitle: null };
-                    setPlayer(updated);
-                    savePlayer(updated);
-                  }}
-                  className="w-full px-3 py-2.5 flex items-center gap-2.5 active:scale-[0.98] transition-all"
-                  style={{
-                    background: !player.activeTitle ? 'rgba(255,215,0,0.2)' : 'transparent',
-                    borderBottom: '1px solid rgba(255,255,255,0.1)',
-                  }}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.3)' }}>
-                    <span className="text-sm">🚫</span>
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className="text-white font-black text-sm">称号を表示しない</div>
-                  </div>
-                  {!player.activeTitle && (
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: '#FFD700' }}>
-                      <span className="text-[8px] text-yellow-900 font-black">✓</span>
-                    </div>
-                  )}
-                </button>
-
-                {/* 獲得済み称号 */}
-                {(player.titles || []).map((tid, idx) => {
-                  const t = getTitleById(tid);
-                  if (!t) return null;
-                  const r = TITLE_RARITY[t.rarity] || TITLE_RARITY.common;
-                  const active = player.activeTitle === t.id;
-                  const isLast = idx === (player.titles || []).length - 1;
-                  return (
-                    <button key={t.id}
-                      onClick={() => {
-                        const updated = { ...player, activeTitle: t.id };
-                        setPlayer(updated);
-                        savePlayer(updated);
-                      }}
-                      className="w-full px-3 py-2.5 flex items-center gap-2.5 active:scale-[0.98] transition-all"
-                      style={{
-                        background: active ? `${r.color}1A` : 'transparent',
-                        borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                        boxShadow: active ? `inset 3px 0 0 ${r.color}` : 'none',
-                      }}>
-                      {/* 称号Lv バッジ（アイコンの代わり） */}
-                      <div className="w-10 flex-shrink-0 flex flex-col items-center gap-0.5">
-                        <div className="text-[8px] font-black leading-none" style={{ color: r.color }}>称号</div>
-                        <div className="text-base font-black leading-none" style={{ color: r.color }}>Lv.{r.level}</div>
-                      </div>
-                      {/* テキスト + レア度バー */}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-white font-black text-sm leading-tight truncate mb-1">{t.name}</div>
-                        {/* レア度バー: 4セグメント、塗りつぶし済みは色あり */}
-                        <div className="flex items-center gap-0.5 mb-0.5">
-                          {[1,2,3,4].map(i => (
-                            <div key={i}
-                              className="h-1.5 rounded-sm"
-                              style={{
-                                flex: 1,
-                                background: i <= r.level ? r.color : 'rgba(255,255,255,0.12)',
-                                boxShadow: i <= r.level ? `0 0 4px ${r.color}88` : 'none',
-                              }} />
-                          ))}
-                        </div>
-                        <div className="text-white/50 text-[9px] font-bold truncate">{t.desc}</div>
-                      </div>
-                      {/* 選択チェック */}
-                      {active ? (
-                        <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ background: r.color }}>
-                          <span className="text-[8px] text-black font-black">✓</span>
-                        </div>
-                      ) : (
-                        <div className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ border: `1.5px solid rgba(255,255,255,0.25)` }} />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* フッター: 未獲得の数 */}
-              {(player.titles || []).length < TITLES.length && (
-                <div className="px-3 py-2 text-center text-white/40 text-[10px] font-bold"
-                  style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                  残り {TITLES.length - (player.titles || []).length} 個 未獲得
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* タイトル画面 */}
+        {/* 🔒 プライバシー */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔒 プライバシー</div>
+          <div className="space-y-2">
+            <SettingRow icon="📍" label="GPSデータ" desc="石モンを撮影した場所を保存">
+              <Toggle on={settings.showLocation} onClick={() => updateSetting('showLocation', !settings.showLocation)} />
+            </SettingRow>
+          </div>
+        </div>
+
+        {/* ⚔️ 難易度 */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">⚔️ 難易度</div>
+          <div className="grid grid-cols-3 gap-2">
+            {difficulties.map(d => {
+              const active = settings.difficulty === d.id;
+              return (
+                <button key={d.id} onClick={() => updateSetting('difficulty', d.id)}
+                  className="p-3 rounded-2xl active:scale-95 transition-transform"
+                  style={{
+                    background: active ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'rgba(255,255,255,0.1)',
+                    border: active ? '2px solid white' : '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: active ? '0 4px 0 #B85C00' : 'none',
+                  }}>
+                  <div className="text-2xl mb-1">{d.emoji}</div>
+                  <div className={`font-black text-xs ${active ? 'text-white' : 'text-white/80'}`}>{d.label}</div>
+                  <div className={`text-[9px] font-bold mt-0.5 ${active ? 'text-white/90' : 'text-white/50'}`}>{d.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 🪨 タイトル画面 */}
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🪨 タイトル画面</div>
           <button
@@ -6131,12 +6039,11 @@ function IshimonZukan() {
           </button>
         </div>
 
-        {/* アプリ更新 */}
+        {/* 🔄 アプリ更新 */}
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔄 アプリ更新</div>
           <button
             onClick={async () => {
-              // リロード前にデータを確実に保存してから実行
               try {
                 await savePlayer(player);
                 await saveCollection(collection);
@@ -6156,40 +6063,125 @@ function IshimonZukan() {
           </button>
         </div>
 
-        {/* テイスト記録 */}
-        {(() => {
-          const tasteList = collection.filter(m => m.isTaste && m.imageSeed);
-          if (tasteList.length === 0) return (
-            <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.12)' }}>
-              <div className="text-white font-black text-sm mb-1">⭐ テイスト記録</div>
-              <div className="text-white/50 text-[11px]">気に入った石モンの詳細画面で「テイスト登録」すると、ここにseedとプロンプトが記録されます。</div>
-            </div>
-          );
-          return (
-            <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,200,0,0.08)', border: '1.5px solid rgba(255,200,0,0.3)' }}>
-              <div className="text-yellow-300 font-black text-sm mb-3">⭐ テイスト記録 ({tasteList.length}件)</div>
-              <div className="space-y-3">
-                {tasteList.map(m => (
-                  <div key={m.id} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)' }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      {m.imageDataUrl && <img src={m.imageDataUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
-                      <div>
-                        <div className="text-white font-black text-sm">{m.name}</div>
-                        <div className="text-white/60 text-[10px]">{m.type} ★{m.rarity} seed: <span className="text-yellow-300 font-mono">{m.imageSeed}</span></div>
+        {/* 🔑 オーナーモード（画像生成エンジン・テイスト記録を統合） */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔑 オーナーモード</div>
+          <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            {isOwner ? (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-white font-black text-sm">✅ オーナーとして認証済み</div>
+                    <div className="text-white/50 text-[11px] mt-0.5">以下の機能が有効です</div>
+                  </div>
+                  <button onClick={() => setIsOwner(false)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-black active:scale-95"
+                    style={{ background: 'rgba(255,100,100,0.2)', border: '1px solid rgba(255,100,100,0.4)', color: '#fca5a5' }}>
+                    解除
+                  </button>
+                </div>
+
+                {/* 🎨 画像生成エンジン */}
+                <div className="mb-3">
+                  <div className="text-white/60 text-[10px] font-black tracking-widest mb-2">🎨 画像生成エンジン</div>
+                  <div className="flex gap-2">
+                    {[
+                      { id: 'pollinations', label: 'Pollinations', desc: '高速・無料' },
+                      { id: 'huggingface', label: 'Hugging Face', desc: '安定・無料' },
+                    ].map(e => (
+                      <button key={e.id} onClick={() => updateSetting('imageEngine', e.id)}
+                        className="flex-1 py-2 px-2 rounded-xl text-center active:scale-95 transition-transform"
+                        style={{
+                          background: settings.imageEngine === e.id ? 'rgba(255,224,102,0.25)' : 'rgba(255,255,255,0.06)',
+                          border: `1.5px solid ${settings.imageEngine === e.id ? '#FFD700' : 'rgba(255,255,255,0.15)'}`,
+                        }}>
+                        <div className="text-white font-black text-xs">{e.label}</div>
+                        <div className="text-white/50 text-[10px]">{e.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {settings.imageEngine === 'huggingface' && (
+                    <div className="text-white/40 text-[10px] leading-relaxed mt-1">
+                      ⚠️ 混雑時は生成に30秒〜かかる場合があります
+                    </div>
+                  )}
+                </div>
+
+                {/* ⭐ テイスト記録 */}
+                {(() => {
+                  const tasteList = collection.filter(m => m.isTaste && m.imageSeed);
+                  if (tasteList.length === 0) return (
+                    <div className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div className="text-white font-black text-sm mb-1">⭐ テイスト記録</div>
+                      <div className="text-white/50 text-[11px]">気に入った石モンの詳細画面で「テイスト登録」すると、ここにseedとプロンプトが記録されます。</div>
+                    </div>
+                  );
+                  return (
+                    <div className="rounded-xl p-3" style={{ background: 'rgba(255,200,0,0.08)', border: '1.5px solid rgba(255,200,0,0.3)' }}>
+                      <div className="text-yellow-300 font-black text-sm mb-3">⭐ テイスト記録 ({tasteList.length}件)</div>
+                      <div className="space-y-3">
+                        {tasteList.map(m => (
+                          <div key={m.id} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                            <div className="flex items-center gap-2 mb-2">
+                              {m.imageDataUrl && <img src={m.imageDataUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
+                              <div>
+                                <div className="text-white font-black text-sm">{m.name}</div>
+                                <div className="text-white/60 text-[10px]">{m.type} ★{m.rarity} seed: <span className="text-yellow-300 font-mono">{m.imageSeed}</span></div>
+                              </div>
+                            </div>
+                            <div className="text-white/50 text-[9px] font-mono break-all leading-relaxed bg-black/30 rounded p-2 select-all">
+                              {m.imagePrompt}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-white/40 text-[9px] mt-3 leading-relaxed">
+                        💡 seedとプロンプトをClaudeに渡すと「このテイストをベースに改良して」という学習に使えます
                       </div>
                     </div>
-                    <div className="text-white/50 text-[9px] font-mono break-all leading-relaxed bg-black/30 rounded p-2 select-all">
-                      {m.imagePrompt}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })()}
               </div>
-              <div className="text-white/40 text-[9px] mt-3 leading-relaxed">
-                💡 seedとプロンプトをClaudeに渡すと「このテイストをベースに改良して」という学習に使えます
+            ) : (
+              <div>
+                <div className="text-white/60 text-[11px] mb-2">パスワードを入力してオーナーモードを解除</div>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    placeholder="パスワード"
+                    className="flex-1 px-3 py-2 rounded-xl text-sm text-white"
+                    style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)' }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        if (e.target.value === 'ishimon2026') {
+                          setIsOwner(true);
+                          e.target.value = '';
+                        } else {
+                          e.target.style.borderColor = '#ff6b6b';
+                          setTimeout(() => { e.target.style.borderColor = 'rgba(255,255,255,0.2)'; }, 1000);
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    className="px-3 py-2 rounded-xl text-xs font-black active:scale-95"
+                    style={{ background: 'rgba(255,224,102,0.2)', border: '1px solid rgba(255,224,102,0.4)', color: '#fde68a' }}
+                    onClick={(e) => {
+                      const input = e.target.previousSibling;
+                      if (input.value === 'ishimon2026') {
+                        setIsOwner(true);
+                        input.value = '';
+                      } else {
+                        input.style.borderColor = '#ff6b6b';
+                        setTimeout(() => { input.style.borderColor = 'rgba(255,255,255,0.2)'; }, 1000);
+                      }
+                    }}
+                  >解除</button>
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            )}
+          </div>
+        </div>
 
         {/* バージョン情報 */}
         <div className="text-center text-white/50 text-[10px] font-bold mt-6">
@@ -6198,6 +6190,7 @@ function IshimonZukan() {
       </div>
     );
   };
+
 
   // ===========================================
   // 下部固定タブバー
