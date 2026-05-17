@@ -1,427 +1,480 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="石の写真を撮ると、AIが世界に1体だけのモンスターを生み出す。旅先・公園・日常のどこでも、石ころが一生の思い出になる図鑑ゲーム。">
-<meta property="og:title" content="石モン図鑑 — この石ころが、一生の宝物になる">
-<meta property="og:description" content="石の写真を撮ると、AIが世界に1体だけのモンスターを生み出す。旅先・公園・日常のどこでも冒険になる図鑑ゲーム。完全無料。">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://ishimonzukan.com/">
-<meta property="og:locale" content="ja_JP">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="石モン図鑑 — この石ころが、一生の宝物になる">
-<meta name="twitter:description" content="石の写真を撮ると、AIが世界に1体だけのモンスターを生み出す図鑑ゲーム。完全無料。">
-<title>石モン図鑑 — この石ころが、一生の宝物になる</title>
-<link rel="canonical" href="https://ishimonzukan.com/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="石モン図鑑">
+  <meta name="application-name" content="石モン図鑑">
+  <meta name="theme-color" content="#FF6B35">
+  <meta name="description" content="石の写真を撮ると、AIが世界に1体だけのモンスターを生み出す。旅先・公園・日常のどこでも、石ころが一生の思い出になる図鑑ゲーム。">
+  <meta property="og:title" content="石モン図鑑 — この石ころが、一生の宝物になる">
+  <meta property="og:description" content="石の写真を撮ると、AIが世界に1体だけのモンスターを生み出す。旅先・公園・日常のどこでも冒険になる図鑑ゲーム。完全無料。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ishimonzukan.com/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="石モン図鑑 — この石ころが、一生の宝物になる">
+  <meta name="twitter:description" content="石の写真を撮ると、AIが世界に1体だけのモンスターを生み出す図鑑ゲーム。完全無料。">
+  
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-J4CZ7ZZST3');
+  </script>
 
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"石モン図鑑","alternateName":"Ishimon Zukan","url":"https://ishimonzukan.com/game/","description":"石の写真を撮ると、AIが世界に1体だけのモンスターを生み出す図鑑ゲーム。","applicationCategory":"GameApplication","operatingSystem":"iOS, Android, Web","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"publisher":{"@type":"Organization","name":"石モン図鑑","url":"https://ishimonzukan.com/","email":"ishimonzukan@gmail.com"},"inLanguage":"ja"}
-</script>
+  <title>石モン図鑑</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-J4CZ7ZZST3');</script>
+    body {
+      font-family: 'M PLUS Rounded 1c', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #FF6B35 0%, #C71F8E 50%, #5A1A78 100%);
+      color: white;
+      line-height: 1.6;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+      min-height: 100vh;
+      -webkit-overflow-scrolling: touch;
+    }
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
+    /* ロードアニメーション背景 */
+    .floating-elements {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
 
-<style>
-:root {
-  --ink:#1a1028; --stone:#4a4060; --glow:#c77dff;
-  --gold:#ffd700; --ember:#ff6b35; --sky:#3da5f5;
-  --leaf:#52b788; --bg:#f8f4ff; --white:#ffffff;
-  --grad-hero:linear-gradient(135deg,#1a0a2e 0%,#2d0f4e 40%,#1a1a4e 100%);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-body{font-family:'M PLUS Rounded 1c',sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden;}
+    .floating-element {
+      position: absolute;
+      font-size: 20px;
+      opacity: 0.15;
+      animation: float 6s ease-in-out infinite;
+    }
 
-/* ===== NAV ===== */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 32px;background:rgba(26,10,46,0.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(199,125,255,0.2);}
-.nav-logo img{height:36px;width:auto;display:block;}
-.nav-cta{background:linear-gradient(135deg,var(--gold),var(--ember));color:white;font-weight:900;font-size:13px;padding:10px 20px;border-radius:999px;text-decoration:none;box-shadow:0 4px 16px rgba(255,107,53,0.4);transition:transform 0.2s,box-shadow 0.2s;white-space:nowrap;}
-.nav-cta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,107,53,0.5);}
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-30px) rotate(5deg); }
+    }
 
-/* ===== HERO ===== */
-#hero{min-height:100svh;background:var(--grad-hero);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 0;position:relative;overflow:hidden;}
-.stars{position:absolute;inset:0;pointer-events:none;}
-.star{position:absolute;border-radius:50%;background:white;animation:twinkle var(--d) ease-in-out infinite;}
-@keyframes twinkle{0%,100%{opacity:0.2;transform:scale(1);}50%{opacity:1;transform:scale(1.5);}}
-.hero-eyebrow{font-size:11px;font-weight:700;color:rgba(199,125,255,0.8);letter-spacing:0.3em;text-transform:uppercase;margin-bottom:16px;animation:fadeUp 0.8s ease both;}
-.hero-title{font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:clamp(32px,7vw,72px);color:white;line-height:1.2;margin-bottom:8px;text-shadow:0 4px 0 rgba(0,0,0,0.4);animation:fadeUp 0.8s 0.1s ease both;}
-.hero-title span{background:linear-gradient(90deg,var(--gold),var(--ember));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;}
-.hero-sub{font-size:clamp(14px,2.5vw,18px);font-weight:700;color:rgba(255,255,255,0.7);line-height:1.7;max-width:480px;margin:0 auto 32px;animation:fadeUp 0.8s 0.2s ease both;}
-.hero-cta{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold),var(--ember));color:white;font-weight:900;font-size:16px;padding:16px 40px;border-radius:999px;text-decoration:none;border:3px solid rgba(255,255,255,0.5);box-shadow:0 8px 32px rgba(255,107,53,0.5);transition:transform 0.2s,box-shadow 0.2s;animation:fadeUp 0.8s 0.3s ease both;}
-.hero-cta:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 12px 40px rgba(255,107,53,0.6);}
-.hero-note{font-size:11px;color:rgba(255,255,255,0.4);margin-top:12px;animation:fadeUp 0.8s 0.4s ease both;}
+    /* コンテナ */
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-/* ===== TICKER ===== */
-.hero-ticker-wrap{width:100%;overflow:hidden;position:relative;margin-top:48px;padding:16px 0 32px;animation:fadeUp 0.8s 0.5s ease both;}
-.hero-ticker-wrap::before,.hero-ticker-wrap::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none;}
-.hero-ticker-wrap::before{left:0;background:linear-gradient(to right,#1a0a2e,transparent);}
-.hero-ticker-wrap::after{right:0;background:linear-gradient(to left,#1a0a2e,transparent);}
-.hero-ticker{display:flex;gap:20px;width:max-content;animation:ticker 28s linear infinite;}
-.hero-ticker:hover{animation-play-state:paused;}
-@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
-.ticker-mon{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.25);box-shadow:0 0 20px rgba(199,125,255,0.4);flex-shrink:0;transition:transform 0.3s,box-shadow 0.3s;}
-.ticker-mon:hover{transform:scale(1.15) translateY(-6px);box-shadow:0 0 32px rgba(255,215,0,0.8);}
+    /* ヘッダー */
+    header {
+      text-align: center;
+      padding: 40px 20px;
+    }
 
-@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+    .logo {
+      font-size: 64px;
+      margin-bottom: 16px;
+      display: inline-block;
+      animation: bounce 2s ease-in-out infinite;
+    }
 
-/* ===== STEPS ===== */
-#steps{background:white;padding:80px 24px;}
-.section-label{text-align:center;font-size:11px;font-weight:700;letter-spacing:0.3em;color:var(--glow);text-transform:uppercase;margin-bottom:12px;}
-.section-title{font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:clamp(24px,4vw,40px);text-align:center;color:var(--ink);margin-bottom:48px;line-height:1.3;}
-.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;max-width:960px;margin:0 auto;}
-.step-card{background:var(--bg);border-radius:24px;padding:32px 24px;text-align:center;border:2px solid rgba(199,125,255,0.15);transition:transform 0.3s,box-shadow 0.3s;}
-.step-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(199,125,255,0.15);}
-.step-num{display:inline-block;font-size:11px;font-weight:900;letter-spacing:0.2em;color:var(--glow);background:rgba(199,125,255,0.1);border-radius:999px;padding:4px 12px;margin-bottom:16px;}
-.step-icon{font-size:48px;margin-bottom:12px;}
-.step-title{font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:18px;color:var(--ink);margin-bottom:8px;}
-.step-desc{font-size:14px;line-height:1.7;color:var(--stone);}
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
 
-/* ===== GALLERY ===== */
-#gallery{background:linear-gradient(180deg,#1a0a2e,#2d0f4e);padding:80px 0;}
-#gallery .section-label{color:rgba(199,125,255,0.8);}
-#gallery .section-title{color:white;padding:0 24px;}
-.gallery-scroll-outer{width:100%;overflow:hidden;position:relative;padding:8px 0 24px;margin-top:32px;}
-.gallery-scroll-outer::before,.gallery-scroll-outer::after{content:'';position:absolute;top:0;bottom:0;width:48px;z-index:2;pointer-events:none;}
-.gallery-scroll-outer::before{left:0;background:linear-gradient(to right,#1a0a2e,transparent);}
-.gallery-scroll-outer::after{right:0;background:linear-gradient(to left,#1a0a2e,transparent);}
-.gallery-scroll-track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:8px 32px;cursor:grab;}
-.gallery-scroll-track:active{cursor:grabbing;}
-.gallery-scroll-track::-webkit-scrollbar{display:none;}
-.mon-card{flex:0 0 156px;scroll-snap-align:start;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:14px 10px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;transition:transform 0.25s,border-color 0.25s,box-shadow 0.25s;}
-.mon-card:hover{transform:translateY(-6px) scale(1.03);border-color:rgba(199,125,255,0.4);box-shadow:0 12px 32px rgba(199,125,255,0.2);}
-.mon-card-img{width:112px;height:112px;object-fit:contain;border-radius:12px;display:block;animation:float 3s ease-in-out infinite;}
-.mon-card:nth-child(2) .mon-card-img{animation-delay:-0.5s;}
-.mon-card:nth-child(3) .mon-card-img{animation-delay:-1s;}
-.mon-card:nth-child(4) .mon-card-img{animation-delay:-1.5s;}
-.mon-card:nth-child(5) .mon-card-img{animation-delay:-2s;}
-.mon-card:nth-child(6) .mon-card-img{animation-delay:-2.5s;}
-.mon-card:nth-child(7) .mon-card-img{animation-delay:-0.3s;}
-.mon-card:nth-child(8) .mon-card-img{animation-delay:-0.8s;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
-.mon-card-name{font-size:13px;font-weight:900;color:white;text-align:center;}
-.mon-card-meta{display:flex;align-items:center;gap:5px;justify-content:center;}
-.mon-card-el{font-size:10px;font-weight:700;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);padding:2px 8px;border-radius:99px;}
-.mon-card-rarity{font-size:10px;color:var(--gold);letter-spacing:1px;}
-.gallery-hint{text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;padding:0 24px;}
+    h1 {
+      font-size: 2.5em;
+      font-weight: 900;
+      margin-bottom: 16px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
 
-/* ===== FEATURES ===== */
-#features{background:white;padding:80px 24px;}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:960px;margin:0 auto;}
-.feature-card{padding:28px 24px;border-radius:20px;border:2px solid transparent;transition:transform 0.3s,border-color 0.3s;}
-.feature-card:hover{transform:translateY(-4px);}
-.feature-card.purple{background:rgba(199,125,255,0.08);border-color:rgba(199,125,255,0.25);}
-.feature-card.gold{background:rgba(255,215,0,0.08);border-color:rgba(255,215,0,0.25);}
-.feature-card.ember{background:rgba(255,107,53,0.08);border-color:rgba(255,107,53,0.25);}
-.feature-card.sky{background:rgba(61,165,245,0.08);border-color:rgba(61,165,245,0.25);}
-.feature-icon{font-size:36px;margin-bottom:12px;}
-.feature-title{font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:16px;color:var(--ink);margin-bottom:6px;}
-.feature-desc{font-size:13px;line-height:1.7;color:var(--stone);}
+    .tagline {
+      font-size: 1.2em;
+      opacity: 0.95;
+      margin-bottom: 12px;
+      line-height: 1.8;
+    }
 
-/* ===== COMMUNITY ===== */
-#community{background:var(--bg);padding:80px 24px;}
-.community-inner{max-width:640px;margin:0 auto;text-align:center;}
-.coming-soon-badge{display:inline-block;font-size:11px;font-weight:900;letter-spacing:0.2em;color:var(--ember);background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);border-radius:999px;padding:5px 14px;margin-bottom:16px;}
-.community-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:32px;}
-.community-card{background:white;border-radius:20px;padding:24px 16px;border:2px dashed rgba(199,125,255,0.3);text-align:center;}
-.community-card-icon{font-size:32px;margin-bottom:8px;}
-.community-card-title{font-weight:900;font-size:14px;color:var(--ink);margin-bottom:4px;}
-.community-card-desc{font-size:12px;color:var(--stone);line-height:1.6;}
-.mon-placeholder{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:24px auto 0;max-width:320px;}
-.mon-ph-item{aspect-ratio:1/1;border-radius:12px;background:linear-gradient(135deg,rgba(199,125,255,0.15),rgba(255,215,0,0.1));border:2px dashed rgba(199,125,255,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;color:rgba(199,125,255,0.4);}
+    .subtitle {
+      font-size: 0.95em;
+      opacity: 0.85;
+    }
 
-/* ===== CTA ===== */
-#cta{background:linear-gradient(135deg,#2d0f4e,#1a1a4e,#0d2a3e);padding:80px 24px;text-align:center;position:relative;overflow:hidden;}
-#cta::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(199,125,255,0.3),transparent 60%);}
-.cta-title{font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:clamp(24px,5vw,48px);color:white;margin-bottom:16px;line-height:1.3;position:relative;}
-.cta-title span{background:linear-gradient(90deg,var(--gold),var(--ember));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.cta-sub{color:rgba(255,255,255,0.6);font-size:15px;font-weight:700;margin-bottom:32px;position:relative;}
-.cta-btn{display:inline-block;background:linear-gradient(135deg,var(--gold),var(--ember));color:white;font-weight:900;font-size:18px;padding:18px 48px;border-radius:999px;text-decoration:none;border:3px solid rgba(255,255,255,0.5);box-shadow:0 8px 40px rgba(255,107,53,0.5);transition:transform 0.2s,box-shadow 0.2s;position:relative;}
-.cta-btn:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 12px 50px rgba(255,107,53,0.7);}
-.cta-note{color:rgba(255,255,255,0.35);font-size:12px;margin-top:12px;position:relative;}
+    /* CTA ボタン */
+    .cta-section {
+      padding: 30px 20px;
+      text-align: center;
+    }
 
-/* ===== FOOTER ===== */
-footer{background:#0f0820;padding:40px 24px;text-align:center;border-top:1px solid rgba(199,125,255,0.15);}
-.footer-logo{margin-bottom:20px;}
-.footer-logo img{height:40px;width:auto;}
-.footer-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;}
-.footer-links a{color:rgba(255,255,255,0.4);font-size:12px;text-decoration:none;transition:color 0.2s;}
-.footer-links a:hover{color:rgba(255,255,255,0.8);}
-.footer-copy{color:rgba(255,255,255,0.2);font-size:11px;}
+    .btn-main {
+      display: inline-block;
+      padding: 18px 40px;
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+      color: #5A1A78;
+      text-decoration: none;
+      border-radius: 50px;
+      font-size: 1.1em;
+      font-weight: 900;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      margin: 16px;
+      display: inline-block;
+      transform: scale(1);
+    }
 
-/* ===== RESPONSIVE ===== */
-@media(max-width:600px){
-  nav{padding:10px 16px;}
-  .nav-logo img{height:28px;}
-  .ticker-mon{width:80px;height:80px;}
-}
+    .btn-main:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
 
-/* ===== REVEAL ===== */
-.reveal{opacity:0;transform:translateY(32px);transition:opacity 0.7s ease,transform 0.7s ease;}
-.reveal.visible{opacity:1;transform:translateY(0);}
-</style>
+    .btn-main:active {
+      transform: scale(0.95);
+    }
+
+    /* セクション */
+    .section {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 24px 0;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    .section h2 {
+      font-size: 1.5em;
+      margin-bottom: 16px;
+      color: #FFD700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section h2::before {
+      font-size: 1.3em;
+    }
+
+    .section-content {
+      font-size: 1em;
+      opacity: 0.95;
+      line-height: 1.8;
+    }
+
+    .features {
+      display: grid;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .feature {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 16px;
+      border-radius: 12px;
+      border-left: 4px solid #FFD700;
+    }
+
+    .feature-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #FFD700;
+    }
+
+    .feature-desc {
+      font-size: 0.95em;
+      opacity: 0.85;
+    }
+
+    /* リンク集 */
+    .links-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .link-card {
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      text-decoration: none;
+      color: white;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .link-card:hover {
+      background: rgba(255, 215, 0, 0.15);
+      border-color: rgba(255, 215, 0, 0.5);
+      transform: translateY(-3px);
+    }
+
+    .link-card-icon {
+      font-size: 1.8em;
+      margin-bottom: 8px;
+    }
+
+    .link-card-title {
+      font-weight: 700;
+      font-size: 0.95em;
+    }
+
+    .link-card-desc {
+      font-size: 0.75em;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+
+    /* SNS セクション */
+    .sns-section {
+      margin-top: 20px;
+    }
+
+    .sns-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .sns-link {
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      text-decoration: none;
+      color: white;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sns-link:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 215, 0, 0.5);
+    }
+
+    .sns-link-icon {
+      font-size: 1.8em;
+    }
+
+    .sns-link-text {
+      font-size: 0.9em;
+      font-weight: 700;
+    }
+
+    /* フッター */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.7;
+      font-size: 0.9em;
+    }
+
+    footer a {
+      color: #FFD700;
+      text-decoration: none;
+      margin: 0 8px;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2em;
+      }
+
+      .logo {
+        font-size: 48px;
+      }
+
+      .tagline {
+        font-size: 1em;
+      }
+
+      .btn-main {
+        font-size: 1em;
+        padding: 16px 32px;
+        margin: 12px;
+      }
+
+      .section {
+        padding: 20px;
+        margin: 16px 0;
+      }
+
+      .section h2 {
+        font-size: 1.3em;
+      }
+
+      .links-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sns-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* アニメーション削減 */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- 浮遊要素背景 -->
+  <div class="floating-elements" id="floatingElements"></div>
 
-<!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">
-    <img src="/images/logo-white.png" alt="石モン図鑑">
-  </a>
-  <a href="/game/" class="nav-cta">今すぐ遊ぶ（無料）→</a>
-</nav>
+  <div class="container">
+    <!-- ヘッダー -->
+    <header>
+      <div class="logo">🪨</div>
+      <h1>石モン図鑑</h1>
+      <p class="tagline">この石ころが、<br>一生の宝物になる</p>
+      <p class="subtitle">完全無料・アカウント不要</p>
+    </header>
 
-<!-- HERO -->
-<section id="hero">
-  <div class="stars" id="stars"></div>
-  <p class="hero-eyebrow">Stone Monster Collection</p>
-  <h1 class="hero-title">
-    この石ころが、<br><span>一生の宝物になる</span>
-  </h1>
-  <p class="hero-sub">
-    石の写真を撮るだけで、<br>
-    AIが世界に1体だけの石モンを生み出す。<br><br>
-    旅先でも、公園でも、<br>
-    日常がぜんぶ冒険になる。
-  </p>
-  <a href="/game/" class="hero-cta">🪨 今すぐ石モンをつくる</a>
-  <p class="hero-note">完全無料・アカウント不要で始められます</p>
+    <!-- CTA -->
+    <div class="cta-section">
+      <button class="btn-main" onclick="window.location.href='/game/'">
+        🎮 今すぐ遊ぶ（無料）
+      </button>
+    </div>
 
-  <!-- 無限オートスクロール ticker -->
-  <div class="hero-ticker-wrap">
-    <div class="hero-ticker">
-<img class="ticker-mon" src="/images/mon1.webp" alt="石モン1" loading="eager">
-<img class="ticker-mon" src="/images/mon2.webp" alt="石モン2" loading="lazy">
-<img class="ticker-mon" src="/images/mon3.webp" alt="石モン3" loading="lazy">
-<img class="ticker-mon" src="/images/mon4.webp" alt="石モン4" loading="lazy">
-<img class="ticker-mon" src="/images/mon5.webp" alt="石モン5" loading="lazy">
-<img class="ticker-mon" src="/images/mon6.webp" alt="石モン6" loading="lazy">
-<img class="ticker-mon" src="/images/mon7.webp" alt="石モン7" loading="lazy">
-<img class="ticker-mon" src="/images/mon8.webp" alt="石モン8" loading="lazy">
-<img class="ticker-mon" src="/images/mon1.webp" alt="石モン1" loading="eager">
-<img class="ticker-mon" src="/images/mon2.webp" alt="石モン2" loading="lazy">
-<img class="ticker-mon" src="/images/mon3.webp" alt="石モン3" loading="lazy">
-<img class="ticker-mon" src="/images/mon4.webp" alt="石モン4" loading="lazy">
-<img class="ticker-mon" src="/images/mon5.webp" alt="石モン5" loading="lazy">
-<img class="ticker-mon" src="/images/mon6.webp" alt="石モン6" loading="lazy">
-<img class="ticker-mon" src="/images/mon7.webp" alt="石モン7" loading="lazy">
-<img class="ticker-mon" src="/images/mon8.webp" alt="石モン8" loading="lazy">
-    </div>
-  </div>
-</section>
-
-<!-- STEPS -->
-<section id="steps">
-  <p class="section-label reveal">あそびかた</p>
-  <h2 class="section-title reveal">3ステップで石モンが生まれる</h2>
-  <div class="steps-grid">
-    <div class="step-card reveal">
-      <span class="step-num">STEP 01</span>
-      <div class="step-icon">📷</div>
-      <h3 class="step-title">石を撮影する</h3>
-      <p class="step-desc">公園・海・山・旅先どこでも。石ならなんでもOK。カメラを向けてシャッターを押すだけ。</p>
-    </div>
-    <div class="step-card reveal">
-      <span class="step-num">STEP 02</span>
-      <div class="step-icon">✨</div>
-      <h3 class="step-title">AIが石モンに変える</h3>
-      <p class="step-desc">石の色・形・質感をAIが読み取り、世界に1体だけのオリジナル石モンが誕生。</p>
-    </div>
-    <div class="step-card reveal">
-      <span class="step-num">STEP 03</span>
-      <div class="step-icon">📖</div>
-      <h3 class="step-title">図鑑に思い出を残す</h3>
-      <p class="step-desc">場所・日付が自動記録。石は自然に返して、思い出だけを図鑑に持ち帰ろう。</p>
-    </div>
-  </div>
-</section>
-
-<!-- GALLERY -->
-<section id="gallery">
-  <p class="section-label reveal">こんな石モンが生まれています</p>
-  <h2 class="section-title reveal">みんなの石モン</h2>
-  <div class="gallery-scroll-outer reveal">
-    <div class="gallery-scroll-track" id="galleryTrack">
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon1.webp" alt="クリスタルン" loading="lazy">
-    <p class="mon-card-name">クリスタルン</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">石</span>
-      <span class="mon-card-rarity">★★★</span>
-    </div>
-  </div>
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon2.webp" alt="エンバーラ" loading="lazy">
-    <p class="mon-card-name">エンバーラ</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">炎</span>
-      <span class="mon-card-rarity">★★★★</span>
-    </div>
-  </div>
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon3.webp" alt="クラウディア" loading="lazy">
-    <p class="mon-card-name">クラウディア</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">雲</span>
-      <span class="mon-card-rarity">★★★★★</span>
-    </div>
-  </div>
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon4.webp" alt="ロッカー" loading="lazy">
-    <p class="mon-card-name">ロッカー</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">岩</span>
-      <span class="mon-card-rarity">★★</span>
-    </div>
-  </div>
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon5.webp" alt="ドラゴラ" loading="lazy">
-    <p class="mon-card-name">ドラゴラ</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">竜</span>
-      <span class="mon-card-rarity">★★★★</span>
-    </div>
-  </div>
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon6.webp" alt="キングストン" loading="lazy">
-    <p class="mon-card-name">キングストン</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">石王</span>
-      <span class="mon-card-rarity">★★★★★</span>
-    </div>
-  </div>
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon7.webp" alt="サンドスパイク" loading="lazy">
-    <p class="mon-card-name">サンドスパイク</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">砂</span>
-      <span class="mon-card-rarity">★★★</span>
-    </div>
-  </div>
-  <div class="mon-card">
-    <img class="mon-card-img" src="/images/mon8.webp" alt="サンダーボルト" loading="lazy">
-    <p class="mon-card-name">サンダーボルト</p>
-    <div class="mon-card-meta">
-      <span class="mon-card-el">雷</span>
-      <span class="mon-card-rarity">★★★★★</span>
-    </div>
-  </div>
-    </div>
-  </div>
-  <p class="gallery-hint">← スワイプして見る →</p>
-</section>
-
-<!-- FEATURES -->
-<section id="features">
-  <p class="section-label reveal">なぜ石モン図鑑？</p>
-  <h2 class="section-title reveal">石ころが、もっと楽しくなる</h2>
-  <div class="features-grid">
-    <div class="feature-card purple reveal">
-      <div class="feature-icon">🌍</div>
-      <h3 class="feature-title">どこでも石モンを発見</h3>
-      <p class="feature-desc">公園・海・山・旅先。日常のどこにでも石はある。歩くたびに冒険になる。</p>
-    </div>
-    <div class="feature-card gold reveal">
-      <div class="feature-icon">🤖</div>
-      <h3 class="feature-title">AIが1体ずつデザイン</h3>
-      <p class="feature-desc">同じ石モンは世界に1体も存在しない。あなただけのオリジナルキャラクター。</p>
-    </div>
-    <div class="feature-card ember reveal">
-      <div class="feature-icon">📸</div>
-      <h3 class="feature-title">思い出が自動で記録</h3>
-      <p class="feature-desc">場所・日付・天気が自動保存。石モン図鑑が旅の記録帳になる。</p>
-    </div>
-    <div class="feature-card sky reveal">
-      <div class="feature-icon">👨‍👩‍👧</div>
-      <h3 class="feature-title">家族みんなで楽しめる</h3>
-      <p class="feature-desc">子供から大人まで。石探しが家族の共通の楽しみになる。</p>
-    </div>
-  </div>
-</section>
-
-<!-- COMMUNITY -->
-<section id="community">
-  <div class="community-inner">
-    <span class="coming-soon-badge reveal">COMING SOON</span>
-    <h2 class="section-title reveal">もっと広がる、石モンの世界</h2>
-    <p class="reveal" style="color:var(--stone);font-size:15px;line-height:1.8;margin-bottom:8px;">
-      バトル・コレクション・育成…<br>石モン図鑑はまだまだ進化中。
-    </p>
-    <div class="community-cards">
-      <div class="community-card reveal">
-        <div class="community-card-icon">⚔️</div>
-        <h3 class="community-card-title">石モンバトル</h3>
-        <p class="community-card-desc">集めた石モンで友達と対戦。属性と戦略が勝敗を分ける。</p>
+    <!-- 説明セクション -->
+    <section class="section">
+      <h2>🎯 どんなゲーム？</h2>
+      <div class="section-content">
+        石の写真を撮るだけで、AIが世界に1体だけの石モンを生み出します。
+        <div class="features">
+          <div class="feature">
+            <div class="feature-title">📸 撮って生成</div>
+            <div class="feature-desc">石を撮影するだけで、AIがユニークな石モンを作成</div>
+          </div>
+          <div class="feature">
+            <div class="feature-title">📚 集める</div>
+            <div class="feature-desc">世界に1体だけの石モンを集めて図鑑を完成させよう</div>
+          </div>
+          <div class="feature">
+            <div class="feature-title">⚔️ バトル</div>
+            <div class="feature-desc">集めた石モンを育ててバトルで競い合う</div>
+          </div>
+          <div class="feature">
+            <div class="feature-title">🌍 冒険</div>
+            <div class="feature-desc">旅先でも公園でも日常がぜんぶ冒険に</div>
+          </div>
+        </div>
       </div>
-      <div class="community-card reveal">
-        <div class="community-card-icon">🗺️</div>
-        <h3 class="community-card-title">石モンマップ</h3>
-        <p class="community-card-desc">みんなが見つけた石モンが地図上に表示。名所巡りが楽しくなる。</p>
+    </section>
+
+    <!-- 主要リンク -->
+    <section class="section">
+      <h2>🗺️ リンク</h2>
+      <div class="links-grid">
+        <a class="link-card" href="/game/">
+          <div class="link-card-icon">🎮</div>
+          <div class="link-card-title">ゲーム</div>
+          <div class="link-card-desc">遊ぶ</div>
+        </a>
+        <a class="link-card" href="/sitemap.html">
+          <div class="link-card-icon">🗺️</div>
+          <div class="link-card-title">サイトマップ</div>
+          <div class="link-card-desc">すべてのページ</div>
+        </a>
       </div>
-      <div class="community-card reveal">
-        <div class="community-card-icon">🎴</div>
-        <h3 class="community-card-title">石モン交換</h3>
-        <p class="community-card-desc">レアな石モンをトレード。コレクションを完成させよう。</p>
+    </section>
+
+    <!-- SNS -->
+    <section class="section sns-section">
+      <h2>📱 フォローする</h2>
+      <div class="sns-grid">
+        <a class="sns-link" href="https://twitter.com/ishimonzukan" target="_blank" rel="noopener noreferrer">
+          <div class="sns-link-icon">𝕏</div>
+          <div class="sns-link-text">X</div>
+        </a>
+        <a class="sns-link" href="https://instagram.com/ishimonzukan" target="_blank" rel="noopener noreferrer">
+          <div class="sns-link-icon">📷</div>
+          <div class="sns-link-text">Instagram</div>
+        </a>
       </div>
+    </section>
+  </div>
+
+  <!-- フッター -->
+  <footer>
+    <p>© 2024 石モン図鑑</p>
+    <div>
+      <a href="/sitemap.html">サイトマップ</a>
+      <a href="/game/">ゲーム</a>
     </div>
-    <div class="mon-placeholder reveal">
-      <div class="mon-ph-item">？</div>
-      <div class="mon-ph-item">？</div>
-      <div class="mon-ph-item">？</div>
-      <div class="mon-ph-item">？</div>
-    </div>
-  </div>
-</section>
+  </footer>
 
-<!-- CTA -->
-<section id="cta">
-  <h2 class="cta-title">さあ、<span>石モン</span>を<br>見つけに行こう</h2>
-  <p class="cta-sub">今日から始まる、石ころ冒険。</p>
-  <a href="/game/" class="cta-btn">🪨 無料で始める</a>
-  <p class="cta-note">完全無料・アカウント不要・インストール不要</p>
-</section>
+  <script>
+    // 浮遊要素の生成
+    function generateFloatingElements() {
+      const container = document.getElementById('floatingElements');
+      const elements = ['🪨', '✨', '⭐', '💫'];
+      for (let i = 0; i < 20; i++) {
+        const element = document.createElement('div');
+        element.className = 'floating-element';
+        element.textContent = elements[Math.floor(Math.random() * elements.length)];
+        element.style.left = Math.random() * 100 + '%';
+        element.style.top = Math.random() * 100 + '%';
+        element.style.animationDelay = Math.random() * 3 + 's';
+        element.style.animationDuration = (Math.random() * 4 + 4) + 's';
+        container.appendChild(element);
+      }
+    }
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo">
-    <img src="/images/logo-color.png" alt="石モン図鑑">
-  </div>
-  <div class="footer-links">
-    <a href="/game/">ゲームをプレイ</a>
-    <a href="mailto:ishimonzukan@gmail.com">お問い合わせ</a>
-  </div>
-  <p class="footer-copy">© 2025 石モン図鑑. All rights reserved.</p>
-</footer>
+    // ページ読み込み時に実行
+    window.addEventListener('DOMContentLoaded', () => {
+      generateFloatingElements();
+    });
 
-<script>
-const starsEl = document.getElementById('stars');
-for(let i=0;i<60;i++){
-  const s=document.createElement('div');
-  s.className='star';
-  const size=Math.random()*3+1;
-  s.style.cssText=`width:${size}px;height:${size}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s;`;
-  starsEl.appendChild(s);
-}
-
-const obs=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
-},{threshold:0.15});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
-
-const track=document.getElementById('galleryTrack');
-let isDown=false,startX,scrollLeft;
-track.addEventListener('mousedown',e=>{isDown=true;startX=e.pageX-track.offsetLeft;scrollLeft=track.scrollLeft;});
-track.addEventListener('mouseleave',()=>isDown=false);
-track.addEventListener('mouseup',()=>isDown=false);
-track.addEventListener('mousemove',e=>{
-  if(!isDown)return;
-  e.preventDefault();
-  const x=e.pageX-track.offsetLeft;
-  track.scrollLeft=scrollLeft-(x-startX)*1.5;
-});
-</script>
+    // ボタンのクリック時アニメーション
+    document.querySelectorAll('.btn-main, .link-card, .sns-link').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        if (!e.target.closest('a') || this.tagName === 'BUTTON') {
+          this.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            this.style.transform = '';
+          }, 100);
+        }
+      });
+    });
+  </script>
 </body>
 </html>
