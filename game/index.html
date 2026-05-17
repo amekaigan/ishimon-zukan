@@ -64,6 +64,15 @@
   }).catch(e => {
     console.error('[Auth] リダイレクト結果エラー:', e);
   });
+
+  // ★ 認証状態確定をReactに通知（レースコンディション防止）
+  onAuthStateChanged(auth, (user) => {
+    window._currentUid = user ? user.uid : null;
+    if (window._authReadyResolve) {
+      window._authReadyResolve(user);
+      window._authReadyResolve = null;
+    }
+  });
 </script>
 <style>
   * { -webkit-tap-highlight-color: transparent; }
