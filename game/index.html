@@ -2600,7 +2600,7 @@ function IshimonZukan() {
 
         {/* ミッション通知（赤丸バッジで知らせる、揺れなし） */}
         {claimableMissions > 0 && (
-          <button onClick={() => setShowMissions(true)}
+          <button onClick={() => { setShowMissions(true); document.body.style.overflow='hidden'; }}
             className="relative w-full mb-3 p-3 rounded-2xl text-white text-left active:scale-95 transition-transform flex items-center gap-3"
             style={{
               background: 'linear-gradient(135deg, #FFD700, #FF6B35)',
@@ -2670,7 +2670,7 @@ function IshimonZukan() {
 
         {/* ショップ・アイテムへのクイックアクセス */}
         <div className="grid grid-cols-2 gap-2 mb-5">
-          <button onClick={() => setShowShop(true)}
+          <button onClick={() => { setShowShop(true); document.body.style.overflow='hidden'; }}
             className="p-3 rounded-2xl text-white active:scale-95 transition-transform flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 4px 0 #4A0E78', border: '2px solid #E0AEFF' }}>
             <span className="text-2xl flex-shrink-0">🛍️</span>
@@ -2679,7 +2679,7 @@ function IshimonZukan() {
               <div className="text-[10px] font-bold opacity-90 leading-tight">アイテムを購入</div>
             </div>
           </button>
-          <button onClick={() => setShowInventory(true)}
+          <button onClick={() => { setShowInventory(true); document.body.style.overflow='hidden'; }}
             className="p-3 rounded-2xl text-white active:scale-95 transition-transform flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg, #FFB347, #E67E22)', boxShadow: '0 4px 0 #8B4513', border: '2px solid #FFD699' }}>
             <span className="text-2xl flex-shrink-0">🎒</span>
@@ -2740,7 +2740,7 @@ function IshimonZukan() {
 
         {/* 今日のミッション一覧（受取可能なものがない時だけ表示。あるときは上部の通知ボタンに集約） */}
         {claimableMissions === 0 && (
-          <button onClick={() => setShowMissions(true)}
+          <button onClick={() => { setShowMissions(true); document.body.style.overflow='hidden'; }}
             className="w-full p-3 rounded-2xl text-white active:scale-95 transition-transform flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg, #52B788, #2D6A4F)', boxShadow: '0 4px 0 #1A3A2C', border: '2px solid #95D5B2' }}>
             <Calendar className="w-5 h-5" />
@@ -2847,12 +2847,12 @@ function IshimonZukan() {
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => { setShowLoginBonus(null); setView('gacha'); }}
+              <button onClick={() => { setShowLoginBonus(null); setView('gacha'); document.body.style.overflow=''; }}
                 className="flex-1 py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform"
                 style={{ background: 'linear-gradient(135deg, #C77DFF, #6A0DAD)', boxShadow: '0 3px 0 #2E0068', border: '2px solid white' }}>
                 今すぐ引く！
               </button>
-              <button onClick={() => setShowLoginBonus(null)}
+              <button onClick={() => { setShowLoginBonus(null); document.body.style.overflow=''; }}
                 className="px-3 py-2.5 rounded-2xl font-black active:scale-95 transition-transform text-white/70 underline text-xs">
                 後で
               </button>
@@ -2881,7 +2881,7 @@ function IshimonZukan() {
                 <div className="text-yellow-300 text-[10px] font-black tracking-widest">今日の</div>
                 <div className="text-2xl font-black text-white">ミッション</div>
               </div>
-              <CloseButton onClick={() => setShowMissions(false)} position="absolute" />
+              <CloseButton onClick={() => { setShowMissions(false); document.body.style.overflow=''; }} position="absolute" />
             </div>
 
             <div className="space-y-2 mb-3">
@@ -3023,7 +3023,7 @@ function IshimonZukan() {
             </div>
           </div>
 
-          <CloseButton onClick={() => setShowShop(false)} />
+          <CloseButton onClick={() => { setShowShop(false); document.body.style.overflow=''; }} />
 
           <div className="grid grid-cols-3 gap-1 mb-3">
             {EQUIP_SLOTS.map(s => (
@@ -3162,7 +3162,7 @@ function IshimonZukan() {
               </div>
             </div>
 
-            <CloseButton onClick={() => setShowInventory(false)} />
+            <CloseButton onClick={() => { setShowInventory(false); document.body.style.overflow=''; }} />
 
             {/* タブ */}
             <div className="grid grid-cols-4 gap-1 mb-3">
@@ -3195,7 +3195,7 @@ function IshimonZukan() {
                 <div className="text-5xl mb-2 opacity-50">📭</div>
                 <div className="text-white/80 font-black text-sm mb-1">まだアイテムがありません</div>
                 <div className="text-white/60 text-xs font-bold mb-3">ショップで装備を買ったり、ガチャを引いたりしてゲットしよう！</div>
-                <button onClick={() => { setShowInventory(false); setShowShop(true); }}
+                <button onClick={() => { setShowInventory(false); setShowShop(true); document.body.style.overflow='hidden'; }}
                   className="px-4 py-2 rounded-xl text-white font-black text-sm active:scale-95"
                   style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 3px 0 #4A0E78', border: '2px solid white' }}>
                   🛍️ ショップへ行く
@@ -3257,7 +3257,7 @@ function IshimonZukan() {
 
             {/* ショップへの導線 */}
             {ownedItems.length > 0 && (
-              <button onClick={() => { setShowInventory(false); setShowShop(true); }}
+              <button onClick={() => { setShowInventory(false); setShowShop(true); document.body.style.overflow='hidden'; }}
                 className="w-full mt-3 py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 3px 0 #4A0E78', border: '2px solid white' }}>
                 🛍️ ショップへ行く
@@ -3292,7 +3292,7 @@ function IshimonZukan() {
           style={{ background: 'linear-gradient(180deg, #1976D2, #0D47A1)', border: '4px solid #FFD700' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="text-3xl font-black text-white">マイページ</div>
-            <CloseButton onClick={() => { setShowProfile(false); setEditingName(false); }} />
+            <CloseButton onClick={() => { setShowProfile(false); setEditingName(false); document.body.style.overflow=''; }} />
           </div>
 
           {/* アバター＋名前 */}
@@ -3403,6 +3403,7 @@ function IshimonZukan() {
 
     const closeGacha = () => {
       setShowGacha(false);
+      document.body.style.overflow = '';
       setGachaResults([]);
       setGachaPhase('idle');
       setView('home');
@@ -3657,7 +3658,7 @@ function IshimonZukan() {
               <div className="text-yellow-300 text-xs font-black tracking-widest">装備</div>
               <div className="text-2xl font-black text-white">{mon.name}</div>
             </div>
-            <CloseButton onClick={() => setShowEquip(null)} />
+            <CloseButton onClick={() => { setShowEquip(null); document.body.style.overflow=''; }} />
           </div>
 
           {/* 現在のステータス */}
@@ -4723,7 +4724,7 @@ function IshimonZukan() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 mb-2">
-            <button onClick={() => setShowEquip(mon)}
+            <button onClick={() => { setShowEquip(mon); document.body.style.overflow='hidden'; }}
               className="py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform"
               style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 4px 0 #4A0E78', border: '3px solid white' }}>
               ⚔️ 装備
@@ -5463,7 +5464,7 @@ function IshimonZukan() {
         </button>
 
         {/* ショップへのリンク */}
-        <button onClick={() => setShowShop(true)}
+        <button onClick={() => { setShowShop(true); document.body.style.overflow='hidden'; }}
           className="w-full mt-2 p-3 rounded-2xl text-white active:scale-95 flex items-center gap-2"
           style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 4px 0 #4A0E78', border: '2px solid #E0AEFF' }}>
           <ShoppingBag className="w-5 h-5" />
@@ -5475,7 +5476,7 @@ function IshimonZukan() {
         </button>
 
         {/* アイテムへのリンク */}
-        <button onClick={() => setShowInventory(true)}
+        <button onClick={() => { setShowInventory(true); document.body.style.overflow='hidden'; }}
           className="w-full mt-2 p-3 rounded-2xl text-white active:scale-95 flex items-center gap-2"
           style={{ background: 'linear-gradient(135deg, #FFB347, #E67E22)', boxShadow: '0 4px 0 #8B4513', border: '2px solid #FFD699' }}>
           <span className="text-xl">🎒</span>
