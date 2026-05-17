@@ -1,240 +1,155 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>石モン図鑑 - サイトマップ</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="石モン図鑑のサイトマップ。全ページへのリンク集です。">
+<meta name="robots" content="index, follow">
+<title>サイトマップ — 石モン図鑑</title>
+<link rel="canonical" href="https://ishimonzukan.com/sitemap.html">
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 40px 20px;
-        }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        }
+<style>
+:root{
+  --ink:#1a1028; --stone:#4a4060; --glow:#c77dff;
+  --gold:#ffd700; --ember:#ff6b35; --sky:#3da5f5;
+  --bg:#f8f4ff; --white:#ffffff;
+  --grad-hero:linear-gradient(135deg,#1a0a2e 0%,#2d0f4e 40%,#1a1a4e 100%);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'M PLUS Rounded 1c',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
 
-        header {
-            margin-bottom: 40px;
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 20px;
-        }
+/* ===== NAV ===== */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 32px;background:rgba(26,10,46,0.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(199,125,255,0.2);}
+.nav-logo img{height:36px;width:auto;display:block;}
+.nav-logo-fallback{color:white;font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:18px;text-decoration:none;}
+.nav-cta{background:linear-gradient(135deg,var(--gold),var(--ember));color:white;font-weight:900;font-size:13px;padding:10px 20px;border-radius:999px;text-decoration:none;box-shadow:0 4px 16px rgba(255,107,53,0.4);transition:transform 0.2s,box-shadow 0.2s;white-space:nowrap;}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,107,53,0.5);}
 
-        h1 {
-            font-size: 2.5em;
-            color: #333;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+/* ===== HEADER ===== */
+header.page-head{background:var(--grad-hero);padding:120px 24px 64px;text-align:center;}
+.page-eyebrow{font-size:11px;font-weight:700;color:rgba(199,125,255,0.8);letter-spacing:0.3em;text-transform:uppercase;margin-bottom:14px;}
+.page-title{font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:clamp(28px,5vw,44px);color:white;line-height:1.3;text-shadow:0 4px 0 rgba(0,0,0,0.4);}
+.page-title span{background:linear-gradient(90deg,var(--gold),var(--ember));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;}
+.page-sub{font-size:14px;font-weight:700;color:rgba(255,255,255,0.65);margin-top:12px;}
 
-        h1 span {
-            font-size: 1.2em;
-        }
+/* ===== CONTENT ===== */
+main{max-width:720px;margin:0 auto;padding:56px 24px 80px;}
+.section{background:var(--white);border-radius:24px;padding:28px 24px;margin-bottom:24px;border:2px solid rgba(199,125,255,0.15);box-shadow:0 8px 28px rgba(199,125,255,0.08);transition:transform 0.3s,box-shadow 0.3s;}
+.section:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(199,125,255,0.15);}
+.section.main-section{border-color:rgba(255,215,0,0.4);background:linear-gradient(135deg,rgba(255,215,0,0.06),rgba(255,107,53,0.05));}
+.section h2{font-family:'Zen Maru Gothic',sans-serif;font-weight:900;font-size:18px;color:var(--ink);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.section-icon{font-size:22px;}
+ul{list-style:none;}
+li{padding:14px 0;border-bottom:1px solid rgba(199,125,255,0.1);}
+li:last-child{border-bottom:none;}
+.link-row{display:flex;align-items:center;gap:8px;}
+.link-row::before{content:'→';color:var(--glow);font-weight:900;font-size:15px;}
+a.page-link{color:var(--glow);text-decoration:none;font-weight:700;font-size:15px;transition:color 0.2s;}
+a.page-link:hover{color:var(--ember);text-decoration:underline;}
+.link-description{color:var(--stone);font-size:12.5px;line-height:1.6;margin-top:5px;margin-left:23px;}
 
-        p.subtitle {
-            color: #666;
-            font-size: 1.1em;
-            margin-top: 10px;
-        }
+/* ===== SNS ===== */
+.sns-row{display:flex;gap:14px;flex-wrap:wrap;}
+.sns-link{display:flex;align-items:center;gap:9px;background:var(--bg);border:2px solid rgba(199,125,255,0.2);border-radius:999px;padding:11px 20px;text-decoration:none;transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;}
+.sns-link:hover{transform:translateY(-2px);border-color:var(--glow);box-shadow:0 6px 18px rgba(199,125,255,0.2);}
+.sns-icon{font-size:18px;line-height:1;}
+.sns-text{font-weight:900;font-size:14px;color:var(--ink);}
+.sns-handle{font-weight:700;font-size:12px;color:var(--stone);}
 
-        .sitemap-sections {
-            display: grid;
-            gap: 30px;
-        }
+/* ===== FOOTER ===== */
+footer{background:#0f0820;padding:36px 24px;text-align:center;border-top:1px solid rgba(199,125,255,0.15);}
+.footer-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;}
+.footer-links a{color:rgba(255,255,255,0.45);font-size:12px;text-decoration:none;transition:color 0.2s;}
+.footer-links a:hover{color:rgba(255,255,255,0.85);}
+.footer-copy{color:rgba(255,255,255,0.25);font-size:11px;}
+.footer-updated{color:rgba(255,255,255,0.2);font-size:11px;margin-top:6px;}
 
-        .section {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 25px;
-            background: #f9f9f9;
-            transition: all 0.3s ease;
-        }
-
-        .section:hover {
-            background: #f0f0f0;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .section h2 {
-            font-size: 1.5em;
-            color: #667eea;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-icon {
-            font-size: 1.3em;
-        }
-
-        ul {
-            list-style: none;
-        }
-
-        li {
-            margin-bottom: 12px;
-            padding-left: 25px;
-            position: relative;
-        }
-
-        li:before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        a {
-            color: #667eea;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 1.05em;
-        }
-
-        a:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-
-        .link-description {
-            color: #999;
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-left: 0;
-        }
-
-        footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            text-align: center;
-            color: #999;
-            font-size: 0.9em;
-        }
-
-        .main-section {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
-            border-left: 4px solid #667eea;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-
-            h1 {
-                font-size: 1.8em;
-            }
-
-            .section {
-                padding: 15px;
-            }
-
-            .section h2 {
-                font-size: 1.2em;
-            }
-        }
-    </style>
+@media(max-width:600px){
+  nav{padding:10px 16px;}
+  .nav-logo img{height:28px;}
+  header.page-head{padding:100px 20px 48px;}
+  main{padding:40px 16px 64px;}
+  .section{padding:22px 18px;}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>
-                <span>🪨</span>
-                石モン図鑑 - サイトマップ
-            </h1>
-            <p class="subtitle">このサイトの全ページへのリンク集</p>
-        </header>
 
-        <div class="sitemap-sections">
-            <!-- メインコンテンツ -->
-            <div class="section main-section">
-                <h2><span class="section-icon">🎮</span> メインコンテンツ</h2>
-                <ul>
-                    <li>
-                        <a href="https://ishimonzukan.com/">ホーム</a>
-                        <div class="link-description">石モン図鑑のホームページ</div>
-                    </li>
-                    <li>
-                        <a href="https://ishimonzukan.com/game/">ゲームをプレイ</a>
-                        <div class="link-description">石の写真を撮ってAIが世界に1体だけのモンスターを生み出す</div>
-                    </li>
-                </ul>
-            </div>
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <img src="/images/logo-white.png" alt="石モン図鑑"
+         onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<a href=\'/\' class=&quot;nav-logo-fallback&quot;>石モン図鑑</a>');">
+  </a>
+  <a href="/game/" class="nav-cta">今すぐ遊ぶ（無料）→</a>
+</nav>
 
-            <!-- 情報ページ -->
-            <div class="section">
-                <h2><span class="section-icon">ℹ️</span> 情報</h2>
-                <ul>
-                    <li>
-                        <a href="https://ishimonzukan.com/about/">このサイトについて</a>
-                        <div class="link-description">石モン図鑑の概要とプロジェクト情報</div>
-                    </li>
-                    <li>
-                        <a href="https://ishimonzukan.com/how-to-play/">遊び方</a>
-                        <div class="link-description">ゲームの基本的なルールと遊び方</div>
-                    </li>
-                </ul>
-            </div>
+<!-- HEADER -->
+<header class="page-head">
+  <p class="page-eyebrow">Site Map</p>
+  <h1 class="page-title">石モン図鑑 <span>サイトマップ</span></h1>
+  <p class="page-sub">このサイトの全ページへのリンク集</p>
+</header>
 
-            <!-- コンテンツ -->
-            <div class="section">
-                <h2><span class="section-icon">🖼️</span> ギャラリー</h2>
-                <ul>
-                    <li>
-                        <a href="https://ishimonzukan.com/gallery/">図書館</a>
-                        <div class="link-description">ユーザーが作成した石モンの図書館</div>
-                    </li>
-                </ul>
-            </div>
+<main>
+  <!-- メインコンテンツ -->
+  <section class="section main-section">
+    <h2><span class="section-icon">🎮</span>メインコンテンツ</h2>
+    <ul>
+      <li>
+        <div class="link-row"><a class="page-link" href="/">ホーム</a></div>
+        <p class="link-description">石モン図鑑のトップページ。ゲームの紹介と遊び方。</p>
+      </li>
+      <li>
+        <div class="link-row"><a class="page-link" href="/game/">ゲームをプレイ</a></div>
+        <p class="link-description">石の写真を撮ると、AIが世界に1体だけの石モンを生み出す。完全無料・アカウント不要。</p>
+      </li>
+    </ul>
+  </section>
 
-            <!-- サポート -->
-            <div class="section">
-                <h2><span class="section-icon">📧</span> サポート</h2>
-                <ul>
-                    <li>
-                        <a href="https://ishimonzukan.com/contact/">お問い合わせ</a>
-                        <div class="link-description">バグ報告や質問はこちらから</div>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- 法的情報 -->
-            <div class="section">
-                <h2><span class="section-icon">⚖️</span> 法的情報</h2>
-                <ul>
-                    <li>
-                        <a href="https://ishimonzukan.com/privacy/">プライバシーポリシー</a>
-                        <div class="link-description">個人情報の取り扱いについて</div>
-                    </li>
-                    <li>
-                        <a href="https://ishimonzukan.com/terms/">利用規約</a>
-                        <div class="link-description">サービス利用の条件</div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <footer>
-            <p>最終更新: 2024年5月18日</p>
-        </footer>
+  <!-- SNS -->
+  <section class="section">
+    <h2><span class="section-icon">📣</span>公式SNS</h2>
+    <div class="sns-row">
+      <a class="sns-link" href="https://x.com/ishimonzukan" target="_blank" rel="noopener noreferrer">
+        <span class="sns-icon">𝕏</span>
+        <span class="sns-text">X</span>
+        <span class="sns-handle">@ishimonzukan</span>
+      </a>
+      <a class="sns-link" href="https://www.instagram.com/ishimonzukan/" target="_blank" rel="noopener noreferrer">
+        <span class="sns-icon">📷</span>
+        <span class="sns-text">Instagram</span>
+        <span class="sns-handle">@ishimonzukan</span>
+      </a>
     </div>
+  </section>
+
+  <!-- サポート -->
+  <section class="section">
+    <h2><span class="section-icon">📧</span>サポート</h2>
+    <ul>
+      <li>
+        <div class="link-row"><a class="page-link" href="mailto:ishimonzukan@gmail.com">お問い合わせ</a></div>
+        <p class="link-description">バグ報告・ご質問・ご要望はメールでお気軽にどうぞ。</p>
+      </li>
+    </ul>
+  </section>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="/">ホーム</a>
+    <a href="/game/">ゲームをプレイ</a>
+    <a href="mailto:ishimonzukan@gmail.com">お問い合わせ</a>
+  </div>
+  <p class="footer-copy">© 2026 石モン図鑑. All rights reserved.</p>
+  <p class="footer-updated">最終更新: 2026年5月18日</p>
+</footer>
+
 </body>
 </html>
