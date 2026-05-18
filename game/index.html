@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
 <script>
@@ -19,10 +19,32 @@
 <meta name="theme-color" content="#FF6B35">
 <meta name="description" content="石を撮影してAIが石モンに変身！集めて、育てて、バトルしよう。">
 <link rel="manifest" href="/game/manifest.json">
-<link rel="apple-touch-icon" href="/game/icon-192.png">
-<link rel="apple-touch-icon" sizes="192x192" href="/game/icon-192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="/game/icon-512.png">
+<!-- ファビコン -->
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="shortcut icon" type="image/png" href="/favicon.png">
+<!-- ホーム画面アイコン（iOS / Android PWA） -->
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png">
 <title>石モン図鑑</title>
+<!-- OGP（SNSシェア用） -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="石モン図鑑">
+<meta property="og:title" content="石モン図鑑">
+<meta property="og:description" content="石の写真から世界に1体の石モンが生まれる。キミだけの冒険と思い出を集めよう！">
+<meta property="og:url" content="https://ishimonzukan.com/">
+<meta property="og:image" content="https://ishimonzukan.com/ogp_ishimon.png">
+<meta property="og:image:secure_url" content="https://ishimonzukan.com/ogp_ishimon.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="石モン図鑑">
+<meta property="og:locale" content="ja_JP">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="石モン図鑑">
+<meta name="twitter:description" content="石の写真から世界に1体の石モンが生まれる。キミだけの冒険と思い出を集めよう！">
+<meta name="twitter:image" content="https://ishimonzukan.com/ogp_ishimon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
@@ -84,6 +106,12 @@
   #root { min-height: 100vh; }
   /* スクロール慣性スムージング */
   html, body { -webkit-overflow-scrolling: touch; }
+  /* iOS Safari: フォーカス時の自動ズーム（＝画面拡大）を防止。
+     font-sizeが16px未満のinput等にフォーカスするとiOSが勝手に拡大するため、
+     16px以上を強制する。視覚的な文字サイズはtransformで元のサイズ感に保つ。 */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 </style>
 </head>
 <body>
@@ -298,7 +326,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.6.4';
+const APP_VERSION = '2.7.0';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1444,8 +1472,14 @@ function IshimonZukan() {
     shadowEnabled: true,        // シャドウエフェクト（古いiPhoneはOFFで軽量化）
     imageEngine: 'pollinations', // 'pollinations' | 'huggingface'
   });
-  const [isOwner, setIsOwner] = useState(false); // オーナーモード
+  // オーナーモード: localStorageに保存し、再読み込み後も維持（この端末のみ）
+  const [isOwner, setIsOwner] = useState(() => {
+    try { return localStorage.getItem('ishimon_owner') === '1'; }
+    catch (e) { return false; }
+  });
   const [tasteTab, setTasteTab] = useState('up'); // テイスト分析のタブ 'up' | 'down'
+  const [tasteOpen, setTasteOpen] = useState(false); // テイスト分析の開閉（カーテン）
+  const [tastePage, setTastePage] = useState(0); // テイスト分析のページ番号（0始まり）
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // ===== 共通: 閉じるボタン（全モーダル・画面で統一使用） =====
@@ -6090,7 +6124,7 @@ function IshimonZukan() {
                     <div className="text-white font-black text-sm">✅ オーナーとして認証済み</div>
                     <div className="text-white/50 text-[11px] mt-0.5">以下の機能が有効です</div>
                   </div>
-                  <button onClick={() => setIsOwner(false)}
+                  <button onClick={() => { try { localStorage.removeItem('ishimon_owner'); } catch (e) {} setIsOwner(false); }}
                     className="px-3 py-1.5 rounded-xl text-xs font-black active:scale-95"
                     style={{ background: 'rgba(255,100,100,0.2)', border: '1px solid rgba(255,100,100,0.4)', color: '#fca5a5' }}>
                     解除
@@ -6130,7 +6164,13 @@ function IshimonZukan() {
                   const list = tasteTab === 'up' ? upList : downList;
                   const accent = tasteTab === 'up' ? '#52B788' : '#FF6B35';
 
-                  // 表示中タブのプロンプトを全部まとめてクリップボードへ
+                  // ページング設定（1ページ10体）
+                  const PER_PAGE = 10;
+                  const totalPages = Math.max(1, Math.ceil(list.length / PER_PAGE));
+                  const safePage = Math.min(tastePage, totalPages - 1);
+                  const pageList = list.slice(safePage * PER_PAGE, safePage * PER_PAGE + PER_PAGE);
+
+                  // 表示中タブのプロンプトを全部まとめてクリップボードへ（全件・ページ無関係）
                   const copyAllPrompts = () => {
                     if (list.length === 0) return;
                     const text = list.map((m, i) =>
@@ -6156,67 +6196,217 @@ function IshimonZukan() {
                     saveCollection(updated);
                   };
 
+                  // タブ切替時はページを先頭に戻す
+                  const switchTab = (tab) => { setTasteTab(tab); setTastePage(0); };
+
                   return (
                     <div className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <div className="text-white font-black text-sm mb-2">テイスト分析</div>
-                      {/* タブ切り替え */}
+                      {/* 開閉ヘッダー（カーテン） */}
+                      <button onClick={() => setTasteOpen(o => !o)}
+                        className="w-full flex items-center justify-between active:scale-[0.99]">
+                        <div className="text-white font-black text-sm">
+                          テイスト分析
+                          <span className="text-white/50 font-bold text-[11px] ml-2">
+                            👍{upList.length} / 👎{downList.length}
+                          </span>
+                        </div>
+                        <div className="text-white/70 text-base" style={{
+                          transform: tasteOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s',
+                        }}>▼</div>
+                      </button>
+
+                      {tasteOpen && (
+                        <div className="mt-3">
+                          {/* タブ切り替え */}
+                          <div className="flex gap-2 mb-3">
+                            <button onClick={() => switchTab('up')}
+                              className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                              style={{ background: tasteTab === 'up' ? 'rgba(82,183,136,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                              👍 Good ({upList.length})
+                            </button>
+                            <button onClick={() => switchTab('down')}
+                              className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                              style={{ background: tasteTab === 'down' ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                              👎 NG ({downList.length})
+                            </button>
+                          </div>
+                          {list.length === 0 ? (
+                            <div className="text-white/50 text-[11px] leading-relaxed">
+                              石モンの詳細画面で{tasteTab === 'up' ? '👍テイストGood' : '👎テイストNG'}を押すと、ここにseedとプロンプトが記録されます。
+                            </div>
+                          ) : (
+                            <>
+                              <button onClick={copyAllPrompts}
+                                className="w-full py-2 rounded-lg font-black text-xs text-white mb-3 active:scale-95"
+                                style={{ background: accent }}>
+                                📋 {tasteTab === 'up' ? '👍' : '👎'}のプロンプトを全部コピー（{list.length}件）
+                              </button>
+                              {/* ページ送り（上） */}
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-between mb-3">
+                                  <button onClick={() => setTastePage(p => Math.max(0, p - 1))}
+                                    disabled={safePage === 0}
+                                    className="px-3 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', opacity: safePage === 0 ? 0.35 : 1 }}>
+                                    ← 前
+                                  </button>
+                                  <div className="text-white/70 font-black text-xs">
+                                    {safePage + 1} / {totalPages} ページ
+                                  </div>
+                                  <button onClick={() => setTastePage(p => Math.min(totalPages - 1, p + 1))}
+                                    disabled={safePage >= totalPages - 1}
+                                    className="px-3 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', opacity: safePage >= totalPages - 1 ? 0.35 : 1 }}>
+                                    次 →
+                                  </button>
+                                </div>
+                              )}
+                              <div className="space-y-3">
+                                {pageList.map((m, idx) => (
+                                  <div key={m.id} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.35)', border: `1px solid ${accent}55` }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="text-white/40 font-black text-xs flex-shrink-0">{safePage * PER_PAGE + idx + 1}</div>
+                                      {m.imageDataUrl && <img src={m.imageDataUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-white font-black text-sm truncate">{m.name}</div>
+                                        <div className="text-white/60 text-[10px]">{m.type} ★{m.rarity} seed: <span className="font-mono" style={{ color: accent }}>{m.imageSeed}</span></div>
+                                      </div>
+                                    </div>
+                                    <div className="text-white/50 text-[9px] font-mono break-all leading-relaxed bg-black/30 rounded p-2 select-all mb-2">
+                                      {m.imagePrompt || '(プロンプトなし)'}
+                                    </div>
+                                    {/* 一覧から評価を見直す */}
+                                    <div className="flex gap-2">
+                                      <button onClick={() => changeTaste(m.id, 'up')}
+                                        className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
+                                        style={{ background: m.taste === 'up' ? 'rgba(82,183,136,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                                        👍 Good
+                                      </button>
+                                      <button onClick={() => changeTaste(m.id, 'down')}
+                                        className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
+                                        style={{ background: m.taste === 'down' ? 'rgba(255,107,53,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                                        👎 NG
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {/* ページ送り（下） */}
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-between mt-3">
+                                  <button onClick={() => setTastePage(p => Math.max(0, p - 1))}
+                                    disabled={safePage === 0}
+                                    className="px-3 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', opacity: safePage === 0 ? 0.35 : 1 }}>
+                                    ← 前
+                                  </button>
+                                  <div className="text-white/70 font-black text-xs">
+                                    {safePage + 1} / {totalPages} ページ
+                                  </div>
+                                  <button onClick={() => setTastePage(p => Math.min(totalPages - 1, p + 1))}
+                                    disabled={safePage >= totalPages - 1}
+                                    className="px-3 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', opacity: safePage >= totalPages - 1 ? 0.35 : 1 }}>
+                                    次 →
+                                  </button>
+                                </div>
+                              )}
+                              <div className="text-white/40 text-[9px] mt-3 leading-relaxed">
+                                💡 👍と👎のプロンプトをそれぞれコピーしてClaudeに渡すと「共通要素を分析して改良プロンプトを作って」という見直しに使えます。コピーは表示中のページに関わらず全件まとめてコピーされます。同じボタンを再度押すと評価を解除できます。
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 💎 リソース補充（消えたデータの復旧用） */}
+                {(() => {
+                  const addResources = (gemsAdd, fragAdd) => {
+                    setPlayer(prev => {
+                      const updated = {
+                        ...prev,
+                        gems: (prev.gems || 0) + gemsAdd,
+                        stoneFragments: (prev.stoneFragments || 0) + fragAdd,
+                      };
+                      savePlayer(updated);
+                      return updated;
+                    });
+                  };
+                  const setResources = (gemsVal, fragVal) => {
+                    setPlayer(prev => {
+                      const updated = { ...prev, gems: gemsVal, stoneFragments: fragVal };
+                      savePlayer(updated);
+                      return updated;
+                    });
+                  };
+                  return (
+                    <div className="rounded-xl p-3 mt-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div className="text-white font-black text-sm mb-1">💎 リソース補充</div>
+                      <div className="text-white/50 text-[10px] leading-relaxed mb-3">
+                        消えてしまった「石のかけら」「きらめき石」をここから復旧できます。
+                      </div>
+                      {/* 現在の所持数 */}
                       <div className="flex gap-2 mb-3">
-                        <button onClick={() => setTasteTab('up')}
-                          className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
-                          style={{ background: tasteTab === 'up' ? 'rgba(82,183,136,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                          👍 Good ({upList.length})
+                        <div className="flex-1 rounded-lg py-1.5 text-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          <div className="text-white/60 text-[9px] font-bold">きらめき石 💎</div>
+                          <div className="text-white font-black text-lg leading-tight">{player.gems || 0}</div>
+                        </div>
+                        <div className="flex-1 rounded-lg py-1.5 text-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          <div className="text-white/60 text-[9px] font-bold">石のかけら 🪨</div>
+                          <div className="text-white font-black text-lg leading-tight">{player.stoneFragments || 0}</div>
+                        </div>
+                      </div>
+                      {/* 補充ボタン（押すたびに加算） */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => addResources(100, 0)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(124,58,237,0.4)', border: '1.5px solid #a78bfa' }}>
+                          きらめき石 +100
                         </button>
-                        <button onClick={() => setTasteTab('down')}
-                          className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
-                          style={{ background: tasteTab === 'down' ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                          👎 NG ({downList.length})
+                        <button onClick={() => addResources(1000, 0)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(124,58,237,0.4)', border: '1.5px solid #a78bfa' }}>
+                          きらめき石 +1000
+                        </button>
+                        <button onClick={() => addResources(0, 100)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(255,107,53,0.4)', border: '1.5px solid #fdba74' }}>
+                          石のかけら +100
+                        </button>
+                        <button onClick={() => addResources(0, 1000)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(255,107,53,0.4)', border: '1.5px solid #fdba74' }}>
+                          石のかけら +1000
                         </button>
                       </div>
-                      {list.length === 0 ? (
-                        <div className="text-white/50 text-[11px] leading-relaxed">
-                          石モンの詳細画面で{tasteTab === 'up' ? '👍テイストGood' : '👎テイストNG'}を押すと、ここにseedとプロンプトが記録されます。
-                        </div>
-                      ) : (
-                        <>
-                          <button onClick={copyAllPrompts}
-                            className="w-full py-2 rounded-lg font-black text-xs text-white mb-3 active:scale-95"
-                            style={{ background: accent }}>
-                            📋 {tasteTab === 'up' ? '👍' : '👎'}のプロンプトを全部コピー（{list.length}件）
-                          </button>
-                          <div className="space-y-3">
-                            {list.map(m => (
-                              <div key={m.id} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.35)', border: `1px solid ${accent}55` }}>
-                                <div className="flex items-center gap-2 mb-2">
-                                  {m.imageDataUrl && <img src={m.imageDataUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-white font-black text-sm truncate">{m.name}</div>
-                                    <div className="text-white/60 text-[10px]">{m.type} ★{m.rarity} seed: <span className="font-mono" style={{ color: accent }}>{m.imageSeed}</span></div>
-                                  </div>
-                                </div>
-                                <div className="text-white/50 text-[9px] font-mono break-all leading-relaxed bg-black/30 rounded p-2 select-all mb-2">
-                                  {m.imagePrompt || '(プロンプトなし)'}
-                                </div>
-                                {/* 一覧から評価を見直す */}
-                                <div className="flex gap-2">
-                                  <button onClick={() => changeTaste(m.id, 'up')}
-                                    className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
-                                    style={{ background: m.taste === 'up' ? 'rgba(82,183,136,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                                    👍 Good
-                                  </button>
-                                  <button onClick={() => changeTaste(m.id, 'down')}
-                                    className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
-                                    style={{ background: m.taste === 'down' ? 'rgba(255,107,53,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                                    👎 NG
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="text-white/40 text-[9px] mt-3 leading-relaxed">
-                            💡 👍と👎のプロンプトをそれぞれコピーしてClaudeに渡すと「共通要素を分析して改良プロンプトを作って」という見直しに使えます。同じボタンを再度押すと評価を解除できます。
-                          </div>
-                        </>
-                      )}
+                      {/* まとめて大量補充 */}
+                      <button onClick={() => addResources(9999, 9999)}
+                        className="w-full py-2 rounded-lg font-black text-xs text-white mt-2 active:scale-95"
+                        style={{ background: 'rgba(255,215,0,0.3)', border: '1.5px solid #FFD700' }}>
+                        ✨ 両方まとめて +9999
+                      </button>
+                      {/* 任意の値に設定（0に戻す等） */}
+                      <button onClick={() => {
+                          const g = window.prompt('きらめき石を何個にしますか？', String(player.gems || 0));
+                          if (g === null) return;
+                          const f = window.prompt('石のかけらを何個にしますか？', String(player.stoneFragments || 0));
+                          if (f === null) return;
+                          const gn = Math.max(0, parseInt(g, 10) || 0);
+                          const fn = Math.max(0, parseInt(f, 10) || 0);
+                          setResources(gn, fn);
+                          window.alert(`設定しました\nきらめき石: ${gn}\n石のかけら: ${fn}`);
+                        }}
+                        className="w-full py-2 rounded-lg font-black text-[11px] text-white/80 mt-2 active:scale-95"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                        🔢 個数を指定して設定（0に戻す等）
+                      </button>
+                      <div className="text-white/40 text-[9px] mt-2 leading-relaxed">
+                        ⚠️ 補充ボタンは押すたびに加算されます。押しすぎたら「個数を指定して設定」で調整してください。
+                      </div>
                     </div>
                   );
                 })()}
@@ -6233,6 +6423,7 @@ function IshimonZukan() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         if (e.target.value === 'ishimon2026') {
+                          try { localStorage.setItem('ishimon_owner', '1'); } catch (err) {}
                           setIsOwner(true);
                           e.target.value = '';
                         } else {
@@ -6248,6 +6439,7 @@ function IshimonZukan() {
                     onClick={(e) => {
                       const input = e.target.previousSibling;
                       if (input.value === 'ishimon2026') {
+                        try { localStorage.setItem('ishimon_owner', '1'); } catch (err) {}
                         setIsOwner(true);
                         input.value = '';
                       } else {
