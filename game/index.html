@@ -326,7 +326,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.7.0';
+const APP_VERSION = '2.7.1';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -571,16 +571,20 @@ const getOrGenerateMonImage = async (mon, seed) => {
 };
 
 // ★ 石モン図鑑スタイルDNA（全生成に自動付加されるブランドスタイル）
-// 12体の画像から精密分析した「石モンらしさ」の核 - v2.5.1
+// v6: 👍/👎評価の分析に基づき改訂（2026-05-18・v2.7.1）
+//   - 弱い画風アンカー(anime chibi style)を強いアンカー(Bikkuriman/Digimon)に
+//   - 輪郭を thick bold black outlines に強化（薄い輪郭の👎対策）
+//   - 塗りに matte を追加（写実的なつや塗りの👎対策）
+//   - 目を「2つ・左右対称」と明示（3大原因①対策）
 const ISHIMON_STYLE_DNA = [
   // 【体型】
-  'chibi monster character, cute mascot, round chubby body, big head',
-  // 【アートスタイル】シンプルなアニメ塗り
-  'anime chibi style, clean bold outlines, flat cel-shading, simple coloring',
-  // 【瞳】
-  'large shiny eyes, white highlight',
+  'cute monster character, original mascot, tiny 2-head-tall chibi baby form, big round head clearly separated from small body',
+  // 【アートスタイル】強い画風アンカー＋太い黒輪郭＋マットなセル画塗り
+  'Bikkuriman sticker style, Digimon anime style, cel-shaded, thick bold black outlines, flat matte cel-shading',
+  // 【瞳】数を2つに明示・左右対称
+  'exactly two large symmetrical shiny eyes (same size and color), white highlight',
   // 【背景・構図】
-  'centered front pose, simple gradient background',
+  'centered front pose, gradient background',
   // 【品質】
   'vibrant colors, no text, no watermark, kid-friendly',
 ].join(', ');
@@ -601,9 +605,15 @@ const buildMonPrompt = (mon, options = {}) => {
     2: '3-head-tall champion form, balanced proportions',
     3: '3.5-head-tall ultimate form, majestic crown',
   };
+  // v6: 装飾語を1段おとなしく（2026-05-18・v2.7.1）
+  //   セキガル(★2 'small crystals')が写実的なつや塗り＋宝石過剰で👎に。
+  //   低〜中レアの装飾が強すぎたため、テーブル全体を1段階下げる。
   const rarityMap = {
-    1: 'simple plain', 2: 'small crystals', 3: 'large crystals glow',
-    4: 'gemstones magical sparkles', 5: 'crown rainbow aura divine',
+    1: 'simple plain, no extra decoration',
+    2: 'a few tiny crystal accents',
+    3: 'small crystals',
+    4: 'large crystals glow',
+    5: 'gemstones magical sparkles',
   };
 
   // 時刻を入れて毎回違う絵柄に
