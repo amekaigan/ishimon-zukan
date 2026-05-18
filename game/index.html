@@ -298,7 +298,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.6.3';
+const APP_VERSION = '2.6.4';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1445,6 +1445,7 @@ function IshimonZukan() {
     imageEngine: 'pollinations', // 'pollinations' | 'huggingface'
   });
   const [isOwner, setIsOwner] = useState(false); // オーナーモード
+  const [tasteTab, setTasteTab] = useState('up'); // テイスト分析のタブ 'up' | 'down'
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // ===== 共通: 閉じるボタン（全モーダル・画面で統一使用） =====
@@ -1493,7 +1494,15 @@ function IshimonZukan() {
         const loadedCollection = colR?.value ? JSON.parse(colR.value) : SAMPLES;
         const loadedPlayer = playerR?.value ? JSON.parse(playerR.value) : null;
 
-        setCollection(loadedCollection);
+        // ★ STEP2移行: 旧⭐(isTaste)を新👍(taste:'up')へ一度だけ変換
+        const migratedCollection = loadedCollection.map(m => {
+          if (m.isTaste && !m.taste) {
+            const { isTaste, ...rest } = m;
+            return { ...rest, taste: 'up' };
+          }
+          return m;
+        });
+        setCollection(migratedCollection);
         if (settingsR?.value) {
           try { setSettings(prev => ({ ...prev, ...JSON.parse(settingsR.value) })); }
           catch (e) { /* デフォルト維持 */ }
@@ -4783,27 +4792,34 @@ function IshimonZukan() {
                   <span className="text-white font-black text-sm flex-1 text-left">お気に入り</span>
                   {isFav && <span className="text-[10px] font-bold text-pink-300">登録中</span>}
                 </button>
-                {/* テイスト登録（オーナーのみ） */}
+                {/* テイスト評価 👍/👎（オーナーのみ） */}
                 {isOwner && mon.imageSeed && (() => {
-                  const isTaste = !!mon.isTaste;
-                  const toggleTaste = () => {
-                    const updated = collection.map(m => m.id === mon.id ? { ...m, isTaste: !m.isTaste } : m);
+                  const taste = mon.taste; // 'up' | 'down' | undefined
+                  // 同じボタンを再度押すと未評価に戻る（トグル）
+                  const setTaste = (value) => {
+                    const next = (taste === value) ? null : value;
+                    const updated = collection.map(m => m.id === mon.id ? { ...m, taste: next } : m);
                     setCollection(updated);
                     saveCollection(updated);
                     setSelected(updated.find(m => m.id === mon.id));
                   };
                   return (
-                    <button onClick={toggleTaste}
-                      className="w-full flex items-center gap-2 py-2 px-3 rounded-xl mb-2 active:scale-95"
-                      style={{ background: isTaste ? 'rgba(255,200,0,0.25)' : 'rgba(255,255,255,0.08)', border: `1.5px solid ${isTaste ? '#FFD700' : 'rgba(255,255,255,0.2)'}` }}>
-                      <span className="text-lg">{isTaste ? '⭐' : '☆'}</span>
-                      <span className="text-white font-black text-sm flex-1 text-left">テイスト登録</span>
-                      {isTaste ? (
-                        <span className="text-[10px] font-bold text-yellow-300">学習中</span>
-                      ) : (
-                        <span className="text-[10px] text-white/40 font-bold">このビジュアルが好き</span>
-                      )}
-                    </button>
+                    <div className="flex gap-2 mb-2">
+                      <button onClick={() => setTaste('up')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl active:scale-95"
+                        style={{ background: taste === 'up' ? 'rgba(82,183,136,0.3)' : 'rgba(255,255,255,0.08)', border: `1.5px solid ${taste === 'up' ? '#52B788' : 'rgba(255,255,255,0.2)'}` }}>
+                        <span className="text-lg">👍</span>
+                        <span className="text-white font-black text-xs">テイストGood</span>
+                        {taste === 'up' && <span className="text-[9px] font-bold text-green-300">記録中</span>}
+                      </button>
+                      <button onClick={() => setTaste('down')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl active:scale-95"
+                        style={{ background: taste === 'down' ? 'rgba(255,107,53,0.3)' : 'rgba(255,255,255,0.08)', border: `1.5px solid ${taste === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.2)'}` }}>
+                        <span className="text-lg">👎</span>
+                        <span className="text-white font-black text-xs">テイストNG</span>
+                        {taste === 'down' && <span className="text-[9px] font-bold text-orange-300">記録中</span>}
+                      </button>
+                    </div>
                   );
                 })()}
                 {/* グループ */}
@@ -6107,37 +6123,100 @@ function IshimonZukan() {
                   )}
                 </div>
 
-                {/* ⭐ テイスト記録 */}
+                {/* 👍/👎 テイスト分析 */}
                 {(() => {
-                  const tasteList = collection.filter(m => m.isTaste && m.imageSeed);
-                  if (tasteList.length === 0) return (
-                    <div className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <div className="text-white font-black text-sm mb-1">⭐ テイスト記録</div>
-                      <div className="text-white/50 text-[11px]">気に入った石モンの詳細画面で「テイスト登録」すると、ここにseedとプロンプトが記録されます。</div>
-                    </div>
-                  );
+                  const upList = collection.filter(m => m.taste === 'up' && m.imageSeed);
+                  const downList = collection.filter(m => m.taste === 'down' && m.imageSeed);
+                  const list = tasteTab === 'up' ? upList : downList;
+                  const accent = tasteTab === 'up' ? '#52B788' : '#FF6B35';
+
+                  // 表示中タブのプロンプトを全部まとめてクリップボードへ
+                  const copyAllPrompts = () => {
+                    if (list.length === 0) return;
+                    const text = list.map((m, i) =>
+                      `[${i + 1}] ${m.name} (${m.type} ★${m.rarity}) seed:${m.imageSeed}\n${m.imagePrompt || '(プロンプトなし)'}`
+                    ).join('\n\n');
+                    const label = tasteTab === 'up' ? '👍' : '👎';
+                    const payload = `=== ${label} テイスト評価 ${list.length}件 ===\n\n${text}`;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(payload)
+                        .then(() => window.alert(`${label}のプロンプト${list.length}件をコピーしました`))
+                        .catch(() => window.alert('コピーに失敗しました'));
+                    } else {
+                      window.alert('このブラウザではコピー非対応です');
+                    }
+                  };
+
+                  // 一覧から評価を変更（付け替え・解除）
+                  const changeTaste = (monId, value) => {
+                    const cur = collection.find(m => m.id === monId);
+                    const next = (cur && cur.taste === value) ? null : value;
+                    const updated = collection.map(m => m.id === monId ? { ...m, taste: next } : m);
+                    setCollection(updated);
+                    saveCollection(updated);
+                  };
+
                   return (
-                    <div className="rounded-xl p-3" style={{ background: 'rgba(255,200,0,0.08)', border: '1.5px solid rgba(255,200,0,0.3)' }}>
-                      <div className="text-yellow-300 font-black text-sm mb-3">⭐ テイスト記録 ({tasteList.length}件)</div>
-                      <div className="space-y-3">
-                        {tasteList.map(m => (
-                          <div key={m.id} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)' }}>
-                            <div className="flex items-center gap-2 mb-2">
-                              {m.imageDataUrl && <img src={m.imageDataUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
-                              <div>
-                                <div className="text-white font-black text-sm">{m.name}</div>
-                                <div className="text-white/60 text-[10px]">{m.type} ★{m.rarity} seed: <span className="text-yellow-300 font-mono">{m.imageSeed}</span></div>
+                    <div className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div className="text-white font-black text-sm mb-2">テイスト分析</div>
+                      {/* タブ切り替え */}
+                      <div className="flex gap-2 mb-3">
+                        <button onClick={() => setTasteTab('up')}
+                          className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                          style={{ background: tasteTab === 'up' ? 'rgba(82,183,136,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                          👍 Good ({upList.length})
+                        </button>
+                        <button onClick={() => setTasteTab('down')}
+                          className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
+                          style={{ background: tasteTab === 'down' ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                          👎 NG ({downList.length})
+                        </button>
+                      </div>
+                      {list.length === 0 ? (
+                        <div className="text-white/50 text-[11px] leading-relaxed">
+                          石モンの詳細画面で{tasteTab === 'up' ? '👍テイストGood' : '👎テイストNG'}を押すと、ここにseedとプロンプトが記録されます。
+                        </div>
+                      ) : (
+                        <>
+                          <button onClick={copyAllPrompts}
+                            className="w-full py-2 rounded-lg font-black text-xs text-white mb-3 active:scale-95"
+                            style={{ background: accent }}>
+                            📋 {tasteTab === 'up' ? '👍' : '👎'}のプロンプトを全部コピー（{list.length}件）
+                          </button>
+                          <div className="space-y-3">
+                            {list.map(m => (
+                              <div key={m.id} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.35)', border: `1px solid ${accent}55` }}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  {m.imageDataUrl && <img src={m.imageDataUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-white font-black text-sm truncate">{m.name}</div>
+                                    <div className="text-white/60 text-[10px]">{m.type} ★{m.rarity} seed: <span className="font-mono" style={{ color: accent }}>{m.imageSeed}</span></div>
+                                  </div>
+                                </div>
+                                <div className="text-white/50 text-[9px] font-mono break-all leading-relaxed bg-black/30 rounded p-2 select-all mb-2">
+                                  {m.imagePrompt || '(プロンプトなし)'}
+                                </div>
+                                {/* 一覧から評価を見直す */}
+                                <div className="flex gap-2">
+                                  <button onClick={() => changeTaste(m.id, 'up')}
+                                    className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
+                                    style={{ background: m.taste === 'up' ? 'rgba(82,183,136,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                                    👍 Good
+                                  </button>
+                                  <button onClick={() => changeTaste(m.id, 'down')}
+                                    className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
+                                    style={{ background: m.taste === 'down' ? 'rgba(255,107,53,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
+                                    👎 NG
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="text-white/50 text-[9px] font-mono break-all leading-relaxed bg-black/30 rounded p-2 select-all">
-                              {m.imagePrompt}
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <div className="text-white/40 text-[9px] mt-3 leading-relaxed">
-                        💡 seedとプロンプトをClaudeに渡すと「このテイストをベースに改良して」という学習に使えます
-                      </div>
+                          <div className="text-white/40 text-[9px] mt-3 leading-relaxed">
+                            💡 👍と👎のプロンプトをそれぞれコピーしてClaudeに渡すと「共通要素を分析して改良プロンプトを作って」という見直しに使えます。同じボタンを再度押すと評価を解除できます。
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 })()}
