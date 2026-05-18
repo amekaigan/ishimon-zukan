@@ -326,7 +326,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.7.1';
+const APP_VERSION = '2.7.3';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -384,8 +384,11 @@ const buildImageUrl = (prompt, seed) => {
     seed: String(seed || Math.floor(Math.random() * 1000000)),
     nologo: 'true',
     model: 'turbo',
-    key: POLLINATIONS_APP_KEY,
   });
+  // キーは本物が設定されているときだけ付ける（プレースホルダのまま送るとエラーを誘発するため）
+  if (POLLINATIONS_APP_KEY && POLLINATIONS_APP_KEY !== 'POLLINATIONS_APP_KEY_HERE') {
+    params.set('key', POLLINATIONS_APP_KEY);
+  }
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
 };
 
@@ -485,9 +488,17 @@ const generateAiImageRaw = async (prompt, seed) => {
 };
 
 // ===== レートリミッター付きキュー =====
-// Pollinations Anonymous Tier: 15秒に1回まで
-// 429エラーが出るとしばらくブロックされるので、確実に間隔を守る
-const RATE_LIMIT_MS = 16000; // 16秒（余裕を持って）
+// Pollinations Anonymous Tier: 16秒に1回程度。429が出ると一時的にブロックされる。
+// v2.7.3: 失敗率改善のため以下を修正
+//   - バックオフを +30秒×5回(最大166秒) → +15秒×3回(最大61秒) に短縮
+//     （regenerateMonImage の90秒タイムアウト内に収め、待機だけでタイムアウトする
+//       悪循環を解消）
+//   - 失敗カウンタが成功するまで永久に減らない問題を、時間経過での自然減衰で解消
+//   - 1回失敗したら即諦めず、間隔を空けて1回だけリトライ
+const RATE_LIMIT_MS = 16000;     // 通常の最小間隔（16秒）
+const BACKOFF_PER_FAIL_MS = 15000; // 失敗1回ごとの追加待機（15秒）
+const MAX_BACKOFF_COUNT = 3;       // バックオフ加算の上限（最大 16+45=61秒）
+const FAILURE_DECAY_MS = 300000;   // 最終リクエストから5分経過で失敗カウンタをリセット
 let _lastRequestAt = 0;
 let _consecutiveFailures = 0; // 連続失敗回数（429時に増加）
 const _aiQueue = [];
@@ -499,28 +510,44 @@ const processAiQueue = async () => {
   _processingQueue = true;
   while (_aiQueue.length > 0) {
     const job = _aiQueue.shift();
+    // 最終リクエストから十分時間が経っていれば失敗カウンタを自然減衰（悪循環防止）
+    if (_lastRequestAt > 0 && Date.now() - _lastRequestAt > FAILURE_DECAY_MS) {
+      _consecutiveFailures = 0;
+    }
     // 前回からの経過を確認
     const elapsed = Date.now() - _lastRequestAt;
     let wait = Math.max(0, RATE_LIMIT_MS - elapsed);
-    // 連続失敗があれば追加待機
+    // 連続失敗があれば追加待機（上限あり）
     if (_consecutiveFailures > 0) {
-      wait += _consecutiveFailures * 30000; // 失敗ごとに+30秒
+      wait += Math.min(_consecutiveFailures, MAX_BACKOFF_COUNT) * BACKOFF_PER_FAIL_MS;
     }
     if (wait > 0) {
       await new Promise(r => setTimeout(r, wait));
     }
     _lastRequestAt = Date.now();
-    try {
-      const result = await generateAiImageRaw(job.prompt, job.seed);
-      _consecutiveFailures = 0; // 成功でリセット
-      job.resolve(result);
-    } catch (e) {
-      if (e.status === 429) {
-        _consecutiveFailures = Math.min(_consecutiveFailures + 1, 5);
-        console.warn(`Rate limited. Backoff: ${_consecutiveFailures * 30}s`);
+
+    // 生成本体（失敗時は1回だけリトライ）
+    let result = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        result = await generateAiImageRaw(job.prompt, job.seed);
+        if (result) { _consecutiveFailures = 0; break; } // 成功でリセット
+        // resultがnull（画像取得できず）→ リトライへ
+      } catch (e) {
+        if (e.status === 429) {
+          _consecutiveFailures = Math.min(_consecutiveFailures + 1, MAX_BACKOFF_COUNT);
+          console.warn(`Rate limited (429). Backoff: ${Math.min(_consecutiveFailures, MAX_BACKOFF_COUNT) * (BACKOFF_PER_FAIL_MS / 1000)}s`);
+        } else {
+          console.warn(`AI generation attempt ${attempt + 1} failed:`, e?.message || e);
+        }
       }
-      job.resolve(null); // エラーでもnullで返してアプリは継続
+      // 1回目が失敗したら、間隔を空けて2回目へ
+      if (attempt === 0) {
+        _lastRequestAt = Date.now();
+        await new Promise(r => setTimeout(r, RATE_LIMIT_MS));
+      }
     }
+    job.resolve(result); // 成功なら画像、ダメならnull（アプリは継続）
   }
   _processingQueue = false;
 };
@@ -2257,12 +2284,13 @@ function IshimonZukan() {
   const regenerateMonImage = async (mon) => {
     setAiGenerating(true);
     let timedOut = false;
-    // 90秒タイムアウト
+    // タイムアウト: レート制限の最大待機(約61秒)＋生成＋1回リトライを考慮し150秒に設定
+    //   (v2.7.3: 旧90秒だと待機中にタイムアウトする悪循環があったため延長)
     const timeoutId = setTimeout(() => {
       timedOut = true;
       setAiGenerating(false);
-      setError('AI生成がタイムアウトしました。スキップするか後で再試行してください');
-    }, 90000);
+      setError('AI生成がタイムアウトしました。少し時間をおいてから再試行してください');
+    }, 150000);
     try {
       const prompt = buildMonPrompt(mon);
       // 強制的に新しいseedで生成（既存キャッシュは新画像で上書き）
@@ -2356,9 +2384,17 @@ function IshimonZukan() {
         imagePromise.then(({ image }) => {
           if (image) {
             const finalEvolved = { ...evolved, imageDataUrl: image };
-            setCollection(prev => prev.map(c => c.id === mon.id ? finalEvolved : c));
-            saveCollection(collection.map(c => c.id === mon.id ? finalEvolved : c));
-            if (selected?.id === mon.id) setSelected(finalEvolved);
+            // バグ修正(v2.7.2): 古いcollection変数ではなく、最新stateから配列を作り、
+            //   その同じ配列をUI更新と保存の両方に使う。
+            //   旧コードは saveCollection(collection.map(...)) で関数定義時点の
+            //   古いcollectionを保存しており、後から届いた進化画像がFirestoreに
+            //   保存されず、リロードで画像が元に戻っていた。
+            setCollection(prev => {
+              const next = prev.map(c => c.id === finalEvolved.id ? finalEvolved : c);
+              saveCollection(next);
+              return next;
+            });
+            setSelected(prev => (prev && prev.id === finalEvolved.id) ? finalEvolved : prev);
           }
         });
       }
