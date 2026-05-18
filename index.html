@@ -6242,6 +6242,94 @@ function IshimonZukan() {
                     </div>
                   );
                 })()}
+
+                {/* 💎 リソース補充（消えたデータの復旧用） */}
+                {(() => {
+                  const addResources = (gemsAdd, fragAdd) => {
+                    setPlayer(prev => {
+                      const updated = {
+                        ...prev,
+                        gems: (prev.gems || 0) + gemsAdd,
+                        stoneFragments: (prev.stoneFragments || 0) + fragAdd,
+                      };
+                      savePlayer(updated);
+                      return updated;
+                    });
+                  };
+                  const setResources = (gemsVal, fragVal) => {
+                    setPlayer(prev => {
+                      const updated = { ...prev, gems: gemsVal, stoneFragments: fragVal };
+                      savePlayer(updated);
+                      return updated;
+                    });
+                  };
+                  return (
+                    <div className="rounded-xl p-3 mt-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div className="text-white font-black text-sm mb-1">💎 リソース補充</div>
+                      <div className="text-white/50 text-[10px] leading-relaxed mb-3">
+                        消えてしまった「石のかけら」「きらめき石」をここから復旧できます。
+                      </div>
+                      {/* 現在の所持数 */}
+                      <div className="flex gap-2 mb-3">
+                        <div className="flex-1 rounded-lg py-1.5 text-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          <div className="text-white/60 text-[9px] font-bold">きらめき石 💎</div>
+                          <div className="text-white font-black text-lg leading-tight">{player.gems || 0}</div>
+                        </div>
+                        <div className="flex-1 rounded-lg py-1.5 text-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          <div className="text-white/60 text-[9px] font-bold">石のかけら 🪨</div>
+                          <div className="text-white font-black text-lg leading-tight">{player.stoneFragments || 0}</div>
+                        </div>
+                      </div>
+                      {/* 補充ボタン（押すたびに加算） */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => addResources(100, 0)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(124,58,237,0.4)', border: '1.5px solid #a78bfa' }}>
+                          きらめき石 +100
+                        </button>
+                        <button onClick={() => addResources(1000, 0)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(124,58,237,0.4)', border: '1.5px solid #a78bfa' }}>
+                          きらめき石 +1000
+                        </button>
+                        <button onClick={() => addResources(0, 100)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(255,107,53,0.4)', border: '1.5px solid #fdba74' }}>
+                          石のかけら +100
+                        </button>
+                        <button onClick={() => addResources(0, 1000)}
+                          className="py-2 rounded-lg font-black text-xs text-white active:scale-95"
+                          style={{ background: 'rgba(255,107,53,0.4)', border: '1.5px solid #fdba74' }}>
+                          石のかけら +1000
+                        </button>
+                      </div>
+                      {/* まとめて大量補充 */}
+                      <button onClick={() => addResources(9999, 9999)}
+                        className="w-full py-2 rounded-lg font-black text-xs text-white mt-2 active:scale-95"
+                        style={{ background: 'rgba(255,215,0,0.3)', border: '1.5px solid #FFD700' }}>
+                        ✨ 両方まとめて +9999
+                      </button>
+                      {/* 任意の値に設定（0に戻す等） */}
+                      <button onClick={() => {
+                          const g = window.prompt('きらめき石を何個にしますか？', String(player.gems || 0));
+                          if (g === null) return;
+                          const f = window.prompt('石のかけらを何個にしますか？', String(player.stoneFragments || 0));
+                          if (f === null) return;
+                          const gn = Math.max(0, parseInt(g, 10) || 0);
+                          const fn = Math.max(0, parseInt(f, 10) || 0);
+                          setResources(gn, fn);
+                          window.alert(`設定しました\nきらめき石: ${gn}\n石のかけら: ${fn}`);
+                        }}
+                        className="w-full py-2 rounded-lg font-black text-[11px] text-white/80 mt-2 active:scale-95"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                        🔢 個数を指定して設定（0に戻す等）
+                      </button>
+                      <div className="text-white/40 text-[9px] mt-2 leading-relaxed">
+                        ⚠️ 補充ボタンは押すたびに加算されます。押しすぎたら「個数を指定して設定」で調整してください。
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <div>
