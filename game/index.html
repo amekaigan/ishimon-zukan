@@ -207,6 +207,47 @@ const _fsGet = async (key) => {
   return combined;
 };
 
+// Firestoreからの読み込み（updatedAtメタ情報つき）
+// v2.7.4 STEP1.5: 新旧比較のため、中身だけでなく保存時刻も返す。
+// 戻り値: { value, updatedAt } または null
+const _fsGetWithMeta = async (key) => {
+  const { getDoc, doc, db } = window._firebase;
+  const uid = window._currentUid;
+  const safeKey = key.replace(/[/.]/g, '_');
+  const ref = doc(db, 'users', uid, 'data', safeKey);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  const updatedAt = data.updatedAt || 0;
+  if (!data.chunks || data.chunks === 0) {
+    return { value: data.value, updatedAt };
+  }
+  let combined = '';
+  for (let i = 0; i < data.chunks; i++) {
+    const chunkRef = doc(db, 'users', uid, 'data', `${safeKey}_chunk_${i}`);
+    const chunkSnap = await getDoc(chunkRef);
+    if (chunkSnap.exists()) combined += chunkSnap.data().value;
+  }
+  return { value: combined, updatedAt };
+};
+
+// ===== v2.7.4 STEP1.5: データ新旧比較の仕組み =====
+// 巻き戻り対策。localStorage側にも保存時刻を別キーで記録し、
+// 初期ロード時に Firestore と localStorage の新しい方を採用する。
+// データ本体のJSON構造は変えない（互換性のため）。
+const _savedAtKey = (key) => `${key}__savedAt`;
+// localStorageに保存時刻を記録
+const _markLocalSaved = (key, ts) => {
+  try { localStorage.setItem(_savedAtKey(key), String(ts || Date.now())); } catch (_) {}
+};
+// localStorageの保存時刻を取得（無ければ0＝最古扱い）
+const _getLocalSavedAt = (key) => {
+  try {
+    const v = localStorage.getItem(_savedAtKey(key));
+    return v ? parseInt(v, 10) || 0 : 0;
+  } catch (_) { return 0; }
+};
+
 window.storage = {
   async get(key) {
     try {
@@ -245,6 +286,8 @@ window.storage = {
     try {
       // 常にlocalStorageにも保存（オフライン対応）
       try { localStorage.setItem(key, value); } catch (_) {}
+      // v2.7.4 STEP1.5: localStorage側にも保存時刻を記録（新旧比較用）
+      _markLocalSaved(key, Date.now());
       // Firestoreにも保存（ログイン中のみ）
       if (window._currentUid && window._firebase) {
         await _fsSet(key, value);
@@ -326,7 +369,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.7.3';
+const APP_VERSION = '2.7.4';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1371,17 +1414,39 @@ function IshimonZukan() {
               const keys = ['ishimon-player-v3', 'ishimon-collection-v3', 'ishimon-settings-v1'];
               for (const key of keys) {
                 try {
-                  const fsVal = await _fsGet(key);
-                  if (fsVal !== null) {
-                    // ★ Firestoreにデータあり → localStorageに上書き
-                    try { localStorage.setItem(key, fsVal); } catch (_) {}
-                    console.log('[Auth] Firestoreから復元:', key);
+                  // v2.7.4 STEP1.5: 無条件上書きをやめ、新旧比較で「新しい方」を採用する。
+                  //   旧コードは「Firestoreにデータがあれば無条件でlocalStorageを上書き」で、
+                  //   古いFirestoreデータが新しいローカルデータを潰す巻き戻り事故が起きていた。
+                  const fsRes = await _fsGetWithMeta(key);
+                  const localVal = localStorage.getItem(key);
+                  const localAt = _getLocalSavedAt(key);
+
+                  if (fsRes !== null && fsRes.value != null) {
+                    const fsAt = fsRes.updatedAt || 0;
+                    if (!localVal) {
+                      // ローカルが空 → Firestoreを採用
+                      localStorage.setItem(key, fsRes.value);
+                      _markLocalSaved(key, fsAt);
+                      console.log(`[Auth] Firestoreから復元(ローカル空): ${key}`);
+                    } else if (fsAt > localAt) {
+                      // Firestoreの方が新しい → Firestoreを採用。古いローカルは1世代退避
+                      try { localStorage.setItem(`${key}-prev`, localVal); } catch (_) {}
+                      localStorage.setItem(key, fsRes.value);
+                      _markLocalSaved(key, fsAt);
+                      console.log(`[Auth] Firestoreが新しいので採用: ${key} (FS:${fsAt} > Local:${localAt})`);
+                    } else if (localAt > fsAt) {
+                      // ローカルの方が新しい → Firestoreをローカルで更新
+                      await _fsSet(key, localVal);
+                      console.log(`[Auth] ローカルが新しいのでFirestore更新: ${key} (Local:${localAt} > FS:${fsAt})`);
+                    } else {
+                      // 同時刻 or 両方時刻不明 → ローカルを尊重（何もしない）
+                      console.log(`[Auth] 新旧同等、ローカル維持: ${key}`);
+                    }
                   } else {
-                    // ★ Firestoreにデータなし → localStorageのデータをFirestoreに移行
-                    const localVal = localStorage.getItem(key);
+                    // Firestoreにデータなし → localStorageのデータをFirestoreに移行
                     if (localVal) {
                       await _fsSet(key, localVal);
-                      console.log('[Auth] localStorageからFirestoreに移行:', key);
+                      console.log(`[Auth] localStorageからFirestoreに移行: ${key}`);
                     }
                   }
                 } catch (e) {
