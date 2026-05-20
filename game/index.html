@@ -369,7 +369,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.7.5';
+const APP_VERSION = '2.7.6';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1479,23 +1479,39 @@ function IshimonZukan() {
     return () => { if (typeof cleanup === 'function') cleanup(); };
   }, []);
 
-  // Googleログイン（リダイレクト方式・ポップアップより安定）
+  // Googleログイン
+  // バグ修正(v2.7.6): signInWithRedirect は Chrome M115+ / Firefox 109+ /
+  //   Safari 16.1+ のサードパーティCookie制限により事実上動かなくなった
+  //   （2024年6月以降の Firebase 公式 issue #8329）。
+  //   GitHub Pages ホスティングのため Firebase Hosting カスタムドメイン経由の
+  //   回避策も使えない。よって signInWithPopup に切り替え。
   const signInWithGoogle = async () => {
     if (!window._firebase) return;
     setAuthLoading(true);
     window.ga4.event('login_attempt');
     try {
-      // ログアウト前に現在のデータをlocalStorageに保存
+      // ログイン前に現在のデータをlocalStorageに保存（念のため）
       try {
         localStorage.setItem('ishimon-player-v3', JSON.stringify(player));
         localStorage.setItem('ishimon-collection-v3', JSON.stringify(collection));
       } catch (_) {}
-      const { auth, provider, signInWithRedirect } = window._firebase;
-      await signInWithRedirect(auth, provider);
-      // → Googleのログインページにリダイレクトされ、戻ってきたらonAuthStateChangedで処理
+      const { auth, provider, signInWithPopup } = window._firebase;
+      const result = await signInWithPopup(auth, provider);
+      console.log('[Auth] ポップアップログイン成功:', result.user.uid);
+      // → onAuthStateChanged が発火して以降の処理が走る
     } catch (e) {
-      console.error('Login error:', e);
-      setError('ログインに失敗しました。もう一度お試しください');
+      console.error('[Auth] Login error:', e);
+      // エラーコード別の案内
+      if (e?.code === 'auth/popup-blocked') {
+        setError('ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください');
+      } else if (e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/cancelled-popup-request') {
+        // ユーザーがキャンセルしただけ。エラー表示しない
+        console.log('[Auth] ユーザーがログインをキャンセル');
+      } else if (e?.code === 'auth/unauthorized-domain') {
+        setError('このドメインは Firebase で許可されていません。設定を確認してください');
+      } else {
+        setError('ログインに失敗しました。もう一度お試しください');
+      }
       setAuthLoading(false);
     }
   };
