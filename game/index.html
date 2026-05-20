@@ -379,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.11.3';
+const APP_VERSION = '2.11.4';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -5126,15 +5126,23 @@ function IshimonZukan() {
     const gems = player.gems || 0;
     const canAfford = gems >= cost;
     const [expanding, setExpanding] = useState(false);
+    // v2.11.4: 拡張成功時の祝福フラッシュ
+    const [justExpanded, setJustExpanded] = useState(false);
     const handleExpand = () => {
       if (!canAfford || expanding) return;
       setExpanding(true);
       const ok = expandCapacity();
       if (ok) {
-        // 演出のため少し待つ
+        // 触覚フィードバック
+        if (navigator.vibrate) { try { navigator.vibrate([30, 50, 30]); } catch (_) {} }
+        // 祝福フラッシュ表示
+        setJustExpanded(true);
         setTimeout(() => {
           setExpanding(false);
         }, 800);
+        setTimeout(() => {
+          setJustExpanded(false);
+        }, 2500);
       } else {
         setExpanding(false);
       }
@@ -5143,13 +5151,35 @@ function IshimonZukan() {
       <div className="fixed inset-0 z-[90] flex items-center justify-center p-4"
         style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
         onClick={onClose}>
-        <div className="w-full max-w-sm rounded-3xl p-5 text-center"
+        <div className="w-full max-w-sm rounded-3xl p-5 text-center relative overflow-hidden"
           style={{
             background: 'linear-gradient(180deg, #2a1a3a 0%, #1a0a05 100%)',
             border: '3px solid #FFD700',
             boxShadow: '0 0 50px rgba(255,215,0,0.4)',
           }}
           onClick={e => e.stopPropagation()}>
+
+          {/* v2.11.4: 拡張成功時の祝福フラッシュ */}
+          {justExpanded && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+              style={{ animation: 'expandCelebrate 2.5s ease-out forwards' }}>
+              <div className="px-6 py-4 rounded-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,215,0,0.95), rgba(255,107,0,0.95))',
+                  border: '3px solid #FFD700',
+                  boxShadow: '0 0 40px rgba(255,215,0,0.9)',
+                }}>
+                <div className="text-4xl mb-1">✨</div>
+                <div className="text-white text-xl font-black" style={{ textShadow: '0 2px 0 rgba(0,0,0,0.4)' }}>
+                  +{unit}体 拡張！
+                </div>
+                <div className="text-white/90 text-xs font-black mt-1">
+                  最大 {cap}体 になりました
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="text-5xl mb-2">💎</div>
           <div className="text-yellow-300 text-xl font-black mb-1">容量を ひろげよう</div>
           <div className="text-white/80 text-xs font-bold mb-4">
@@ -5158,9 +5188,18 @@ function IshimonZukan() {
 
           {/* 現在の状態 */}
           <div className="rounded-2xl p-3 mb-3"
-            style={{ background: 'rgba(0,0,0,0.4)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+            style={{
+              background: 'rgba(0,0,0,0.4)',
+              border: justExpanded ? '2px solid #FFD700' : '1.5px solid rgba(255,255,255,0.15)',
+              transition: 'border 0.3s ease',
+              boxShadow: justExpanded ? '0 0 20px rgba(255,215,0,0.5)' : 'none',
+            }}>
             <div className="text-white/60 text-[10px] font-black mb-1">いまの じょうたい</div>
-            <div className="text-white text-base font-black">
+            <div className="text-white text-base font-black"
+              style={{
+                color: justExpanded ? '#FFD700' : 'white',
+                transition: 'color 0.3s ease',
+              }}>
               {collection.length} / {cap} 体
             </div>
             <div className="text-white/60 text-[10px] font-bold mt-1">
@@ -5186,7 +5225,11 @@ function IshimonZukan() {
           </div>
 
           {/* 所持きらめき石 */}
-          <div className="text-white/70 text-xs font-bold mb-4">
+          <div className="text-white/70 text-xs font-bold mb-4"
+            style={{
+              color: justExpanded ? '#FFD700' : 'rgba(255,255,255,0.7)',
+              transition: 'color 0.3s ease',
+            }}>
             いま もってる: 💎 {gems}個
           </div>
 
@@ -5209,6 +5252,17 @@ function IshimonZukan() {
               閉じる
             </button>
           </div>
+
+          {/* v2.11.4: 祝福フラッシュのアニメーション定義 */}
+          <style>{`
+            @keyframes expandCelebrate {
+              0% { opacity: 0; transform: scale(0.5); }
+              15% { opacity: 1; transform: scale(1.1); }
+              25% { transform: scale(1); }
+              80% { opacity: 1; transform: scale(1); }
+              100% { opacity: 0; transform: scale(1); }
+            }
+          `}</style>
         </div>
       </div>
     );
