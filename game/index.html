@@ -379,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.9.2';
+const APP_VERSION = '2.10.0';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1386,6 +1386,9 @@ function IshimonZukan() {
   //   この間はホーム画面の代わりに InitialLoadingView を表示し、
   //   「name: 'トレーナー' / level: 1」のチラ見えを防ぐ。
   const [initialLoading, setInitialLoading] = useState(true);
+  // 機能追加(v2.10.0): 長押しメニューと削除確認モーダル
+  const [longPressMon, setLongPressMon] = useState(null);  // 長押しメニュー表示中の石モン
+  const [deleteConfirmMon, setDeleteConfirmMon] = useState(null);  // 削除確認モーダル中の石モン
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [newMon, setNewMon] = useState(null);
@@ -2421,6 +2424,109 @@ function IshimonZukan() {
     } finally {
       if (!timedOut) setAiGenerating(false);
     }
+  };
+
+  // 機能追加(v2.10.0): 長押し検出ハンドラを生成するヘルパー。
+  //   500ms以上のタッチ/マウス押下で onLongPress が発火、通常タップでは onClick が発火する。
+  //   タッチ中にスクロール（指が動く）すれば長押しキャンセル。
+  //   使い方: <button {...makeLongPressHandlers({ onClick, onLongPress })}>
+  const makeLongPressHandlers = ({ onClick, onLongPress, threshold = 500, moveTolerance = 10 }) => {
+    let timer = null;
+    let startPos = null;
+    let triggered = false;
+
+    const clear = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      startPos = null;
+    };
+
+    const start = (clientX, clientY) => {
+      triggered = false;
+      startPos = { x: clientX, y: clientY };
+      timer = setTimeout(() => {
+        triggered = true;
+        timer = null;
+        // iOS Safari でも触覚フィードバックがあれば実行
+        if (navigator.vibrate) { try { navigator.vibrate(20); } catch (_) {} }
+        onLongPress?.();
+      }, threshold);
+    };
+
+    const move = (clientX, clientY) => {
+      if (!startPos) return;
+      const dx = Math.abs(clientX - startPos.x);
+      const dy = Math.abs(clientY - startPos.y);
+      if (dx > moveTolerance || dy > moveTolerance) clear();
+    };
+
+    return {
+      onTouchStart: (e) => {
+        const t = e.touches[0];
+        start(t.clientX, t.clientY);
+      },
+      onTouchMove: (e) => {
+        const t = e.touches[0];
+        move(t.clientX, t.clientY);
+      },
+      onTouchEnd: (e) => {
+        const wasTriggered = triggered;
+        clear();
+        if (!wasTriggered) {
+          // 通常タップ。clickイベントは別途発火するので何もしない
+        } else {
+          // 長押し済み。clickの発火を防ぐ
+          e.preventDefault();
+        }
+      },
+      onTouchCancel: () => clear(),
+      onMouseDown: (e) => {
+        if (e.button !== 0) return;
+        start(e.clientX, e.clientY);
+      },
+      onMouseMove: (e) => move(e.clientX, e.clientY),
+      onMouseUp: () => clear(),
+      onMouseLeave: () => clear(),
+      onClick: (e) => {
+        if (triggered) {
+          e.preventDefault();
+          e.stopPropagation();
+          triggered = false;
+          return;
+        }
+        onClick?.(e);
+      },
+    };
+  };
+
+  // ===== 石モン削除（v2.10.0） =====
+  // 世界に一体の石モンを消す重い操作。安全装置として2段階確認を必須にする。
+  // 1段階目: 長押しメニュー → 削除を選択
+  // 2段階目: 確認モーダル → 削除ボタンは2秒間ロック
+  const deleteMon = async (mon) => {
+    if (!mon || !mon.id) return;
+    const updated = collection.filter(c => c.id !== mon.id);
+    setCollection(updated);
+    setSelected(null);  // 詳細画面が開いていたら閉じる
+    setLongPressMon(null);  // 長押しメニューも閉じる
+    setDeleteConfirmMon(null);  // 確認モーダルも閉じる
+    try {
+      await saveCollection(updated);
+      console.log(`[Delete] 石モン削除完了: ${mon.name} (${mon.id})`);
+    } catch (err) {
+      console.error('[Delete] 保存エラー:', err);
+      setError('削除しましたが、保存に失敗しました。次回起動時に復元される可能性があります');
+    }
+  };
+
+  // お気に入りtoggle（長押しメニューから呼ぶ用）
+  const toggleFavoriteMon = (mon) => {
+    if (!mon || !mon.id) return;
+    const updated = collection.map(c => c.id === mon.id ? { ...c, isFav: !c.isFav } : c);
+    setCollection(updated);
+    saveCollection(updated);
+    // 詳細画面が開いていれば、そのstateも更新
+    setSelected(prev => prev && prev.id === mon.id ? { ...prev, isFav: !prev.isFav } : prev);
+    setLongPressMon(null);  // メニュー閉じる
   };
 
   // ===== 進化 =====
@@ -4730,6 +4836,138 @@ function IshimonZukan() {
   // ===========================================
   // ローディングと進化アニメ
   // ===========================================
+  // 機能追加(v2.10.0): 長押しメニュー。図鑑カードを長押しすると出る。
+  //   「詳細を見る / お気に入り / 削除」の3項目。お気に入りは右上のボタンと同じトグル動作。
+  const LongPressMenu = ({ mon, onClose, onShowDetail, onToggleFav, onDelete }) => {
+    const t = TYPES[mon.type] || TYPES['土'];
+    const r = getRarityLabel(mon.rarity);
+    const isFav = !!mon.isFav;
+    return (
+      <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center"
+        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+        onClick={onClose}>
+        <div className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden"
+          style={{
+            background: `linear-gradient(180deg, ${t.light} 0%, ${t.bg} 100%)`,
+            border: `3px solid ${r.color}`,
+            boxShadow: `0 0 40px ${r.glow}80`,
+            animation: 'slideUp 0.25s ease-out',
+          }}
+          onClick={e => e.stopPropagation()}>
+          {/* 上部：石モンプレビュー */}
+          <div className="flex items-center gap-3 p-4" style={{ borderBottom: '2px solid rgba(255,255,255,0.2)' }}>
+            {mon.imageDataUrl ? (
+              <img src={mon.imageDataUrl} className="w-16 h-16 rounded-xl object-cover" style={{ border: `2px solid ${r.color}` }} />
+            ) : (
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: `2px solid ${r.color}` }}>
+                <span className="text-3xl">{t.emoji}</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-white font-black text-base truncate" style={{ textShadow: '0 2px 0 rgba(0,0,0,0.3)' }}>{mon.name}</div>
+              <div className="text-white/80 text-xs font-bold">{'★'.repeat(mon.rarity)} / Lv.{mon.level || 1}</div>
+            </div>
+          </div>
+          {/* メニュー項目 */}
+          <div className="p-3 space-y-2">
+            <button onClick={onShowDetail}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl active:scale-95"
+              style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(255,255,255,0.2)' }}>
+              <span className="text-2xl">🔍</span>
+              <span className="text-white font-black text-sm flex-1 text-left">詳細を見る</span>
+            </button>
+            <button onClick={onToggleFav}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl active:scale-95"
+              style={{
+                background: isFav ? 'rgba(255,61,127,0.3)' : 'rgba(0,0,0,0.4)',
+                border: `2px solid ${isFav ? '#FF3D7F' : 'rgba(255,255,255,0.2)'}`,
+              }}>
+              <span className="text-2xl">{isFav ? '❤️' : '🤍'}</span>
+              <span className="text-white font-black text-sm flex-1 text-left">
+                {isFav ? 'お気に入り 解除' : 'お気に入り 登録'}
+              </span>
+            </button>
+            <button onClick={onDelete}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl active:scale-95"
+              style={{ background: 'rgba(199,62,29,0.3)', border: '2px solid #C73E1D' }}>
+              <span className="text-2xl">🗑️</span>
+              <span className="text-white font-black text-sm flex-1 text-left">削除</span>
+            </button>
+          </div>
+          {/* キャンセル */}
+          <div className="p-3 pt-0">
+            <button onClick={onClose}
+              className="w-full py-2.5 rounded-xl text-white/70 font-black text-sm active:scale-95"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+              キャンセル
+            </button>
+          </div>
+        </div>
+        <style>{`
+          @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  };
+
+  // 機能追加(v2.10.0): 削除確認モーダル。
+  //   2段階確認の2段目。削除ボタンは2秒間ロックされ、誤タップを防ぐ。
+  const DeleteConfirmModal = ({ mon, onCancel, onConfirm }) => {
+    const [lockSec, setLockSec] = useState(2);
+    useEffect(() => {
+      if (lockSec <= 0) return;
+      const timer = setTimeout(() => setLockSec(s => s - 1), 1000);
+      return () => clearTimeout(timer);
+    }, [lockSec]);
+    const locked = lockSec > 0;
+    return (
+      <div className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+        style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}>
+        <div className="w-full max-w-sm rounded-3xl p-5 text-center"
+          style={{
+            background: 'linear-gradient(180deg, #2a1a3a 0%, #1a0a05 100%)',
+            border: '3px solid #C73E1D',
+            boxShadow: '0 0 50px rgba(199,62,29,0.5)',
+          }}>
+          <div className="text-5xl mb-3">⚠️</div>
+          <div className="text-white text-xl font-black mb-2">本当に 削除しますか？</div>
+          <div className="text-yellow-300 text-lg font-black mb-1">{mon.name}</div>
+          <div className="text-white/70 text-xs font-bold mb-4">
+            {'★'.repeat(mon.rarity)} / Lv.{mon.level || 1}
+          </div>
+          <div className="rounded-2xl px-3 py-3 mb-4"
+            style={{ background: 'rgba(199,62,29,0.15)', border: '1.5px solid rgba(199,62,29,0.5)' }}>
+            <div className="text-red-300 text-xs font-black leading-relaxed">
+              ⚠️ この石モンは ずかんから 消えます。<br />
+              一度削除すると 元には もどせません。
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={onCancel}
+              className="flex-1 py-3 rounded-2xl text-white font-black text-sm active:scale-95"
+              style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>
+              やめる
+            </button>
+            <button onClick={onConfirm} disabled={locked}
+              className="flex-1 py-3 rounded-2xl text-white font-black text-sm active:scale-95 disabled:active:scale-100"
+              style={{
+                background: locked
+                  ? 'rgba(100,100,100,0.5)'
+                  : 'linear-gradient(135deg, #C73E1D, #8B0000)',
+                border: `2px solid ${locked ? 'rgba(150,150,150,0.5)' : '#FF6B6B'}`,
+                opacity: locked ? 0.6 : 1,
+              }}>
+              {locked ? `削除 (${lockSec})` : '削除する'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // 機能追加(v2.9.0): 起動時専用のローディングビュー。
   //   既存の LoadingView は石モン生成中専用（previewImage 前提）のため、
   //   起動時用に別途用意。HTMLレベルのスプラッシュと同じ配色で、
@@ -5247,6 +5485,15 @@ function IshimonZukan() {
               {aiGenerating ? <>描いています...</> : <>✨ AIで オリジナルアートに変換！</>}
             </button>
           )}
+
+          {/* 機能追加(v2.10.0): 詳細画面からの削除ボタン。
+              控えめなデザインで誤タップを抑制。実際の削除は2段階確認モーダルで安全。 */}
+          <button onClick={() => setDeleteConfirmMon(mon)}
+            className="w-full mt-3 py-2 rounded-xl text-white/70 font-bold text-xs active:scale-95 flex items-center justify-center gap-1.5"
+            style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(199,62,29,0.4)' }}>
+            <span className="text-sm">🗑️</span>
+            <span>この石モンを 削除</span>
+          </button>
         </div>
       </div>
     );
@@ -5494,10 +5741,14 @@ function IshimonZukan() {
               const t = TYPES[m.type] || TYPES['土'];
               const r = getRarityLabel(m.rarity);
               const monGroup = groups.find(g => g.id === m.groupId);
+              const longPressProps = makeLongPressHandlers({
+                onClick: () => setSelected(m),
+                onLongPress: () => setLongPressMon(m),
+              });
               return (
-                <button key={m.id} onClick={() => setSelected(m)}
+                <button key={m.id} {...longPressProps}
                   className="rounded-2xl overflow-hidden active:scale-95 transition-transform relative"
-                  style={{ background: `linear-gradient(180deg, ${t.light}, ${t.bg})`, border: `2px solid ${r.color}`, boxShadow: `0 3px 0 ${t.dark}` }}>
+                  style={{ background: `linear-gradient(180deg, ${t.light}, ${t.bg})`, border: `2px solid ${r.color}`, boxShadow: `0 3px 0 ${t.dark}`, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}>
                   <div className="relative">
                     {m.imageDataUrl ? (
                       <img src={m.imageDataUrl} className="w-full h-24 object-cover" />
@@ -6928,6 +7179,26 @@ function IshimonZukan() {
 
       {/* 機能追加(v2.9.0): 起動時の初期ロード画面（最前面） */}
       {initialLoading && <InitialLoadingView />}
+
+      {/* 機能追加(v2.10.0): 長押しメニュー */}
+      {longPressMon && (
+        <LongPressMenu
+          mon={longPressMon}
+          onClose={() => setLongPressMon(null)}
+          onShowDetail={() => { setSelected(longPressMon); setLongPressMon(null); }}
+          onToggleFav={() => toggleFavoriteMon(longPressMon)}
+          onDelete={() => { setDeleteConfirmMon(longPressMon); setLongPressMon(null); }}
+        />
+      )}
+
+      {/* 機能追加(v2.10.0): 削除確認モーダル */}
+      {deleteConfirmMon && (
+        <DeleteConfirmModal
+          mon={deleteConfirmMon}
+          onCancel={() => setDeleteConfirmMon(null)}
+          onConfirm={() => deleteMon(deleteConfirmMon)}
+        />
+      )}
 
       {/* カメラビュー */}
       {showCamera && (
