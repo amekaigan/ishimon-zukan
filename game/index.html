@@ -116,14 +116,24 @@
 </head>
 <body>
 <div id="root">
-  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(180deg,#FF6B35,#C71F8E);color:white;font-family:'M PLUS Rounded 1c',sans-serif">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(180deg,#FF6B35 0%,#C71F8E 50%,#5A1A78 100%);color:white;font-family:'M PLUS Rounded 1c',sans-serif">
     <div style="text-align:center">
-      <div style="font-size:48px;margin-bottom:16px">🪨</div>
-      <div style="font-size:24px;font-weight:900">石モン図鑑</div>
-      <div style="font-size:14px;opacity:0.8;margin-top:8px">よみこみちゅう...</div>
+      <div style="font-size:72px;margin-bottom:16px;animation:ishimon-bounce 0.6s ease-in-out infinite alternate;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.4))">🪨</div>
+      <div style="font-size:28px;font-weight:900;color:#FFD700;text-shadow:0 0 20px #FFAA00,0 4px 0 rgba(0,0,0,0.3);letter-spacing:0.05em">石モン図鑑</div>
+      <div style="font-size:13px;opacity:0.85;margin-top:12px;font-weight:700">よみこみちゅう...</div>
+      <div style="display:inline-block;margin-top:16px;width:32px;height:32px;border:4px solid rgba(255,215,0,0.3);border-top-color:#FFD700;border-radius:50%;animation:ishimon-spin 0.8s linear infinite"></div>
     </div>
   </div>
 </div>
+<style>
+  @keyframes ishimon-bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-10px); }
+  }
+  @keyframes ishimon-spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
 
 <!-- window.storage: Firestore対応版（ログイン前はlocalStorage、ログイン後はFirestore） -->
 <script>
@@ -369,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.8.1';
+const APP_VERSION = '2.9.2';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1371,6 +1381,11 @@ function IshimonZukan() {
   const [selected, setSelected] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
+  // 機能追加(v2.9.0): 起動時の初期ロード中フラグ。
+  //   useEffect の初期ロード（Firebase認証＋データ読み込み）が完了するまで true。
+  //   この間はホーム画面の代わりに InitialLoadingView を表示し、
+  //   「name: 'トレーナー' / level: 1」のチラ見えを防ぐ。
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [newMon, setNewMon] = useState(null);
@@ -1498,7 +1513,15 @@ function IshimonZukan() {
       const { auth, provider, signInWithPopup } = window._firebase;
       const result = await signInWithPopup(auth, provider);
       console.log('[Auth] ポップアップログイン成功:', result.user.uid);
-      // → onAuthStateChanged が発火して以降の処理が走る
+      // バグ修正(v2.9.1): ログイン成功後にリロードしてデータを完全にロードし直す。
+      //   旧コードはログイン後 onAuthStateChanged が再発火しても、
+      //   `if (!authResolved)` の分岐で Firestore 同期がスキップされていた。
+      //   結果、firebaseUser（名前・アイコン）は更新されるが、
+      //   player state（連続ログイン streak など）が古いままになっていた。
+      //   リロードで初期ロードフローを最初から走らせれば、Firestore同期 →
+      //   useEffect → checkLoginBonus の流れが完全に実行される。
+      //   v2.9.0 の InitialLoadingView で待ち時間も気にならない。
+      location.reload();
     } catch (e) {
       console.error('[Auth] Login error:', e);
       // エラーコード別の案内
@@ -1720,6 +1743,10 @@ function IshimonZukan() {
       } catch (e) {
         console.error(e);
         setCollection(SAMPLES);
+      } finally {
+        // 機能追加(v2.9.0): 初期ロード完了。成功・失敗どちらでも必ずローディング解除。
+        setInitialLoading(false);
+        console.log('[初期ロード] 完了');
       }
     })();
   }, []);
@@ -4703,6 +4730,113 @@ function IshimonZukan() {
   // ===========================================
   // ローディングと進化アニメ
   // ===========================================
+  // 機能追加(v2.9.0): 起動時専用のローディングビュー。
+  //   既存の LoadingView は石モン生成中専用（previewImage 前提）のため、
+  //   起動時用に別途用意。HTMLレベルのスプラッシュと同じ配色で、
+  //   切り替わりが自然になるよう設計。
+  const InitialLoadingView = () => {
+    const tips = [
+      { icon: '🪨', text: '石モンたちが きみを 待っています...' },
+      { icon: '✨', text: '世界に1つだけの 石モンを 集めよう！' },
+      { icon: '🔮', text: '石は数億年かけて 生まれた 大地の記憶' },
+      { icon: '💎', text: 'レアな石モンほど、ふしぎな ちからを 秘めている' },
+      { icon: '🌟', text: '7体の石モンを 集めると、神秘の とびらが ひらく' },
+      { icon: '🌿', text: 'つちの 精霊が きみを 祝福しているようです' },
+      { icon: '⭐', text: '石モンと いっしょに ぼうけんに 出かけよう！' },
+      { icon: '🌙', text: 'こんやも あたらしい 仲間が ふえるかも...' },
+    ];
+    const [tipIdx, setTipIdx] = useState(() => Math.floor(Math.random() * tips.length));
+    const [bounce, setBounce] = useState(0);
+
+    useEffect(() => {
+      const tipTimer = setInterval(() => {
+        setTipIdx(i => (i + 1) % tips.length);
+      }, 3000);
+      const bounceTimer = setInterval(() => {
+        setBounce(b => (b + 1) % 2);
+      }, 500);
+      return () => { clearInterval(tipTimer); clearInterval(bounceTimer); };
+    }, []);
+
+    const tip = tips[tipIdx];
+
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-6"
+        style={{
+          background: 'linear-gradient(180deg, #FF6B35 0%, #C71F8E 50%, #5A1A78 100%)',
+        }}>
+        {/* 浮遊する星 */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div key={i} className="absolute" style={{
+              top: ((i * 37) % 100) + '%',
+              left: ((i * 53) % 100) + '%',
+              fontSize: ((i % 3) * 4 + 12) + 'px',
+              opacity: 0.4,
+              animation: `float ${3 + (i % 3)}s ease-in-out infinite`,
+              animationDelay: (i * 0.2) + 's',
+            }}>{['✨', '⭐', '💫'][i % 3]}</div>
+          ))}
+        </div>
+
+        {/* 中央コンテンツ */}
+        <div className="relative z-10 flex flex-col items-center">
+          {/* 大きな石モンアイコン（ぴょこぴょこ） */}
+          <div className="mb-4" style={{
+            fontSize: '88px',
+            transform: bounce === 0 ? 'translateY(0)' : 'translateY(-8px)',
+            transition: 'transform 0.5s ease-in-out',
+            filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.4))',
+          }}>🪨</div>
+
+          {/* タイトル */}
+          <div className="text-yellow-300 text-3xl font-black tracking-wider mb-1"
+            style={{ textShadow: '0 0 20px #FFAA00, 0 4px 0 rgba(0,0,0,0.3)' }}>
+            石モン図鑑
+          </div>
+          <div className="text-white/80 text-xs font-bold mb-6">
+            v{APP_VERSION}
+          </div>
+
+          {/* スピナー */}
+          <Loader2 className="w-8 h-8 text-yellow-300 animate-spin mb-5" />
+
+          {/* 豆知識（フェードイン切り替え） */}
+          <div key={tipIdx}
+            className="w-full max-w-xs rounded-2xl px-4 py-3 text-center"
+            style={{
+              background: 'rgba(0,0,0,0.4)',
+              border: '1px solid rgba(255,215,0,0.4)',
+              backdropFilter: 'blur(8px)',
+              animation: 'fadeIn 0.5s ease-in',
+              minHeight: '70px',
+            }}>
+            <div className="text-3xl mb-1">{tip.icon}</div>
+            <div className="text-white/95 text-xs font-bold leading-relaxed">
+              {tip.text}
+            </div>
+          </div>
+
+          {/* ステータステキスト */}
+          <div className="text-white/60 text-[11px] font-bold mt-5">
+            データを よみこんでいます...
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+          }
+        `}</style>
+      </div>
+    );
+  };
+
   const LoadingView = () => {
     // 表示する豆知識・占い・予言（ローディング中にローテーション）
     const tips = [
@@ -6791,6 +6925,9 @@ function IshimonZukan() {
       {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); }} />}
       {isLoading && <LoadingView />}
       {showEvolveAnim && <EvolveAnimView mon={showEvolveAnim} />}
+
+      {/* 機能追加(v2.9.0): 起動時の初期ロード画面（最前面） */}
+      {initialLoading && <InitialLoadingView />}
 
       {/* カメラビュー */}
       {showCamera && (
