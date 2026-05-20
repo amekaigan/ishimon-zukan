@@ -369,7 +369,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.7.4';
+const APP_VERSION = '2.7.5';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -2394,6 +2394,9 @@ function IshimonZukan() {
     savePlayer(costDeductedPlayer);
     setShowEvolveAnim(mon);
     try {
+      // ===== 進化データの確定（ここまでが「進化処理本体」） =====
+      // この部分が例外なく完了すれば、進化は「成功」とみなす。
+      // 画像生成・Firestore保存の失敗は別扱い（進化自体は成功扱いに）。
       const newStage = mon.stage + 1;
       const newRarity = Math.min(5, mon.rarity + 1);
       const evolved = {
@@ -2412,7 +2415,14 @@ function IshimonZukan() {
       // === 進化アニメ中にAI画像をバックグラウンド生成 ===
       // 進化アニメは2500ms。その間にAI画像生成（5〜15秒）が始まり、画像はキャッシュへ保存。
       // アニメ完了時点でキャッシュにあれば即適用、なければ後から自動更新する。
-      const imagePromise = getOrGenerateMonImage(evolved);
+      //
+      // バグ修正(v2.7.5): 画像生成の失敗で「進化に失敗しました」が出ていた問題。
+      //   imagePromise を .catch でラップして、画像エラーは null 扱いに。
+      //   進化処理は画像の有無に関わらず成功させる。
+      const imagePromise = getOrGenerateMonImage(evolved).catch(err => {
+        console.warn('[Evolve] 画像生成エラー（進化は成功扱い）:', err);
+        return { image: null };
+      });
 
       await new Promise(r => setTimeout(r, 2500));
 
@@ -2425,12 +2435,22 @@ function IshimonZukan() {
         evolved.imageDataUrl = imageRace.image;
       }
 
+      // 進化データをUIに反映（同期処理・失敗しない）
       const updated = collection.map(c => c.id === mon.id ? evolved : c);
       setCollection(updated);
-      await saveCollection(updated);
       setShowEvolveAnim(null);
       setSelected(evolved);
       updateMission('evolve');
+
+      // Firestore保存。失敗しても進化は成功扱い（UIには反映済み）。
+      // バグ修正(v2.7.5): 旧コードは await saveCollection(updated) の失敗で
+      //   catch に落ちて「進化に失敗しました」が出ていた。
+      try {
+        await saveCollection(updated);
+      } catch (saveErr) {
+        console.warn('[Evolve] Firestore保存エラー（進化は成功・後で再保存される）:', saveErr);
+        setError('進化は成功しましたが、保存に失敗しました。次回起動時に復元されます。');
+      }
 
       // 進化カウンタを更新 → 称号チェック
       const evolvedPlayer = {
@@ -2456,14 +2476,24 @@ function IshimonZukan() {
             //   保存されず、リロードで画像が元に戻っていた。
             setCollection(prev => {
               const next = prev.map(c => c.id === finalEvolved.id ? finalEvolved : c);
-              saveCollection(next);
+              // 後追い保存も失敗しても進化UIには影響しない
+              saveCollection(next).catch(err => {
+                console.warn('[Evolve] 後追い画像のFirestore保存エラー:', err);
+              });
               return next;
             });
             setSelected(prev => (prev && prev.id === finalEvolved.id) ? finalEvolved : prev);
           }
         });
       }
-    } catch (err) { setError('進化に失敗しました...'); setShowEvolveAnim(null); }
+    } catch (err) {
+      // ここに来るのは「進化処理本体」が本当にコケたとき
+      // （mon.baseStats が無い、setState 系のエラーなど予期せぬ例外）。
+      // 画像生成エラー・Firestore保存エラーは個別にハンドリング済みで、ここには来ない。
+      console.error('[Evolve] 進化処理の例外:', err);
+      setError('進化に失敗しました...');
+      setShowEvolveAnim(null);
+    }
   };
 
   // ===== 装備 =====
