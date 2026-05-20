@@ -369,7 +369,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.8.0';
+const APP_VERSION = '2.8.1';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -4894,35 +4894,40 @@ function IshimonZukan() {
             <p className="text-[13px] font-bold text-gray-800 leading-relaxed">{mon.description}</p>
 
             {/* 機能追加(v2.8.0): 進化履歴。世界に一体の石モンの「思い出」を残す。 */}
+            {/* UI改善(v2.8.1): 説明文は不変なので各段階に重複表示せず、垂直の連鎖カードに変更。 */}
             {mon.evolutionHistory && mon.evolutionHistory.length > 0 && (
               <div className="mt-3 pt-3" style={{ borderTop: '1px dashed rgba(0,0,0,0.15)' }}>
-                <div className="text-[10px] font-bold text-gray-600 mb-1.5">✨ 進化の あゆみ</div>
-                {/* 名前の連鎖 */}
-                <div className="flex flex-wrap items-center gap-1 mb-2 text-[12px] font-black text-gray-700">
+                <div className="text-[10px] font-bold text-gray-600 mb-2">✨ 進化の あゆみ</div>
+                <div className="space-y-1">
+                  {/* 過去の段階 */}
                   {mon.evolutionHistory.map((h, i) => (
                     <React.Fragment key={i}>
-                      <span style={{ color: '#9b6dff' }}>{h.name}</span>
-                      <span className="text-gray-400">→</span>
+                      <div className="bg-purple-50 rounded-lg px-3 py-2"
+                        style={{ border: '1px solid rgba(155,109,255,0.3)' }}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[13px] font-black" style={{ color: '#9b6dff' }}>{h.name}</span>
+                          <span className="text-[10px] font-bold text-gray-500">
+                            {'★'.repeat(h.rarity)} / だんかい{h.stage}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-center text-purple-400 text-sm font-black leading-none">↓</div>
                     </React.Fragment>
                   ))}
-                  <span style={{ color: '#FF6B35' }}>{mon.name}</span>
-                  <span className="text-[10px] font-bold text-gray-500">（いま）</span>
-                </div>
-                {/* 各段階の詳細（折りたたみ風に小さく） */}
-                <div className="space-y-1.5">
-                  {mon.evolutionHistory.map((h, i) => (
-                    <div key={i} className="bg-purple-50 rounded-lg p-2" style={{ border: '1px solid rgba(155,109,255,0.2)' }}>
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-[10px] font-black text-purple-700">{h.name}</span>
-                        <span className="text-[9px] font-bold text-gray-500">
-                          {'★'.repeat(h.rarity)} / だんかい{h.stage}
-                        </span>
-                      </div>
-                      {h.description && (
-                        <p className="text-[11px] font-bold text-gray-600 leading-snug">{h.description}</p>
-                      )}
+                  {/* 現在の姿（オレンジで強調） */}
+                  <div className="rounded-lg px-3 py-2"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255,107,53,0.12), rgba(199,31,142,0.12))',
+                      border: '2px solid #FF6B35',
+                    }}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[13px] font-black" style={{ color: '#FF6B35' }}>{mon.name}</span>
+                      <span className="text-[10px] font-bold text-gray-500">
+                        {'★'.repeat(mon.rarity)} / だんかい{mon.stage}
+                      </span>
+                      <span className="text-[10px] font-black" style={{ color: '#C71F8E' }}>（いま）</span>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             )}
