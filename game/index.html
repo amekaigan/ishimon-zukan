@@ -379,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.10.0';
+const APP_VERSION = '2.11.0';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1056,6 +1056,11 @@ const playerExpForNextLevel = (lv) => lv * 100;
 const MAX_LEVEL = 20;
 const MAX_PLAYER_LEVEL = 50;
 
+// 機能追加(v2.11.0): 石モン所有上限
+const MON_CAPACITY_DEFAULT = 150;           // 初期上限
+const MON_CAPACITY_EXPANSION_UNIT = 10;     // 1回の拡張で増える数
+const MON_CAPACITY_EXPANSION_COST = 30;     // 拡張1回のきらめき石コスト
+
 // ===== 装備データ =====
 const EQUIPMENT = {
   // 剣 (こうげき+)
@@ -1389,6 +1394,9 @@ function IshimonZukan() {
   // 機能追加(v2.10.0): 長押しメニューと削除確認モーダル
   const [longPressMon, setLongPressMon] = useState(null);  // 長押しメニュー表示中の石モン
   const [deleteConfirmMon, setDeleteConfirmMon] = useState(null);  // 削除確認モーダル中の石モン
+  // 機能追加(v2.11.0): 容量関連モーダル
+  const [showCapacityWarn, setShowCapacityWarn] = useState(null); // {context: 'gacha'|'capture', message}
+  const [showCapacityExpand, setShowCapacityExpand] = useState(false); // 容量拡張モーダル
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [newMon, setNewMon] = useState(null);
@@ -1707,6 +1715,19 @@ function IshimonZukan() {
               },
             };
           }
+          // 機能追加(v2.11.0): 容量フィールドの補完。
+          //   既存プレイヤーが既にデフォルト上限を超えて持っている場合、自動で引き上げる。
+          //   実装した瞬間に「上限超過でロック」になる事故を防ぐ保護策。
+          if (typeof adjusted.monCapacity === 'undefined' || typeof adjusted.capacityExpansions === 'undefined') {
+            const currentCount = loadedCollection.length;
+            const safeCapacity = Math.max(MON_CAPACITY_DEFAULT, currentCount);
+            adjusted = {
+              ...adjusted,
+              monCapacity: safeCapacity,
+              capacityExpansions: adjusted.capacityExpansions || 0,
+            };
+            console.log(`[Capacity] 既存プレイヤーに容量を設定: ${safeCapacity}体（所有数 ${currentCount}体）`);
+          }
           const ctx = { player: adjusted, collection: loadedCollection, event: 'tick' };
           const grants = evaluateTitles(ctx);
           if (grants.length > 0) {
@@ -1731,6 +1752,9 @@ function IshimonZukan() {
             titles: [],
             activeTitle: null,
             stats: { totalGacha: 0, totalEvolves: 0, consecutiveR1Count: 0 },
+            // 機能追加(v2.11.0): 容量
+            monCapacity: MON_CAPACITY_DEFAULT,
+            capacityExpansions: 0,
           };
           setPlayer(initialPlayer);
           if (!authResult.uid) {
@@ -1945,6 +1969,24 @@ function IshimonZukan() {
       if ((player.gachaCards || 0) < count) { setError('ガチャカードが足りません！'); return; }
     }
 
+    // 機能追加(v2.11.0): 容量チェック（ガチャ起動時の警告）
+    //   ガチャでは石モンと装備の両方が出る可能性があるが、安全側に倒して
+    //   「最大 count 体の石モンが出る可能性」で判定する。
+    const cap = getMonCapacity();
+    const remaining = cap - collection.length;
+    if (remaining <= 0) {
+      // 完全に上限到達 → ガチャ自体を中断
+      setShowCapacityWarn({
+        context: 'gacha',
+        message: `図鑑が いっぱいです！\n${collection.length} / ${cap} 体\n\nこのまま ガチャを 引くと\nせっかくの 石モンが もらえません。\n\n古い子を 削除するか、容量を 拡張してね。`,
+      });
+      return;
+    } else if (remaining < count) {
+      // 残り枠が引く枚数より少ない → 注意して進めるか確認
+      const ok = window.confirm(`図鑑の 残り枠: ${remaining}体\n${count}連ガチャ では 全部 もらえない かもしれません。\n\nそれでも 引きますか？`);
+      if (!ok) return;
+    }
+
     // 設定で有効なら確認ダイアログを表示
     if (settings.confirmGacha) {
       const costLabel = useGems ? `きらめき石 ${cost}個` : `ガチャカード ${count}枚`;
@@ -2020,8 +2062,24 @@ function IshimonZukan() {
     const newMons = results.filter(r => r.kind === 'mon').map(r => r.data);
     const newEquips = results.filter(r => r.kind === 'equip').map(r => r.data.id);
 
-    if (newMons.length) {
-      const updated = [...newMons, ...collection];
+    // 機能追加(v2.11.0): 上限を超える分の石モンは取得をキャンセル
+    //   doGacha 入口で警告は出すが、それでも引いた場合の最終防衛線。
+    //   残り枠ぶんだけ採用し、超過分は破棄（コンソールに記録）。
+    const remainingSlots = getMonCapacity() - collection.length;
+    let acceptedMons = newMons;
+    let droppedMons = [];
+    if (newMons.length > remainingSlots) {
+      acceptedMons = newMons.slice(0, Math.max(0, remainingSlots));
+      droppedMons = newMons.slice(Math.max(0, remainingSlots));
+      console.warn(`[Capacity] ガチャ結果のうち${droppedMons.length}体が上限超過で破棄されました`, droppedMons.map(m => m.name));
+      // ユーザーへの案内
+      setTimeout(() => {
+        setError(`図鑑が いっぱいで ${droppedMons.length}体 もらえませんでした...`);
+      }, 500);
+    }
+
+    if (acceptedMons.length) {
+      const updated = [...acceptedMons, ...collection];
       setCollection(updated);
       await saveCollection(updated);
     }
@@ -2053,8 +2111,8 @@ function IshimonZukan() {
         },
       };
       savePlayer(updated);
-      // 最新の collection は newMons 反映済みのものを使う
-      const latestCollection = newMons.length > 0 ? [...newMons, ...collection] : collection;
+      // 最新の collection は acceptedMons（上限超過分を除いた）反映済みのものを使う
+      const latestCollection = acceptedMons.length > 0 ? [...acceptedMons, ...collection] : collection;
       grantTitlesIfAny('gacha', { gachaResults: results }, updated, latestCollection);
       return updated;
     });
@@ -2157,6 +2215,16 @@ function IshimonZukan() {
   };
 
   const generateMon = async (imageDataUrl) => {
+    // 機能追加(v2.11.0): 石モン所有上限チェック
+    if (isCapacityFull()) {
+      const cap = getMonCapacity();
+      setPreviewImage(null);
+      setShowCapacityWarn({
+        context: 'capture',
+        message: `図鑑が いっぱいです！\n${collection.length} / ${cap} 体\n\n古い子を 削除するか、容量を 拡張してね。`,
+      });
+      return;
+    }
     // 石のかけら コストチェック
     if ((player.stoneFragments || 0) < CAPTURE_COST) {
       setError(`石のかけらが 足りません！（${CAPTURE_COST}個 必要 / 現在 ${player.stoneFragments || 0}個）`);
@@ -2424,6 +2492,36 @@ function IshimonZukan() {
     } finally {
       if (!timedOut) setAiGenerating(false);
     }
+  };
+
+  // 機能追加(v2.11.0): 石モン所有上限関連のヘルパー
+  //   実効上限 = monCapacity(基本150) + capacityExpansions(拡張回数) * 10
+  //   既存プレイヤーは初期ロード時に monCapacity 未設定の可能性があるためデフォルト補完。
+  const getMonCapacity = (p = player) => {
+    const base = p.monCapacity || MON_CAPACITY_DEFAULT;
+    const ext = (p.capacityExpansions || 0) * MON_CAPACITY_EXPANSION_UNIT;
+    return base + ext;
+  };
+  const isCapacityFull = (capacityOverride) => {
+    const cap = capacityOverride != null ? capacityOverride : getMonCapacity();
+    return collection.length >= cap;
+  };
+  // 容量拡張処理（きらめき石を消費）
+  const expandCapacity = () => {
+    if ((player.gems || 0) < MON_CAPACITY_EXPANSION_COST) {
+      setError(`きらめき石が足りません（${MON_CAPACITY_EXPANSION_COST}個必要）`);
+      return false;
+    }
+    setPlayer(prev => {
+      const updated = {
+        ...prev,
+        gems: (prev.gems || 0) - MON_CAPACITY_EXPANSION_COST,
+        capacityExpansions: (prev.capacityExpansions || 0) + 1,
+      };
+      savePlayer(updated);
+      return updated;
+    });
+    return true;
   };
 
   // 機能追加(v2.10.0): 長押し検出ハンドラを生成するヘルパー。
@@ -4968,6 +5066,154 @@ function IshimonZukan() {
     );
   };
 
+  // 機能追加(v2.11.0): 容量警告モーダル。
+  //   ガチャ起動時に上限到達、または撮影時に上限到達したときに表示。
+  //   「整理する」「容量を 拡張する」「あとで」の3択。
+  const CapacityWarnModal = ({ data, onClose }) => {
+    if (!data) return null;
+    const cap = getMonCapacity();
+    return (
+      <div className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+        style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
+        onClick={onClose}>
+        <div className="w-full max-w-sm rounded-3xl p-5 text-center"
+          style={{
+            background: 'linear-gradient(180deg, #2a1a3a 0%, #1a0a05 100%)',
+            border: '3px solid #FFAA00',
+            boxShadow: '0 0 50px rgba(255,170,0,0.4)',
+          }}
+          onClick={e => e.stopPropagation()}>
+          <div className="text-5xl mb-3">📦</div>
+          <div className="text-yellow-300 text-xl font-black mb-2">ずかんが いっぱい！</div>
+          <div className="text-white text-sm font-bold mb-4 whitespace-pre-line leading-relaxed">
+            {data.message}
+          </div>
+          <div className="rounded-2xl px-3 py-2 mb-4"
+            style={{ background: 'rgba(255,170,0,0.15)', border: '1.5px solid rgba(255,170,0,0.4)' }}>
+            <div className="text-yellow-200 text-xs font-black">
+              いまの 上限: {cap}体（{collection.length} / {cap}）
+            </div>
+          </div>
+          <div className="space-y-2">
+            <button onClick={() => { onClose(); setView('collection'); }}
+              className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #9b6dff, #5f3dc4)', border: '2px solid #b794ff' }}>
+              🗑️ 整理する（図鑑へ）
+            </button>
+            <button onClick={() => { onClose(); setShowCapacityExpand(true); }}
+              className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #FFAA00, #FF6B00)', border: '2px solid #FFD700' }}>
+              💎 容量を 拡張する
+            </button>
+            <button onClick={onClose}
+              className="w-full py-2 rounded-xl text-white/70 font-bold text-xs active:scale-95"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
+              あとで
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 機能追加(v2.11.0): 容量拡張モーダル。
+  //   きらめき石30個で +10体。何回でも拡張できる（永続）。
+  //   将来の課金導線もここに追加可能（「課金で拡張」ボタンを並べる）。
+  const CapacityExpandModal = ({ onClose }) => {
+    const cap = getMonCapacity();
+    const cost = MON_CAPACITY_EXPANSION_COST;
+    const unit = MON_CAPACITY_EXPANSION_UNIT;
+    const gems = player.gems || 0;
+    const canAfford = gems >= cost;
+    const [expanding, setExpanding] = useState(false);
+    const handleExpand = () => {
+      if (!canAfford || expanding) return;
+      setExpanding(true);
+      const ok = expandCapacity();
+      if (ok) {
+        // 演出のため少し待つ
+        setTimeout(() => {
+          setExpanding(false);
+        }, 800);
+      } else {
+        setExpanding(false);
+      }
+    };
+    return (
+      <div className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+        style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)' }}
+        onClick={onClose}>
+        <div className="w-full max-w-sm rounded-3xl p-5 text-center"
+          style={{
+            background: 'linear-gradient(180deg, #2a1a3a 0%, #1a0a05 100%)',
+            border: '3px solid #FFD700',
+            boxShadow: '0 0 50px rgba(255,215,0,0.4)',
+          }}
+          onClick={e => e.stopPropagation()}>
+          <div className="text-5xl mb-2">💎</div>
+          <div className="text-yellow-300 text-xl font-black mb-1">容量を ひろげよう</div>
+          <div className="text-white/80 text-xs font-bold mb-4">
+            きらめき石を つかって ずかんを 拡張できます
+          </div>
+
+          {/* 現在の状態 */}
+          <div className="rounded-2xl p-3 mb-3"
+            style={{ background: 'rgba(0,0,0,0.4)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+            <div className="text-white/60 text-[10px] font-black mb-1">いまの じょうたい</div>
+            <div className="text-white text-base font-black">
+              {collection.length} / {cap} 体
+            </div>
+            <div className="text-white/60 text-[10px] font-bold mt-1">
+              拡張ずみ: {player.capacityExpansions || 0}回
+            </div>
+          </div>
+
+          {/* 拡張オプション */}
+          <div className="rounded-2xl p-3 mb-4"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,0,0.15))',
+              border: '2px solid rgba(255,215,0,0.5)',
+            }}>
+            <div className="text-yellow-300 text-base font-black mb-1">+{unit}体 拡張</div>
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <span className="text-2xl">💎</span>
+              <span className="text-white font-black text-lg">{cost}</span>
+              <span className="text-white/60 text-xs font-bold">きらめき石</span>
+            </div>
+            <div className="text-white/70 text-[11px] font-bold">
+              拡張後: {cap + unit}体まで OK!
+            </div>
+          </div>
+
+          {/* 所持きらめき石 */}
+          <div className="text-white/70 text-xs font-bold mb-4">
+            いま もってる: 💎 {gems}個
+          </div>
+
+          {/* ボタン */}
+          <div className="space-y-2">
+            <button onClick={handleExpand} disabled={!canAfford || expanding}
+              className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95 disabled:active:scale-100"
+              style={{
+                background: canAfford && !expanding
+                  ? 'linear-gradient(135deg, #FFAA00, #FF6B00)'
+                  : 'rgba(100,100,100,0.5)',
+                border: `2px solid ${canAfford && !expanding ? '#FFD700' : 'rgba(150,150,150,0.5)'}`,
+                opacity: canAfford && !expanding ? 1 : 0.6,
+              }}>
+              {expanding ? '拡張中...' : canAfford ? `💎${cost} つかって 拡張する` : 'きらめき石が たりません'}
+            </button>
+            <button onClick={onClose}
+              className="w-full py-2 rounded-xl text-white/70 font-bold text-xs active:scale-95"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>
+              閉じる
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // 機能追加(v2.9.0): 起動時専用のローディングビュー。
   //   既存の LoadingView は石モン生成中専用（previewImage 前提）のため、
   //   起動時用に別途用意。HTMLレベルのスプラッシュと同じ配色で、
@@ -5601,7 +5847,40 @@ function IshimonZukan() {
     return (
       <div className="px-3 pt-4 pb-24" style={{ maxWidth: '1280px', margin: '0 auto' }}>
         <h2 className="text-2xl font-black text-white text-center mb-0.5" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>図鑑</h2>
-        <p className="text-center text-yellow-200 text-xs font-bold mb-2">{collection.length}体 収集済み</p>
+
+        {/* 機能追加(v2.11.0): 容量バー */}
+        {(() => {
+          const cap = getMonCapacity();
+          const count = collection.length;
+          const percent = Math.min(100, (count / cap) * 100);
+          const isWarn = percent >= 90;
+          const isFull = count >= cap;
+          const barColor = isFull ? '#FF3D3D' : isWarn ? '#FFAA00' : '#52B788';
+          return (
+            <button onClick={() => setShowCapacityExpand(true)}
+              className="w-full mb-2 active:scale-[0.98] transition-transform">
+              <div className="flex items-center justify-between mb-0.5 px-1">
+                <span className="text-yellow-200 text-xs font-bold">
+                  🪨 {count} / {cap} 体
+                </span>
+                <span className="text-white/60 text-[10px] font-bold">
+                  {isFull ? 'いっぱい!' : `あと ${cap - count}体`}
+                </span>
+              </div>
+              <div className="w-full rounded-full overflow-hidden"
+                style={{ height: '6px', background: 'rgba(0,0,0,0.4)' }}>
+                <div className={isFull ? 'animate-pulse' : ''}
+                  style={{
+                    width: `${percent}%`,
+                    height: '100%',
+                    background: `linear-gradient(90deg, ${barColor}, ${barColor}dd)`,
+                    transition: 'width 0.4s ease',
+                    boxShadow: `0 0 8px ${barColor}80`,
+                  }} />
+              </div>
+            </button>
+          );
+        })()}
 
         {/* フィルタバー */}
         {collection.length > 0 && (
@@ -7015,6 +7294,42 @@ function IshimonZukan() {
                     </div>
                   );
                 })()}
+
+                {/* 機能追加(v2.11.0): 容量管理 */}
+                <div className="mt-3 rounded-2xl p-3"
+                  style={{ background: 'rgba(255,215,0,0.08)', border: '1.5px solid rgba(255,215,0,0.3)' }}>
+                  <div className="text-yellow-300 font-black text-sm mb-1">📦 ずかん容量の管理</div>
+                  <div className="text-white/60 text-[10px] mb-2">
+                    いまの上限: {getMonCapacity()}体（基本{player.monCapacity || MON_CAPACITY_DEFAULT}＋拡張{player.capacityExpansions || 0}回 × {MON_CAPACITY_EXPANSION_UNIT}）
+                  </div>
+                  <button onClick={() => {
+                      const cur = player.monCapacity || MON_CAPACITY_DEFAULT;
+                      const v = window.prompt(`基本容量を 何体に しますか？\n（現在: ${cur}体）`, String(cur));
+                      if (v === null) return;
+                      const n = Math.max(10, parseInt(v, 10) || MON_CAPACITY_DEFAULT);
+                      const updated = { ...player, monCapacity: n };
+                      setPlayer(updated);
+                      savePlayer(updated);
+                      window.alert(`基本容量を ${n}体 に設定しました`);
+                    }}
+                    className="w-full py-2 rounded-lg font-black text-[11px] text-white mb-1 active:scale-95"
+                    style={{ background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.5)' }}>
+                    🔢 基本容量を 変更
+                  </button>
+                  <button onClick={() => {
+                      const v = window.prompt(`拡張回数を 何回に しますか？\n（現在: ${player.capacityExpansions || 0}回 × ${MON_CAPACITY_EXPANSION_UNIT}体）`, String(player.capacityExpansions || 0));
+                      if (v === null) return;
+                      const n = Math.max(0, parseInt(v, 10) || 0);
+                      const updated = { ...player, capacityExpansions: n };
+                      setPlayer(updated);
+                      savePlayer(updated);
+                      window.alert(`拡張回数を ${n}回 に設定しました（+${n * MON_CAPACITY_EXPANSION_UNIT}体）`);
+                    }}
+                    className="w-full py-2 rounded-lg font-black text-[11px] text-white active:scale-95"
+                    style={{ background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.5)' }}>
+                    🔢 拡張回数を 変更
+                  </button>
+                </div>
               </div>
             ) : (
               <div>
@@ -7197,6 +7512,21 @@ function IshimonZukan() {
           mon={deleteConfirmMon}
           onCancel={() => setDeleteConfirmMon(null)}
           onConfirm={() => deleteMon(deleteConfirmMon)}
+        />
+      )}
+
+      {/* 機能追加(v2.11.0): 容量警告モーダル */}
+      {showCapacityWarn && (
+        <CapacityWarnModal
+          data={showCapacityWarn}
+          onClose={() => setShowCapacityWarn(null)}
+        />
+      )}
+
+      {/* 機能追加(v2.11.0): 容量拡張モーダル */}
+      {showCapacityExpand && (
+        <CapacityExpandModal
+          onClose={() => setShowCapacityExpand(false)}
         />
       )}
 
