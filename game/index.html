@@ -379,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.11.4';
+const APP_VERSION = '2.11.5';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1397,6 +1397,8 @@ function IshimonZukan() {
   // 機能追加(v2.11.0): 容量関連モーダル
   const [showCapacityWarn, setShowCapacityWarn] = useState(null); // {context: 'gacha'|'capture', message}
   const [showCapacityExpand, setShowCapacityExpand] = useState(false); // 容量拡張モーダル
+  // v2.11.5: 拡張成功時の祝福フラッシュ（モーダル再マウント問題を避けるため親レベルに置く）
+  const [justExpanded, setJustExpanded] = useState(false);
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [newMon, setNewMon] = useState(null);
@@ -2521,6 +2523,10 @@ function IshimonZukan() {
       savePlayer(updated);
       return updated;
     });
+    // v2.11.5: 祝福フラッシュをトリガー（親stateなのでモーダル再マウントに影響されない）
+    setJustExpanded(true);
+    if (navigator.vibrate) { try { navigator.vibrate([30, 50, 30]); } catch (_) {} }
+    setTimeout(() => setJustExpanded(false), 2500);
     return true;
   };
 
@@ -5126,23 +5132,15 @@ function IshimonZukan() {
     const gems = player.gems || 0;
     const canAfford = gems >= cost;
     const [expanding, setExpanding] = useState(false);
-    // v2.11.4: 拡張成功時の祝福フラッシュ
-    const [justExpanded, setJustExpanded] = useState(false);
+    // v2.11.5: justExpanded は親の state を参照（再マウント問題回避）
     const handleExpand = () => {
       if (!canAfford || expanding) return;
       setExpanding(true);
-      const ok = expandCapacity();
+      const ok = expandCapacity();  // この中で setJustExpanded(true) も走る
       if (ok) {
-        // 触覚フィードバック
-        if (navigator.vibrate) { try { navigator.vibrate([30, 50, 30]); } catch (_) {} }
-        // 祝福フラッシュ表示
-        setJustExpanded(true);
         setTimeout(() => {
           setExpanding(false);
         }, 800);
-        setTimeout(() => {
-          setJustExpanded(false);
-        }, 2500);
       } else {
         setExpanding(false);
       }
