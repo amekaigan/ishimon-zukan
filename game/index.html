@@ -379,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.11.5';
+const APP_VERSION = '2.12.0';
 
 // ===== Firebase設定（v2.0でGoogleログイン実装予定） =====
 const FIREBASE_CONFIG = {
@@ -1399,6 +1399,8 @@ function IshimonZukan() {
   const [showCapacityExpand, setShowCapacityExpand] = useState(false); // 容量拡張モーダル
   // v2.11.5: 拡張成功時の祝福フラッシュ（モーダル再マウント問題を避けるため親レベルに置く）
   const [justExpanded, setJustExpanded] = useState(false);
+  // v2.12.0: 全石モンデータ分析ビュー（オーナー専用）
+  const [showMonDataExplorer, setShowMonDataExplorer] = useState(false);
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [newMon, setNewMon] = useState(null);
@@ -5266,6 +5268,212 @@ function IshimonZukan() {
     );
   };
 
+  // 機能追加(v2.12.0): 全石モンデータ分析ビュー（オーナー専用）
+  //   生成された全石モンの「元写真・AI画像・名前・属性・レア・日時・場所・評価・プロンプト」を
+  //   一覧表示する。テイスト改善サイクルとデータ分析の基盤。
+  //   第1段階: 画面で見ることに特化。コピー/CSVは次回。
+  const MonDataExplorer = ({ onClose }) => {
+    // 新しい順
+    const sorted = [...collection].sort((a, b) =>
+      (b.capturedAt || '').localeCompare(a.capturedAt || '')
+    );
+    const stats = {
+      total: collection.length,
+      withAI: collection.filter(m => m.imageDataUrl && !m.needsImageRegen).length,
+      withOrigPhoto: collection.filter(m => m.originalPhoto).length,
+      withLocation: collection.filter(m => m.location).length,
+      withPrompt: collection.filter(m => m.imagePrompt).length,
+      thumbUp: collection.filter(m => m.taste === 'up').length,
+      thumbDown: collection.filter(m => m.taste === 'down').length,
+    };
+    const formatDate = (iso) => {
+      if (!iso) return '日時不明';
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      } catch (_) { return iso; }
+    };
+    const formatLocation = (loc) => {
+      if (!loc) return null;
+      const parts = [];
+      if (loc.name) parts.push(loc.name);
+      if (loc.lat != null && loc.lng != null) {
+        parts.push(`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`);
+      }
+      return parts.join(' / ');
+    };
+
+    return (
+      <div className="fixed inset-0 z-[95] flex flex-col"
+        style={{ background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)' }}>
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between px-4 py-3"
+          style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div>
+            <div className="text-yellow-300 font-black text-lg">📊 全石モンデータ</div>
+            <div className="text-white/60 text-[10px] font-bold">オーナー専用・分析用</div>
+          </div>
+          <button onClick={onClose}
+            className="px-3 py-1.5 rounded-lg text-white font-black text-xs active:scale-95"
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}>
+            ✕ 閉じる
+          </button>
+        </div>
+
+        {/* 統計サマリ */}
+        <div className="px-4 py-3 grid grid-cols-3 gap-2"
+          style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="text-center">
+            <div className="text-yellow-300 font-black text-base">{stats.total}</div>
+            <div className="text-white/60 text-[9px] font-bold">合計</div>
+          </div>
+          <div className="text-center">
+            <div className="text-green-400 font-black text-base">{stats.withAI}</div>
+            <div className="text-white/60 text-[9px] font-bold">AI画像あり</div>
+          </div>
+          <div className="text-center">
+            <div className="text-blue-400 font-black text-base">{stats.withLocation}</div>
+            <div className="text-white/60 text-[9px] font-bold">位置情報あり</div>
+          </div>
+          <div className="text-center">
+            <div className="text-purple-400 font-black text-base">{stats.withPrompt}</div>
+            <div className="text-white/60 text-[9px] font-bold">プロンプトあり</div>
+          </div>
+          <div className="text-center">
+            <div className="text-green-300 font-black text-base">👍 {stats.thumbUp}</div>
+            <div className="text-white/60 text-[9px] font-bold">高評価</div>
+          </div>
+          <div className="text-center">
+            <div className="text-red-300 font-black text-base">👎 {stats.thumbDown}</div>
+            <div className="text-white/60 text-[9px] font-bold">低評価</div>
+          </div>
+        </div>
+
+        {/* リスト */}
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+          {sorted.length === 0 ? (
+            <div className="text-white/60 text-center py-12 font-bold">石モンがいません</div>
+          ) : sorted.map((mon, idx) => {
+            const t = TYPES[mon.type] || TYPES['土'];
+            const r = getRarityLabel(mon.rarity);
+            const tasteIcon = mon.taste === 'up' ? '👍' : mon.taste === 'down' ? '👎' : null;
+            const tasteColor = mon.taste === 'up' ? '#52B788' : mon.taste === 'down' ? '#FF6B6B' : null;
+            return (
+              <div key={mon.id} className="rounded-2xl p-3"
+                style={{
+                  background: 'rgba(0,0,0,0.5)',
+                  border: `2px solid ${r.color}40`,
+                }}>
+                {/* インデックス番号と評価バッジ */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white/40 text-[10px] font-black">#{idx + 1}</span>
+                  {tasteIcon && (
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-black"
+                      style={{
+                        background: `${tasteColor}30`,
+                        color: tasteColor,
+                        border: `1px solid ${tasteColor}80`,
+                      }}>
+                      {tasteIcon} {mon.taste === 'up' ? '高評価' : '低評価'}
+                    </span>
+                  )}
+                </div>
+
+                {/* 画像セクション: 元写真 + AI画像 横並び */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <div className="text-white/50 text-[9px] font-black mb-1">📷 元写真</div>
+                    {mon.originalPhoto ? (
+                      <img src={mon.originalPhoto}
+                        className="w-full aspect-square object-cover rounded-lg"
+                        style={{ border: '1px solid rgba(255,255,255,0.2)' }} />
+                    ) : (
+                      <div className="w-full aspect-square rounded-lg flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <span className="text-white/30 text-xs">なし</span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-white/50 text-[9px] font-black mb-1">✨ AI画像</div>
+                    {mon.imageDataUrl ? (
+                      <img src={mon.imageDataUrl}
+                        className="w-full aspect-square object-cover rounded-lg"
+                        style={{ border: `1px solid ${r.color}80` }} />
+                    ) : (
+                      <div className="w-full aspect-square rounded-lg flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <span className="text-white/30 text-xs">なし</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* メタ情報 */}
+                <div className="space-y-1 text-[11px]">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-white font-black text-sm">{mon.name}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold"
+                      style={{ background: t.bg, color: 'white' }}>
+                      {t.emoji} {mon.type}
+                    </span>
+                    <span className="text-yellow-300 font-black">{'★'.repeat(mon.rarity)}</span>
+                    <span className="text-white/60 font-bold">だんかい{mon.stage}</span>
+                    <span className="text-white/60 font-bold">Lv.{mon.level || 1}</span>
+                  </div>
+                  <div className="text-white/70 font-bold">
+                    📅 {formatDate(mon.capturedAt)}
+                  </div>
+                  {mon.location ? (
+                    <div className="text-white/70 font-bold">
+                      📍 {formatLocation(mon.location)}
+                    </div>
+                  ) : (
+                    <div className="text-white/30 font-bold">📍 位置情報なし</div>
+                  )}
+                  <div className="text-white/50 font-bold text-[10px]">
+                    ID: {mon.id}
+                  </div>
+                  {mon.imageSeed && (
+                    <div className="text-white/50 font-bold text-[10px]">
+                      Seed: {mon.imageSeed}
+                    </div>
+                  )}
+                </div>
+
+                {/* プロンプト */}
+                {mon.imagePrompt && (
+                  <div className="mt-2 pt-2"
+                    style={{ borderTop: '1px dashed rgba(255,255,255,0.15)' }}>
+                    <div className="text-white/50 text-[9px] font-black mb-1">🤖 AIプロンプト</div>
+                    <div className="text-white/80 text-[10px] font-mono leading-relaxed"
+                      style={{
+                        background: 'rgba(0,0,0,0.4)',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        wordBreak: 'break-word',
+                      }}>
+                      {mon.imagePrompt}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* フッター情報 */}
+        <div className="px-4 py-2 text-center"
+          style={{ background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="text-white/40 text-[9px] font-bold">
+            次回更新予定: 並び替え・フィルタ・CSV出力
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // 機能追加(v2.9.0): 起動時専用のローディングビュー。
   //   既存の LoadingView は石モン生成中専用（previewImage 前提）のため、
   //   起動時用に別途用意。HTMLレベルのスプラッシュと同じ配色で、
@@ -7455,6 +7663,24 @@ function IshimonZukan() {
                     🔢 拡張回数を 変更
                   </button>
                 </div>
+
+                {/* 機能追加(v2.12.0): 全石モンデータ分析ビュー */}
+                <div className="mt-3 rounded-2xl p-3"
+                  style={{ background: 'rgba(82,183,136,0.08)', border: '1.5px solid rgba(82,183,136,0.3)' }}>
+                  <div className="text-green-300 font-black text-sm mb-1">📊 データ分析</div>
+                  <div className="text-white/60 text-[10px] mb-2 leading-relaxed">
+                    全石モンの元写真・AI画像・場所・プロンプト・評価を一覧表示。<br/>
+                    テイスト改善や生成精度向上の分析に。
+                  </div>
+                  <button onClick={() => setShowMonDataExplorer(true)}
+                    className="w-full py-2 rounded-lg font-black text-[12px] text-white active:scale-95"
+                    style={{
+                      background: 'linear-gradient(135deg, #52B788, #2D6A4F)',
+                      border: '1px solid rgba(82,183,136,0.7)',
+                    }}>
+                    📊 全石モンデータを 見る（{collection.length}体）
+                  </button>
+                </div>
               </div>
             ) : (
               <div>
@@ -7653,6 +7879,11 @@ function IshimonZukan() {
         <CapacityExpandModal
           onClose={() => setShowCapacityExpand(false)}
         />
+      )}
+
+      {/* 機能追加(v2.12.0): 全石モンデータ分析ビュー（オーナー専用） */}
+      {showMonDataExplorer && isOwner && (
+        <MonDataExplorer onClose={() => setShowMonDataExplorer(false)} />
       )}
 
       {/* カメラビュー */}
