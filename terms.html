@@ -38,6 +38,13 @@ body {
 h1 {
   font-size: 22px;
   font-weight: 900;
+  line-height: 1.4;
+}
+@media (max-width: 480px) {
+  h1 { font-size: 19px; }
+  .mobile-br { display: inline; }
+}
+.mobile-br { display: none;
   color: #5A1A78;
   margin-bottom: 6px;
 }
@@ -146,11 +153,11 @@ strong { color: #C71F8E; font-weight: 900; }
 <div class="container">
   <div class="header">
     <div class="header-emoji">📜</div>
-    <h1>石モン図鑑 利用規約</h1>
+    <h1>石モン図鑑<br class="mobile-br">利用規約</h1>
     <div class="subtitle">TERMS OF SERVICE</div>
   </div>
 
-  <div class="meta">📅 最終更新日: 2026年X月X日 / バージョン: 1.0.0</div>
+  <div class="meta">📅 最終更新日: 2026年5月23日 / バージョン: 1.0.0</div>
 
   <p>この利用規約(以下「本規約」)は、「石モン図鑑」(以下「本ゲーム」)の利用条件を定めるものです。本ゲームをご利用になる方(以下「ユーザー」)には、本規約の内容に同意したうえでご利用いただきます。</p>
 
