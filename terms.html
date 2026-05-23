@@ -39,15 +39,14 @@ h1 {
   font-size: 22px;
   font-weight: 900;
   line-height: 1.4;
+  color: #5A1A78;
+  margin-bottom: 6px;
 }
 @media (max-width: 480px) {
   h1 { font-size: 19px; }
   .mobile-br { display: inline; }
 }
-.mobile-br { display: none;
-  color: #5A1A78;
-  margin-bottom: 6px;
-}
+.mobile-br { display: none; }
 .subtitle {
   font-size: 11px;
   font-weight: 700;
@@ -107,15 +106,16 @@ strong { color: #C71F8E; font-weight: 900; }
   margin: 10px 0;
 }
 .contact {
-  background: linear-gradient(135deg, #FFD700, #FF6B35);
-  color: #fff;
+  background: linear-gradient(90deg, #FF6B35 0%, #FFB07A 60%, #FFE8D6 100%);
+  color: #4A1500;
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 16px 18px;
   margin-top: 20px;
   font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255,107,53,0.25);
 }
 .contact a {
-  color: #fff;
+  color: #4A1500;
   text-decoration: underline;
   font-weight: 900;
 }
@@ -147,6 +147,16 @@ strong { color: #C71F8E; font-weight: 900; }
   font-weight: 700;
   text-decoration: none;
 }
+.meta-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(0,0,0,0.08);
+  font-size: 10px;
+  color: #bbb;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
 </style>
 </head>
 <body>
@@ -156,8 +166,6 @@ strong { color: #C71F8E; font-weight: 900; }
     <h1>石モン図鑑<br class="mobile-br">利用規約</h1>
     <div class="subtitle">TERMS OF SERVICE</div>
   </div>
-
-  <div class="meta">📅 最終更新日: 2026年5月23日 / バージョン: 1.0.0</div>
 
   <p>この利用規約(以下「本規約」)は、「石モン図鑑」(以下「本ゲーム」)の利用条件を定めるものです。本ゲームをご利用になる方(以下「ユーザー」)には、本規約の内容に同意したうえでご利用いただきます。</p>
 
@@ -290,10 +298,12 @@ strong { color: #C71F8E; font-weight: 900; }
   <p style="font-size: 11px; color: #999; margin-top: 8px;">なお、本ゲームは個人開発のため、お問い合わせへの返信にはお時間をいただく場合があります。あらかじめご了承ください。</p>
 
   <div class="footer-nav">
+    <a href="javascript:history.back()">← 戻る</a>
     <a href="/privacy.html">🔒 プライバシーポリシー</a>
     <a href="/">🏠 ホームへ</a>
   </div>
   <a href="/game/" class="back-home">▶ ゲームを始める</a>
+  <div class="meta-footer">📅 最終更新日: 2026年5月23日 / バージョン: 1.0.0</div>
 </div>
 </body>
 </html>
