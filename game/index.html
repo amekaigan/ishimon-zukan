@@ -1618,6 +1618,8 @@ function IshimonZukan() {
   //   初回起動時と、ポリシー/規約のバージョンが更新された時に表示する
   const [showConsent, setShowConsent] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  // v2.14.0: スライド位置を親に置くことで、consentChecked変更時の再マウント問題を回避
+  const [onboardingSlideIdx, setOnboardingSlideIdx] = useState(0);
   const onboardingNameRef = useRef(null);
   // 新規称号獲得モーダル（{ titles: [...] } または null）
   const [newTitleAlert, setNewTitleAlert] = useState(null);
@@ -4376,7 +4378,9 @@ function IshimonZukan() {
   const OnboardingModal = () => {
     if (!showOnboarding) return null;
 
-    const [slideIdx, setSlideIdx] = useState(0);
+    // v2.14.0: 親のstateを参照(再マウント時もスライド位置を保持)
+    const slideIdx = onboardingSlideIdx;
+    const setSlideIdx = setOnboardingSlideIdx;
     const totalSlides = 5;
     const sliderRef = useRef(null);
 
@@ -4418,6 +4422,8 @@ function IshimonZukan() {
         terms_version: CURRENT_TERMS_OF_SERVICE_VERSION,
         flow: 'onboarding',
       });
+      // v2.14.0: 次回オンボーディング表示時のためにスライド位置をリセット
+      setOnboardingSlideIdx(0);
       setShowOnboarding(false);
     };
 
