@@ -379,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.14.0';
+const APP_VERSION = '2.14.1';
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
 // 本文に重要な変更があった場合のみインクリメント。軽微な誤字修正はバージョンを上げない。
@@ -486,7 +486,7 @@ const getCurrentLocation = async () => {
       async (pos) => {
         clearTimeout(timeout);
         const { latitude, longitude } = pos.coords;
-        const result = { lat: latitude, lng: longitude, name: null };
+        const result = { name: null };
         // 逆ジオコーディング (OpenStreetMap Nominatim、無料・APIキー不要)
         try {
           const r = await fetch(
@@ -5553,12 +5553,7 @@ function IshimonZukan() {
     };
     const formatLocation = (loc) => {
       if (!loc) return null;
-      const parts = [];
-      if (loc.name) parts.push(loc.name);
-      if (loc.lat != null && loc.lng != null) {
-        parts.push(`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`);
-      }
-      return parts.join(' / ');
+      return loc.name || null;
     };
 
     return (
