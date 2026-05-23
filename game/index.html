@@ -379,7 +379,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.13.0';
+const APP_VERSION = '2.14.0';
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
 // 本文に重要な変更があった場合のみインクリメント。軽微な誤字修正はバージョンを上げない。
@@ -1792,8 +1792,10 @@ function IshimonZukan() {
             // ログイン済みでlocalStorageが空 = 別デバイスor初回 → Firestoreを守る
             try { localStorage.setItem('ishimon-player-v3', JSON.stringify(initialPlayer)); } catch(_) {}
           }
-          // v2.13.0: 新規プレイヤーは同意モーダル → オンボーディングの順で表示
-          setShowConsent(true);
+          // v2.14.0: 新規プレイヤーはオンボーディング末尾で同意を取る方式に変更
+          //   (旧 v2.13.0 では setShowConsent(true) で先に同意モーダルを出していたが、
+          //    UX改善のためオンボーディングを先に見せてから同意するフローに)
+          setShowOnboarding(true);
         }
       } catch (e) {
         console.error(e);
@@ -4394,9 +4396,28 @@ function IshimonZukan() {
     const finishOnboarding = (defaultName = false) => {
       const value = defaultName ? 'トレーナー' : (onboardingNameRef.current?.value || '');
       const trimmed = value.trim().slice(0, 10) || 'トレーナー';
-      const updated = { ...player, name: trimmed };
+      // v2.14.0: 同意情報も同時に保存(オンボーディング末尾で同意を取る方式)
+      const now = new Date().toISOString();
+      const updated = {
+        ...player,
+        name: trimmed,
+        privacyPolicy: {
+          agreedVersion: CURRENT_PRIVACY_POLICY_VERSION,
+          agreedAt: now,
+        },
+        termsOfService: {
+          agreedVersion: CURRENT_TERMS_OF_SERVICE_VERSION,
+          agreedAt: now,
+        },
+      };
       setPlayer(updated);
       savePlayer(updated);
+      // v2.14.0: 同意イベントをGA4に送信
+      window.ga4.event('consent_agreed', {
+        policy_version: CURRENT_PRIVACY_POLICY_VERSION,
+        terms_version: CURRENT_TERMS_OF_SERVICE_VERSION,
+        flow: 'onboarding',
+      });
       setShowOnboarding(false);
     };
 
@@ -4620,34 +4641,78 @@ function IshimonZukan() {
           </div>
         ),
       },
-      // スライド5: 名前入力 + Googleログイン
+      // スライド5: 名前入力 + 同意 + Googleログイン (v2.14.0で同意フローを統合)
       {
         bg: 'linear-gradient(160deg, #0D47A1 0%, #1565C0 50%, #0a0a2a 100%)',
         content: (
           <div className="flex flex-col items-center justify-center h-full px-5 text-center">
-            <div className="text-5xl mb-2">🪨✨</div>
-            <h2 className="text-2xl font-black text-white mb-1">さあ、冒険を始めよう！</h2>
-            <p className="text-white/70 text-xs font-bold mb-4">名前は後で変更できます</p>
+            <div className="text-4xl mb-1">🪨✨</div>
+            <h2 className="text-xl font-black text-white mb-1">さあ、冒険を始めよう!</h2>
+            <p className="text-white/70 text-[10px] font-bold mb-2">名前は後で変更できます</p>
             <input
               ref={onboardingNameRef}
               defaultValue=""
               maxLength={8}
-              placeholder="名前を入力（8文字まで）"
-              className="w-full max-w-xs rounded-xl px-4 py-3 text-center font-black text-gray-800 text-base mb-3"
+              placeholder="名前を入力(8文字まで)"
+              className="w-full max-w-xs rounded-xl px-4 py-2.5 text-center font-black text-gray-800 text-base mb-3"
               style={{ border: '3px solid #FFD700', outline: 'none' }}
-              onKeyDown={e => e.key === 'Enter' && finishOnboarding(false)}
             />
-            <button onClick={() => finishOnboarding(false)}
-              className="w-full max-w-xs py-3.5 rounded-2xl text-white font-black text-base active:scale-95 mb-3"
-              style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 5px 0 #5A1A4A', border: '3px solid white' }}>
-              石モン図鑑を始める！
+            {/* v2.14.0: 同意セクション */}
+            <div className="w-full max-w-xs rounded-xl p-2 mb-2"
+              style={{ background: 'rgba(0,0,0,0.35)', border: '1.5px solid rgba(255,215,0,0.4)' }}>
+              <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-between px-2 py-1.5 rounded-lg mb-1 active:scale-95"
+                style={{ background: 'rgba(255,255,255,0.1)', textDecoration: 'none' }}>
+                <span className="text-white text-[11px] font-black">🔒 プライバシーポリシー</span>
+                <span className="text-yellow-300 text-[10px] font-black">全文 ↗</span>
+              </a>
+              <a href={TERMS_OF_SERVICE_URL} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-between px-2 py-1.5 rounded-lg active:scale-95"
+                style={{ background: 'rgba(255,255,255,0.1)', textDecoration: 'none' }}>
+                <span className="text-white text-[11px] font-black">📜 利用規約</span>
+                <span className="text-yellow-300 text-[10px] font-black">全文 ↗</span>
+              </a>
+            </div>
+            {/* チェックボックス */}
+            <button onClick={() => setConsentChecked(c => !c)}
+              className="w-full max-w-xs flex items-center gap-2 px-3 py-2 rounded-xl mb-2 active:scale-[0.98]"
+              style={{
+                background: consentChecked ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.08)',
+                border: `2px solid ${consentChecked ? '#FFD700' : 'rgba(255,255,255,0.25)'}`,
+              }}>
+              <div className="flex-shrink-0 w-5 h-5 rounded flex items-center justify-center"
+                style={{
+                  background: consentChecked ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'rgba(255,255,255,0.1)',
+                  border: `2px solid ${consentChecked ? '#FFD700' : 'rgba(255,255,255,0.4)'}`,
+                }}>
+                {consentChecked && <span className="text-white font-black text-xs leading-none">✓</span>}
+              </div>
+              <span className="text-white font-black text-[11px] text-left flex-1">
+                プライバシーポリシーと利用規約に同意します
+              </span>
+            </button>
+            <button onClick={() => { if (consentChecked) finishOnboarding(false); }}
+              disabled={!consentChecked}
+              className="w-full max-w-xs py-3 rounded-2xl text-white font-black text-sm active:scale-95 mb-2"
+              style={{
+                background: consentChecked ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'rgba(100,100,100,0.5)',
+                boxShadow: consentChecked ? '0 4px 0 #5A1A4A' : 'none',
+                border: '3px solid white',
+                opacity: consentChecked ? 1 : 0.5,
+              }}>
+              石モン図鑑を始める!
             </button>
             {/* Googleログインも誘導 */}
-            <div className="text-white/50 text-[10px] font-bold mb-2">またはGoogleでログインして始める</div>
-            <button onClick={async () => { finishOnboarding(false); setTimeout(signInWithGoogle, 300); }}
-              className="w-full max-w-xs py-3 rounded-xl font-black text-sm active:scale-95 flex items-center justify-center gap-2"
-              style={{ background: 'white', color: '#333' }}>
-              <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 01-7.18-2.54H1.83v2.07A8 8 0 008.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 010-3.04V5.41H1.83a8 8 0 000 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 001.83 5.4L4.5 7.49a4.77 4.77 0 014.48-3.31z"/></svg>
+            <div className="text-white/50 text-[9px] font-bold mb-1">またはGoogleでログインして始める</div>
+            <button onClick={async () => {
+                if (!consentChecked) return;
+                finishOnboarding(false);
+                setTimeout(signInWithGoogle, 300);
+              }}
+              disabled={!consentChecked}
+              className="w-full max-w-xs py-2 rounded-xl font-black text-xs active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: consentChecked ? 'white' : 'rgba(200,200,200,0.5)', color: '#333', opacity: consentChecked ? 1 : 0.5 }}>
+              <svg width="14" height="14" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 01-7.18-2.54H1.83v2.07A8 8 0 008.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 010-3.04V5.41H1.83a8 8 0 000 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 001.83 5.4L4.5 7.49a4.77 4.77 0 014.48-3.31z"/></svg>
               Googleでログイン
             </button>
           </div>
