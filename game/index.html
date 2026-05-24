@@ -6029,6 +6029,161 @@ function IshimonZukan() {
   );
 
   // ===========================================
+  // シェアカード（SNS用画像生成）※v2.16.0で追加
+  // ===========================================
+  const ShareCardModal = ({ mon, onClose }) => {
+    const [generating, setGenerating] = React.useState(false);
+    const cardRef = React.useRef(null);
+    const t = TYPES[mon.type] || TYPES['土'];
+    const r = getRarityLabel(mon.rarity);
+    const stage = STAGES[mon.stage] || STAGES[1];
+    const cur = getCurrentStats(mon);
+    const max = Math.max(cur.hp, cur.kogeki, cur.bougyo, cur.speed, 180);
+    const pct = (v) => Math.round((v / max) * 100);
+
+    const handleSave = async () => {
+      if (!cardRef.current || !window.htmlToImage) return;
+      setGenerating(true);
+      try {
+        const dataUrl = await window.htmlToImage.toPng(cardRef.current, {
+          pixelRatio: 2,
+          cacheBust: true,
+          backgroundColor: '#1a0a3a',
+        });
+        // ダウンロード
+        const link = document.createElement('a');
+        link.download = `ishimon_${mon.name}_${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+        window.ga4?.event?.('share_card_saved', { mon_name: mon.name, rarity: mon.rarity });
+      } catch (e) {
+        console.error('シェアカード生成失敗:', e);
+        alert('画像の生成に失敗しました。もう一度お試しください。');
+      } finally {
+        setGenerating(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-start p-3 pt-6 pb-20 overflow-y-auto"
+        style={{ background: 'rgba(0,0,0,0.92)' }}>
+        <CloseButton onClick={onClose} />
+
+        <div className="text-center mb-3 mt-2">
+          <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-1">SHARE CARD</div>
+          <h2 className="text-white text-xl font-black">シェアカード</h2>
+          <p className="text-white/60 text-[11px] font-bold mt-1">画像で保存してSNSで自慢しよう！</p>
+        </div>
+
+        {/* === ここからシェアカード本体（PNG化される範囲） === */}
+        <div ref={cardRef} style={{
+          width: '340px',
+          background: `linear-gradient(160deg, ${t.light} 0%, ${t.bg} 50%, ${t.dark} 100%)`,
+          borderRadius: '24px',
+          border: `4px solid ${r.color}`,
+          padding: '16px',
+          boxShadow: `0 0 40px ${r.glow}80`,
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* 装飾キラキラ */}
+          <div style={{position:'absolute',top:'8px',right:'14px',fontSize:'18px',opacity:0.7}}>✨</div>
+          <div style={{position:'absolute',bottom:'70px',left:'14px',fontSize:'14px',opacity:0.5}}>✨</div>
+
+          {/* レアリティバッジ */}
+          <div style={{
+            background: r.color, color: '#fff', fontWeight: 900, fontSize: '11px',
+            padding: '4px 12px', borderRadius: '20px', display: 'inline-block',
+            border: '2px solid white', letterSpacing: '0.1em',
+            boxShadow: `0 0 12px ${r.glow}`,
+          }}>{'★'.repeat(mon.rarity)} {r.label}</div>
+
+          {/* タイプ・段階バッジ */}
+          <div style={{display:'flex',gap:'6px',marginTop:'8px'}}>
+            <span style={{background:'rgba(255,255,255,0.4)',color:'#fff',fontWeight:900,fontSize:'10px',padding:'3px 10px',borderRadius:'20px',border:'2px solid white'}}>
+              {t.emoji} {t.name}
+            </span>
+            <span style={{background:'rgba(0,0,0,0.4)',color:'#fff',fontWeight:900,fontSize:'10px',padding:'3px 10px',borderRadius:'20px',border:'2px solid white'}}>
+              {stage.emoji} {stage.label}
+            </span>
+          </div>
+
+          {/* 石モン画像 */}
+          <div style={{position:'relative',marginTop:'10px',borderRadius:'14px',overflow:'hidden',border:'2px solid white',aspectRatio:'1/1',background:'rgba(0,0,0,0.15)'}}>
+            {mon.imageDataUrl ? (
+              <img src={mon.imageDataUrl} crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+            ) : (
+              <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'80px'}}>{t.emoji}</div>
+            )}
+            {/* 元画像サムネ（右下） */}
+            {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
+              <div style={{position:'absolute',right:'8px',bottom:'8px',width:'80px',background:'#fff',borderRadius:'6px',padding:'3px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
+                <img src={mon.originalPhoto} crossOrigin="anonymous" style={{width:'100%',aspectRatio:'4/3',objectFit:'cover',borderRadius:'4px',display:'block'}}/>
+                <div style={{fontSize:'7px',color:'#666',fontWeight:900,textAlign:'center',marginTop:'1px'}}>元画像</div>
+              </div>
+            )}
+          </div>
+
+          {/* 名前 */}
+          <div style={{textAlign:'center',marginTop:'10px'}}>
+            <div style={{color:'#fff',fontSize:'28px',fontWeight:900,letterSpacing:'0.05em',textShadow:`0 3px 0 ${t.dark}`}}>{mon.name}</div>
+          </div>
+
+          {/* ステータスバー */}
+          <div style={{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'10px',marginTop:'10px'}}>
+            {[
+              {label:'HP', val:cur.hp, color:'#52B788'},
+              {label:'ATK', val:cur.kogeki, color:'#FF6B35'},
+              {label:'DEF', val:cur.bougyo, color:'#3DA5F5'},
+              {label:'SPD', val:cur.speed, color:'#FFC42B'},
+            ].map((s,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',marginBottom: i<3?'5px':0}}>
+                <span style={{fontSize:'10px',fontWeight:900,color:'#444',width:'30px'}}>{s.label}</span>
+                <div style={{flex:1,height:'8px',background:'#eee',borderRadius:'4px',overflow:'hidden'}}>
+                  <div style={{width:`${pct(s.val)}%`,height:'100%',background:s.color,borderRadius:'4px'}}/>
+                </div>
+                <span style={{fontSize:'11px',fontWeight:900,color:'#222',minWidth:'30px',textAlign:'right'}}>{s.val}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* 説明文（短く） */}
+          {mon.description && (
+            <div style={{background:'rgba(0,0,0,0.35)',borderRadius:'10px',padding:'8px 10px',marginTop:'8px',border:'1px dashed rgba(255,255,255,0.4)'}}>
+              <div style={{color:'#fff',fontSize:'10px',fontWeight:700,lineHeight:1.5}}>
+                {mon.description.length > 70 ? mon.description.slice(0, 68) + '…' : mon.description}
+              </div>
+            </div>
+          )}
+
+          {/* フッター（URL + AI注意） */}
+          <div style={{marginTop:'10px',textAlign:'center'}}>
+            <div style={{color:'#FFD700',fontSize:'13px',fontWeight:900,letterSpacing:'0.05em'}}>👉 今すぐ石モンをつくる</div>
+            <div style={{color:'rgba(255,255,255,0.9)',fontSize:'11px',fontWeight:900,marginTop:'2px'}}>ishimonzukan.com</div>
+            <div style={{color:'rgba(255,255,255,0.5)',fontSize:'7px',fontWeight:700,marginTop:'3px'}}>※画像はAI生成 / 元画像から作成</div>
+          </div>
+        </div>
+        {/* === シェアカード本体ここまで === */}
+
+        {/* 保存ボタン */}
+        <button onClick={handleSave} disabled={generating}
+          className="mt-5 w-full max-w-sm py-4 rounded-2xl text-white font-black text-base active:scale-95 transition-transform"
+          style={{
+            background: generating ? 'rgba(100,100,100,0.5)' : 'linear-gradient(135deg, #FFD700, #FF6B35)',
+            boxShadow: generating ? 'none' : '0 4px 0 #5A1A4A',
+            border: '3px solid white',
+            opacity: generating ? 0.6 : 1,
+          }}>
+          {generating ? '🎨 生成中…' : '💾 画像として保存'}
+        </button>
+        <p className="text-white/40 text-[10px] font-bold text-center mt-2 max-w-sm">
+          保存した画像をTwitter/X、Instagram等でシェアしてね！
+        </p>
+      </div>
+    );
+  };
+
+  // ===========================================
   // 石モン詳細カード
   // ===========================================
   const MonCard = ({ mon, onClose }) => {
