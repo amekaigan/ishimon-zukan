@@ -1654,6 +1654,7 @@ function IshimonZukan() {
     confirmGacha: true,        // ガチャ確認ダイアログ
     shadowEnabled: true,        // シャドウエフェクト（古いiPhoneはOFFで軽量化）
     imageEngine: 'pollinations', // 'pollinations' | 'huggingface'
+    devCoopMode: false,        // 開発協力モード（石の写真・位置情報を改善に活用）
   });
   // オーナーモード: localStorageに保存し、再読み込み後も維持（この端末のみ）
   const [isOwner, setIsOwner] = useState(() => {
@@ -7510,6 +7511,32 @@ function IshimonZukan() {
             <SettingRow icon="🎴" label="ガチャ確認ダイアログ" desc="ガチャを引く前に確認する">
               <Toggle on={settings.confirmGacha} onClick={() => updateSetting('confirmGacha', !settings.confirmGacha)} />
             </SettingRow>
+          </div>
+        </div>
+
+        {/* 🔬 開発協力モード */}
+        <div className="mb-4">
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔬 開発協力</div>
+          <div className="space-y-2">
+            <div style={{
+              background: settings.devCoopMode
+                ? 'linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,140,0,0.1))'
+                : 'rgba(255,255,255,0.06)',
+              border: settings.devCoopMode ? '1px solid rgba(255,215,0,0.4)' : '1px solid transparent',
+              borderRadius: '12px',
+              padding: '10px 12px',
+              transition: 'all 0.3s',
+            }}>
+              <SettingRow icon="🤝" label={
+                <span>開発協力モード{settings.devCoopMode && <span style={{marginLeft:'6px',fontSize:'11px',background:'linear-gradient(135deg,#FFD700,#FFA500)',color:'#1a1060',fontWeight:900,padding:'1px 7px',borderRadius:'20px'}}>ON</span>}</span>
+              } desc="石の写真・位置情報（市区町村）をゲーム改善に活用します">
+                <Toggle on={!!settings.devCoopMode} onClick={() => updateSetting('devCoopMode', !settings.devCoopMode)} />
+              </SettingRow>
+              <div style={{fontSize:'11px',color:'rgba(255,255,255,0.55)',marginTop:'6px',lineHeight:'1.6',paddingLeft:'4px'}}>
+                収集データ: 石の写真・石モン画像・出会い場所（市区町村のみ）<br/>
+                個人を特定する情報は収集しません。いつでもOFFにできます。
+              </div>
+            </div>
           </div>
         </div>
 
