@@ -6046,6 +6046,22 @@ function IshimonZukan() {
       if (!cardRef.current || !window.htmlToImage) return;
       setGenerating(true);
       try {
+        // iOS Safari対策: 画像をbase64データに変換して埋め込み
+        const imgs = cardRef.current.querySelectorAll('img');
+        await Promise.all(Array.from(imgs).map(async (img) => {
+          if (!img.src || img.src.startsWith('data:')) return;
+          try {
+            const res = await fetch(img.src, { mode: 'cors', cache: 'force-cache' });
+            const blob = await res.blob();
+            const reader = new FileReader();
+            await new Promise((resolve) => {
+              reader.onload = () => { img.src = reader.result; resolve(); };
+              reader.onerror = resolve;
+              reader.readAsDataURL(blob);
+            });
+          } catch (_) { /* fetch失敗はそのまま */ }
+        }));
+        await new Promise(r => setTimeout(r, 300));
         // 画像を事前に読み込んでキャッシュ（CORS対策）
         const imgs = cardRef.current.querySelectorAll('img');
         await Promise.all(Array.from(imgs).map(img => {
@@ -6095,88 +6111,141 @@ function IshimonZukan() {
         <div ref={cardRef} style={{
           width: '340px',
           background: `linear-gradient(160deg, ${t.light} 0%, ${t.bg} 50%, ${t.dark} 100%)`,
-          borderRadius: '24px',
-          border: `4px solid ${r.color}`,
-          padding: '16px',
-          boxShadow: `0 0 40px ${r.glow}80`,
+          borderRadius: '18px',
+          padding: '10px',
           position: 'relative',
           overflow: 'hidden',
+          boxShadow: `0 0 30px ${r.glow}80`,
+          border: `5px solid ${r.color}`,
         }}>
-          {/* 装飾キラキラ */}
-          <div style={{position:'absolute',top:'8px',right:'14px',fontSize:'18px',opacity:0.7}}>✨</div>
-          <div style={{position:'absolute',bottom:'70px',left:'14px',fontSize:'14px',opacity:0.5}}>✨</div>
-
-          {/* レアリティバッジ */}
+          {/* 内側の金枠 */}
           <div style={{
-            background: r.color, color: '#fff', fontWeight: 900, fontSize: '11px',
-            padding: '4px 12px', borderRadius: '20px', display: 'inline-block',
-            border: '2px solid white', letterSpacing: '0.1em',
-            boxShadow: `0 0 12px ${r.glow}`,
+            position:'absolute', top:'6px', left:'6px', right:'6px', bottom:'6px',
+            border: `2px solid ${r.color}`, opacity: 0.7,
+            borderRadius: '12px', pointerEvents:'none', zIndex: 1,
+          }}/>
+          {/* 四隅の金角飾り */}
+          {[{tl:1},{tr:1},{bl:1},{br:1}].map((c, i) => {
+            const positions = [
+              {top:'8px', left:'8px', bt:`3px solid ${r.color}`, bl:`3px solid ${r.color}`, br: '0', bbr:'0', radius:'8px 0 0 0'},
+              {top:'8px', right:'8px', bt:`3px solid ${r.color}`, br:`3px solid ${r.color}`, radius:'0 8px 0 0'},
+              {bottom:'8px', left:'8px', bb:`3px solid ${r.color}`, bl:`3px solid ${r.color}`, radius:'0 0 0 8px'},
+              {bottom:'8px', right:'8px', bb:`3px solid ${r.color}`, br:`3px solid ${r.color}`, radius:'0 0 8px 0'},
+            ];
+            const p = positions[i];
+            return <div key={i} style={{
+              position:'absolute', width:'18px', height:'18px', zIndex:4, pointerEvents:'none',
+              top: p.top, left: p.left, right: p.right, bottom: p.bottom,
+              borderTop: p.bt, borderLeft: p.bl, borderBottom: p.bb, borderRight: p.br,
+              borderRadius: p.radius,
+            }}/>;
+          })}
+          {/* リボン（★★★レア） */}
+          <div style={{
+            position:'absolute', top:'-2px', left:'50%', transform:'translateX(-50%)',
+            background: `linear-gradient(180deg, ${r.color}, ${r.glow})`,
+            color: '#5A1A00',
+            fontSize:'11px', fontWeight:900,
+            padding:'6px 22px 8px',
+            borderRadius:'0 0 14px 14px',
+            border: '2px solid white', borderTop: 'none',
+            letterSpacing:'0.08em',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            zIndex: 5,
           }}>{'★'.repeat(mon.rarity)} {r.label}</div>
 
-          {/* タイプ・段階バッジ */}
-          <div style={{display:'flex',gap:'6px',marginTop:'8px'}}>
-            <span style={{background:'rgba(255,255,255,0.4)',color:'#fff',fontWeight:900,fontSize:'10px',padding:'3px 10px',borderRadius:'20px',border:'2px solid white'}}>
-              {t.emoji} {t.name}
-            </span>
-            <span style={{background:'rgba(0,0,0,0.4)',color:'#fff',fontWeight:900,fontSize:'10px',padding:'3px 10px',borderRadius:'20px',border:'2px solid white'}}>
-              {stage.emoji} {stage.label}
-            </span>
-          </div>
-
-          {/* 石モン画像 */}
-          <div style={{position:'relative',marginTop:'10px',borderRadius:'14px',overflow:'hidden',border:'2px solid white',aspectRatio:'1/1',background:'rgba(0,0,0,0.15)'}}>
-            {mon.imageDataUrl ? (
-              <img src={mon.imageDataUrl} crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-            ) : (
-              <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'80px'}}>{t.emoji}</div>
-            )}
-            {/* 元画像サムネ（右下） */}
-            {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
-              <div style={{position:'absolute',right:'8px',bottom:'8px',width:'80px',background:'#fff',borderRadius:'6px',padding:'3px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
-                <img src={mon.originalPhoto} crossOrigin="anonymous" style={{width:'100%',aspectRatio:'4/3',objectFit:'cover',borderRadius:'4px',display:'block'}}/>
-                <div style={{fontSize:'7px',color:'#666',fontWeight:900,textAlign:'center',marginTop:'1px'}}>元画像</div>
+          {/* 内容ラッパー */}
+          <div style={{ position:'relative', zIndex:2, padding:'22px 4px 4px' }}>
+            {/* 石モン画像エリア */}
+            <div style={{
+              position:'relative', borderRadius:'10px', overflow:'hidden',
+              border:'3px solid #FFD700',
+              aspectRatio:'1/1',
+              background:'rgba(0,0,0,0.2)',
+            }}>
+              {/* タイプ/段階バッジ（左上に重ねる） */}
+              <div style={{position:'absolute',top:'8px',left:'8px',display:'flex',flexDirection:'column',gap:'5px',zIndex:3}}>
+                <span style={{background:'rgba(255,255,255,0.92)',color:'#5A1A78',fontSize:'10px',fontWeight:900,padding:'3px 9px',borderRadius:'16px',border:'1.5px solid white',boxShadow:'0 2px 4px rgba(0,0,0,0.3)'}}>
+                  {t.emoji} {t.name}
+                </span>
+                <span style={{background:'rgba(60,30,0,0.8)',color:'#FFD700',fontSize:'10px',fontWeight:900,padding:'3px 9px',borderRadius:'16px',border:'1.5px solid white'}}>
+                  {stage.emoji} {stage.label}
+                </span>
               </div>
-            )}
-          </div>
-
-          {/* 名前 */}
-          <div style={{textAlign:'center',marginTop:'10px'}}>
-            <div style={{color:'#fff',fontSize:'28px',fontWeight:900,letterSpacing:'0.05em',textShadow:`0 3px 0 ${t.dark}`}}>{mon.name}</div>
-          </div>
-
-          {/* ステータスバー */}
-          <div style={{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'10px',marginTop:'10px'}}>
-            {[
-              {label:'HP', val:cur.hp, color:'#52B788'},
-              {label:'ATK', val:cur.kogeki, color:'#FF6B35'},
-              {label:'DEF', val:cur.bougyo, color:'#3DA5F5'},
-              {label:'SPD', val:cur.speed, color:'#FFC42B'},
-            ].map((s,i)=>(
-              <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',marginBottom: i<3?'5px':0}}>
-                <span style={{fontSize:'10px',fontWeight:900,color:'#444',width:'30px'}}>{s.label}</span>
-                <div style={{flex:1,height:'8px',background:'#eee',borderRadius:'4px',overflow:'hidden'}}>
-                  <div style={{width:`${pct(s.val)}%`,height:'100%',background:s.color,borderRadius:'4px'}}/>
-                </div>
-                <span style={{fontSize:'11px',fontWeight:900,color:'#222',minWidth:'30px',textAlign:'right'}}>{s.val}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* 説明文（短く） */}
-          {mon.description && (
-            <div style={{background:'rgba(0,0,0,0.35)',borderRadius:'10px',padding:'8px 10px',marginTop:'8px',border:'1px dashed rgba(255,255,255,0.4)'}}>
-              <div style={{color:'#fff',fontSize:'10px',fontWeight:700,lineHeight:1.5}}>
-                {mon.description.length > 70 ? mon.description.slice(0, 68) + '…' : mon.description}
+              {mon.imageDataUrl ? (
+                <img src={mon.imageDataUrl} crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+              ) : (
+                <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'80px'}}>{t.emoji}</div>
+              )}
+              {/* 名前オーバーレイ（足元に重ねて大きく） */}
+              <div style={{
+                position:'absolute',bottom:'-2px',left:0,right:0,
+                background:'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.9) 100%)',
+                padding:'30px 8px 8px',textAlign:'center',zIndex:3,
+              }}>
+                <div style={{
+                  fontSize:'26px',fontWeight:900,color:'#fff',letterSpacing:'0.08em',
+                  textShadow:`0 0 8px rgba(255,180,0,0.8), 0 3px 0 ${t.dark}`,
+                }}>{mon.name}</div>
               </div>
             </div>
-          )}
 
-          {/* フッター（URL + AI注意） */}
-          <div style={{marginTop:'10px',textAlign:'center'}}>
-            <div style={{color:'#FFD700',fontSize:'13px',fontWeight:900,letterSpacing:'0.05em'}}>👉 今すぐ石モンをつくる</div>
-            <div style={{color:'rgba(255,255,255,0.9)',fontSize:'11px',fontWeight:900,marginTop:'2px'}}>ishimonzukan.com</div>
-            <div style={{color:'rgba(255,255,255,0.5)',fontSize:'7px',fontWeight:700,marginTop:'3px'}}>※画像はAI生成 / 元画像から作成</div>
+            {/* ステータス + 元画像（横並び） */}
+            <div style={{display:'flex',gap:'8px',marginTop:'8px'}}>
+              <div style={{
+                flex:1, background:'rgba(0,0,0,0.4)',
+                borderRadius:'10px', border:`2px solid ${r.color}`,
+                padding:'8px 10px',
+              }}>
+                {[
+                  {label:'HP', val:cur.hp, color:'#52B788'},
+                  {label:'ATK', val:cur.kogeki, color:'#FF6B35'},
+                  {label:'DEF', val:cur.bougyo, color:'#3DA5F5'},
+                  {label:'SPD', val:cur.speed, color:'#FFC42B'},
+                ].map((s,i)=>(
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:i<3?'4px':0}}>
+                    <span style={{fontSize:'10px',fontWeight:900,color:'#FFD700',width:'28px'}}>{s.label}</span>
+                    <div style={{flex:1,height:'6px',background:'rgba(255,255,255,0.2)',borderRadius:'3px',overflow:'hidden'}}>
+                      <div style={{width:`${pct(s.val)}%`,height:'100%',background:s.color,borderRadius:'3px'}}/>
+                    </div>
+                    <span style={{fontSize:'11px',fontWeight:900,color:'#fff',minWidth:'24px',textAlign:'right'}}>{s.val}</span>
+                  </div>
+                ))}
+              </div>
+              {mon.originalPhoto && (
+                <div style={{width:'90px',background:'#fff',borderRadius:'8px',padding:'4px',border:`2px solid ${r.color}`}}>
+                  <img src={mon.originalPhoto} crossOrigin="anonymous" style={{width:'100%',aspectRatio:'1/1',objectFit:'cover',borderRadius:'4px',display:'block'}}/>
+                  <div style={{fontSize:'8px',fontWeight:900,color:'#5A1A00',textAlign:'center',marginTop:'2px'}}>元画像</div>
+                </div>
+              )}
+            </div>
+
+            {/* 説明文 */}
+            {mon.description && (
+              <div style={{
+                marginTop:'8px', background:'rgba(0,0,0,0.4)',
+                borderRadius:'10px', border:'1px dashed rgba(255,215,0,0.5)',
+                padding:'7px 10px', color:'#fff', fontSize:'10px',
+                lineHeight:1.5, fontWeight:700,
+              }}>
+                {mon.description.length > 80 ? mon.description.slice(0, 78) + '…' : mon.description}
+              </div>
+            )}
+
+            {/* フッター */}
+            <div style={{textAlign:'center',marginTop:'6px'}}>
+              <div style={{color:'#fff',fontSize:'11px',fontWeight:900,letterSpacing:'0.05em'}}>ishimonzukan.com</div>
+              <div style={{color:'rgba(255,255,255,0.5)',fontSize:'7px',fontWeight:700,marginTop:'1px'}}>※画像はAI生成 / 元画像から作成</div>
+            </div>
+
+            {/* シリアルナンバー（右下に控えめに） */}
+            <div style={{
+              position:'absolute', bottom:'-18px', right:'2px',
+              fontSize:'9px', fontWeight:900,
+              color:'rgba(255,255,255,0.6)',
+              letterSpacing:'0.1em',
+              fontFamily:'monospace',
+            }}>ID #{(mon.id || '').slice(-4).padStart(4,'0').toUpperCase()}</div>
           </div>
         </div>
         {/* === シェアカード本体ここまで === */}
