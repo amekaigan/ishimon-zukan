@@ -1665,6 +1665,7 @@ function IshimonZukan() {
   const [tasteOpen, setTasteOpen] = useState(false); // テイスト分析の開閉（カーテン）
   const [tastePage, setTastePage] = useState(0); // テイスト分析のページ番号（0始まり）
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [consentDevCoop, setConsentDevCoop] = useState(true); // §4: 開発協力モード同意モーダル用
 
   // ===== 共通: 閉じるボタン（全モーダル・画面で統一使用） =====
   const CloseButton = ({ onClick, position = 'absolute' }) => (
@@ -1841,6 +1842,11 @@ function IshimonZukan() {
         agreedAt: now,
       },
     };
+    // §4: 開発協力モードの選択を settings に保存
+    const newSettings = { ...settings, devCoopMode: consentDevCoop };
+    setSettings(newSettings);
+    await window.storage.set('ishimon-settings-v1', JSON.stringify(newSettings));
+    window.ga4.event('dev_coop_consent', { agreed: consentDevCoop });
     setPlayer(updated);
     await window.storage.set('ishimon-player-v3', JSON.stringify(updated));
     // v2.13.0: 同意イベントをGA4に送信(観測性のための布石)
@@ -4341,6 +4347,26 @@ function IshimonZukan() {
             background: 'linear-gradient(180deg, rgba(58,10,106,0.5), rgba(90,26,120,0.95))',
             borderTop: '1px solid rgba(255,215,0,0.3)',
           }}>
+          {/* 開発協力モード選択 */}
+          <button onClick={() => setConsentDevCoop(v => !v)}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 active:scale-[0.98] transition-transform"
+            style={{
+              background: consentDevCoop ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.06)',
+              border: `2px solid ${consentDevCoop ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.15)'}`,
+            }}>
+            <div className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center"
+              style={{
+                background: consentDevCoop ? 'linear-gradient(135deg, #FFD700, #FFA500)' : 'rgba(255,255,255,0.1)',
+                border: `2px solid ${consentDevCoop ? '#FFD700' : 'rgba(255,255,255,0.3)'}`,
+              }}>
+              {consentDevCoop && <span className="text-white font-black text-sm leading-none">✓</span>}
+            </div>
+            <div className="text-left flex-1">
+              <div className="text-white font-black text-[13px]">🔬 開発協力モードに参加する</div>
+              <div className="text-white/55 text-[10px] mt-0.5">石の写真・位置情報（市区町村）をゲーム改善に活用。任意・いつでもOFF可</div>
+            </div>
+          </button>
+
           {/* チェックボックス */}
           <button onClick={() => setConsentChecked(c => !c)}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 active:scale-[0.98] transition-transform"
