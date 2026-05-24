@@ -6080,15 +6080,16 @@ function IshimonZukan() {
     };
 
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-start p-3 pt-6 pb-20 overflow-y-auto"
-        style={{ background: 'rgba(0,0,0,0.92)' }}>
+      <div className="fixed inset-0 z-[100] overflow-y-auto"
+        style={{ background: 'rgba(0,0,0,0.92)', WebkitOverflowScrolling: 'touch' }}>
         <CloseButton onClick={onClose} />
+        <div className="flex flex-col items-center px-3 pt-12 pb-24" style={{ minHeight: '100%' }}>
 
-        <div className="text-center mb-3 mt-2">
-          <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-1">SHARE CARD</div>
-          <h2 className="text-white text-xl font-black">シェアカード</h2>
-          <p className="text-white/60 text-[11px] font-bold mt-1">画像で保存してSNSで自慢しよう！</p>
-        </div>
+          <div className="text-center mb-3">
+            <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-1">SHARE CARD</div>
+            <h2 className="text-white text-xl font-black">シェアカード</h2>
+            <p className="text-white/60 text-[11px] font-bold mt-1">画像で保存してSNSで自慢しよう！</p>
+          </div>
 
         {/* === ここからシェアカード本体（PNG化される範囲） === */}
         <div ref={cardRef} style={{
@@ -6194,6 +6195,7 @@ function IshimonZukan() {
         <p className="text-white/40 text-[10px] font-bold text-center mt-2 max-w-sm">
           保存した画像をTwitter/X、Instagram等でシェアしてね！
         </p>
+        </div>
       </div>
     );
   };
