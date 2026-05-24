@@ -6062,18 +6062,6 @@ function IshimonZukan() {
           } catch (_) { /* fetch失敗はそのまま */ }
         }));
         await new Promise(r => setTimeout(r, 300));
-        // 画像を事前に読み込んでキャッシュ（CORS対策）
-        const imgs = cardRef.current.querySelectorAll('img');
-        await Promise.all(Array.from(imgs).map(img => {
-          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-          return new Promise((res) => {
-            img.onload = res;
-            img.onerror = res;
-            setTimeout(res, 3000); // タイムアウト
-          });
-        }));
-        // 少し待ってからキャプチャ
-        await new Promise(r => setTimeout(r, 200));
         const dataUrl = await window.htmlToImage.toPng(cardRef.current, {
           pixelRatio: 2,
           cacheBust: true,
