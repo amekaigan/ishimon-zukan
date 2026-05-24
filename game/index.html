@@ -1619,6 +1619,7 @@ function IshimonZukan() {
   const [showInventory, setShowInventory] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showEquip, setShowEquip] = useState(null);
+  const [showShareCard, setShowShareCard] = useState(null); // v2.16.0: シェアカード表示用
   const [showGacha, setShowGacha] = useState(false);
   const [gachaResults, setGachaResults] = useState([]);
   const [gachaPhase, setGachaPhase] = useState('idle');
@@ -6384,6 +6385,20 @@ function IshimonZukan() {
             )}
           </div>
 
+          {/* v2.16.0: シェアカードボタン */}
+          <button onClick={() => setShowShareCard(mon)}
+            className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform mb-2"
+            style={{
+              background: 'linear-gradient(135deg, #FF3B8E, #C71F8E, #7B2CBF)',
+              boxShadow: '0 4px 0 #4A0E78',
+              border: '3px solid white',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+            <span style={{position:'absolute',top:'4px',right:'10px',fontSize:'13px',opacity:0.6}}>✨</span>
+            📤 シェアカードを作る
+          </button>
+
           {/* お気に入り & グループ登録 */}
           {(() => {
             const groups = player.monGroups || [];
@@ -8441,6 +8456,7 @@ function IshimonZukan() {
       )}
 
       {selected && <MonCard mon={selected} onClose={() => setSelected(null)} />}
+      {showShareCard && <ShareCardModal mon={showShareCard} onClose={() => setShowShareCard(null)} />}
       {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); }} />}
       {isLoading && <LoadingView />}
       {showEvolveAnim && <EvolveAnimView mon={showEvolveAnim} />}
