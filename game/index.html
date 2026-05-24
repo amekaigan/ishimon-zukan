@@ -1665,7 +1665,7 @@ function IshimonZukan() {
   const [tasteOpen, setTasteOpen] = useState(false); // テイスト分析の開閉（カーテン）
   const [tastePage, setTastePage] = useState(0); // テイスト分析のページ番号（0始まり）
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [consentDevCoop, setConsentDevCoop] = useState(true); // §4: 開発協力モード同意モーダル用
+  const [consentDevCoop, setConsentDevCoop] = useState(true); // §4: 開発協力モード同意モーダル用（初回はtrueデフォルト、既存ユーザーは現設定を引き継ぐ）
 
   // ===== 共通: 閉じるボタン（全モーダル・画面で統一使用） =====
   const CloseButton = ({ onClick, position = 'absolute' }) => (
@@ -1842,11 +1842,14 @@ function IshimonZukan() {
         agreedAt: now,
       },
     };
-    // §4: 開発協力モードの選択を settings に保存
-    const newSettings = { ...settings, devCoopMode: consentDevCoop };
-    setSettings(newSettings);
-    await window.storage.set('ishimon-settings-v1', JSON.stringify(newSettings));
-    window.ga4.event('dev_coop_consent', { agreed: consentDevCoop });
+    // §4: 開発協力モードの選択を settings に保存（既存ユーザーは現設定を維持）
+    const isReturningUser = !!player?.privacyPolicy;
+    if (!isReturningUser) {
+      const newSettings = { ...settings, devCoopMode: consentDevCoop };
+      setSettings(newSettings);
+      await window.storage.set('ishimon-settings-v1', JSON.stringify(newSettings));
+      window.ga4.event('dev_coop_consent', { agreed: consentDevCoop });
+    }
     setPlayer(updated);
     await window.storage.set('ishimon-player-v3', JSON.stringify(updated));
     // v2.13.0: 同意イベントをGA4に送信(観測性のための布石)
@@ -4271,6 +4274,8 @@ function IshimonZukan() {
     // §4: NEW判定（ユーザーの同意済みバージョンと現在のバージョンが不一致ならNEW）
     const isPrivacyNew = !player?.privacyPolicy || player.privacyPolicy.agreedVersion !== CURRENT_PRIVACY_POLICY_VERSION;
     const isTermsNew = !player?.termsOfService || player.termsOfService.agreedVersion !== CURRENT_TERMS_OF_SERVICE_VERSION;
+    // §4: 既存ユーザー判定（過去に一度でも同意済み = privacyPolicyが存在する）
+    const isReturningUser = !!player?.privacyPolicy;
     return (
       <div className="fixed inset-0 z-[95] flex flex-col overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #3a0a6a 0%, #C71F8E 50%, #5A1A78 100%)' }}>
@@ -4372,8 +4377,8 @@ function IshimonZukan() {
             background: 'linear-gradient(180deg, rgba(58,10,106,0.5), rgba(90,26,120,0.95))',
             borderTop: '1px solid rgba(255,215,0,0.3)',
           }}>
-          {/* 開発協力モード選択（C: キラキラ✨デザイン） */}
-          <button onClick={() => setConsentDevCoop(v => !v)}
+          {/* 開発協力モード選択（C: キラキラ✨デザイン）※初回ユーザーのみ表示 */}
+          {!isReturningUser && (<button onClick={() => setConsentDevCoop(v => !v)}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 active:scale-[0.98] transition-transform"
             style={{
               background: consentDevCoop
@@ -4397,7 +4402,7 @@ function IshimonZukan() {
               <div className="text-white font-black text-[13px]">🔬 開発協力モードに参加する</div>
               <div className="text-white/55 text-[10px] mt-0.5">石の写真・位置情報（市区町村）をゲーム改善に活用。任意・いつでもOFF可</div>
             </div>
-          </button>
+          </button>)}
 
           {/* チェックボックス */}
           <button onClick={() => setConsentChecked(c => !c)}
