@@ -4268,6 +4268,9 @@ function IshimonZukan() {
   // 外部リンクで全文を読めるようにし、モーダル内には要点のみ記載。
   const ConsentModal = () => {
     if (!showConsent) return null;
+    // §4: NEW判定（ユーザーの同意済みバージョンと現在のバージョンが不一致ならNEW）
+    const isPrivacyNew = !player?.privacyPolicy || player.privacyPolicy.agreedVersion !== CURRENT_PRIVACY_POLICY_VERSION;
+    const isTermsNew = !player?.termsOfService || player.termsOfService.agreedVersion !== CURRENT_TERMS_OF_SERVICE_VERSION;
     return (
       <div className="fixed inset-0 z-[95] flex flex-col overflow-hidden"
         style={{ background: 'linear-gradient(160deg, #3a0a6a 0%, #C71F8E 50%, #5A1A78 100%)' }}>
@@ -4310,7 +4313,18 @@ function IshimonZukan() {
               <div className="flex items-center gap-2">
                 <span className="text-base">🔒</span>
                 <div>
-                  <div className="text-white font-black text-sm">プライバシーポリシー</div>
+                  <div className="text-white font-black text-sm flex items-center gap-1.5">
+                    プライバシーポリシー
+                    {isPrivacyNew && (
+                      <span style={{
+                        background:'linear-gradient(135deg,#FF3B6B,#FF6B35)',
+                        color:'#fff',fontSize:'9px',fontWeight:900,
+                        padding:'1px 6px',borderRadius:'20px',
+                        letterSpacing:'0.05em',
+                        boxShadow:'0 0 6px rgba(255,80,80,0.6)',
+                      }}>NEW</span>
+                    )}
+                  </div>
                   <div className="text-white/60 text-[10px] font-bold">v{CURRENT_PRIVACY_POLICY_VERSION}</div>
                 </div>
               </div>
@@ -4322,7 +4336,18 @@ function IshimonZukan() {
               <div className="flex items-center gap-2">
                 <span className="text-base">📜</span>
                 <div>
-                  <div className="text-white font-black text-sm">利用規約</div>
+                  <div className="text-white font-black text-sm flex items-center gap-1.5">
+                    利用規約
+                    {isTermsNew && (
+                      <span style={{
+                        background:'linear-gradient(135deg,#FF3B6B,#FF6B35)',
+                        color:'#fff',fontSize:'9px',fontWeight:900,
+                        padding:'1px 6px',borderRadius:'20px',
+                        letterSpacing:'0.05em',
+                        boxShadow:'0 0 6px rgba(255,80,80,0.6)',
+                      }}>NEW</span>
+                    )}
+                  </div>
                   <div className="text-white/60 text-[10px] font-bold">v{CURRENT_TERMS_OF_SERVICE_VERSION}</div>
                 </div>
               </div>
@@ -4347,13 +4372,20 @@ function IshimonZukan() {
             background: 'linear-gradient(180deg, rgba(58,10,106,0.5), rgba(90,26,120,0.95))',
             borderTop: '1px solid rgba(255,215,0,0.3)',
           }}>
-          {/* 開発協力モード選択 */}
+          {/* 開発協力モード選択（C: キラキラ✨デザイン） */}
           <button onClick={() => setConsentDevCoop(v => !v)}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 active:scale-[0.98] transition-transform"
             style={{
-              background: consentDevCoop ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.06)',
-              border: `2px solid ${consentDevCoop ? 'rgba(255,215,0,0.5)' : 'rgba(255,255,255,0.15)'}`,
+              background: consentDevCoop
+                ? 'linear-gradient(135deg,rgba(255,215,0,0.25),rgba(255,140,0,0.18))'
+                : 'rgba(255,255,255,0.06)',
+              border: `2px solid ${consentDevCoop ? 'rgba(255,215,0,0.65)' : 'rgba(255,255,255,0.15)'}`,
+              position:'relative',
+              overflow:'hidden',
             }}>
+            {consentDevCoop && (
+              <span style={{position:'absolute',top:'4px',right:'8px',fontSize:'14px',opacity:0.7}}>✨</span>
+            )}
             <div className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center"
               style={{
                 background: consentDevCoop ? 'linear-gradient(135deg, #FFD700, #FFA500)' : 'rgba(255,255,255,0.1)',
