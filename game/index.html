@@ -6046,22 +6046,55 @@ function IshimonZukan() {
       if (!cardRef.current || !window.htmlToImage) return;
       setGenerating(true);
       try {
-        // iOS Safari対策: 画像をbase64データに変換して埋め込み
+        // iOS Safari対策: 画像を確実にbase64化（既にdata:でも検証して再変換）
         const imgs = cardRef.current.querySelectorAll('img');
         await Promise.all(Array.from(imgs).map(async (img) => {
-          if (!img.src || img.src.startsWith('data:')) return;
+          // 既にdata:URLならスキップ
+          if (img.src && img.src.startsWith('data:')) {
+            // ただし、読み込み完了を待つ
+            if (!img.complete || img.naturalWidth === 0) {
+              await new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve;
+                setTimeout(resolve, 1500);
+              });
+            }
+            return;
+          }
+          if (!img.src) return;
           try {
-            const res = await fetch(img.src, { mode: 'cors', cache: 'force-cache' });
+            // crossOrigin属性を外してから fetch（CORS汚染を回避）
+            img.removeAttribute('crossorigin');
+            const res = await fetch(img.src, { mode: 'cors', cache: 'no-cache' });
+            if (!res.ok) throw new Error('fetch failed');
             const blob = await res.blob();
-            const reader = new FileReader();
-            await new Promise((resolve) => {
-              reader.onload = () => { img.src = reader.result; resolve(); };
-              reader.onerror = resolve;
+            const dataUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = reject;
               reader.readAsDataURL(blob);
             });
-          } catch (_) { /* fetch失敗はそのまま */ }
+            // 新しいImageオブジェクトで読み込み完了を確認してから差し替え
+            await new Promise((resolve) => {
+              const testImg = new Image();
+              testImg.onload = () => { img.src = dataUrl; resolve(); };
+              testImg.onerror = () => { img.src = dataUrl; resolve(); };
+              testImg.src = dataUrl;
+            });
+          } catch (e) {
+            console.warn('画像base64化失敗:', img.src, e);
+          }
         }));
-        await new Promise(r => setTimeout(r, 300));
+        // 全画像のロード完了を待つ追加保険
+        await Promise.all(Array.from(cardRef.current.querySelectorAll('img')).map(img => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+            setTimeout(resolve, 2000);
+          });
+        }));
+        await new Promise(r => setTimeout(r, 500));
         const dataUrl = await window.htmlToImage.toPng(cardRef.current, {
           pixelRatio: 2,
           cacheBust: true,
@@ -6100,25 +6133,25 @@ function IshimonZukan() {
           width: '340px',
           background: `linear-gradient(160deg, ${t.light} 0%, ${t.bg} 50%, ${t.dark} 100%)`,
           borderRadius: '18px',
-          padding: '10px',
+          padding: '14px',  /* 上下左右の余白を均等に */
           position: 'relative',
-          overflow: 'hidden',
+          overflow: 'visible',  /* リボンが上にはみ出せるように */
           boxShadow: `0 0 30px ${r.glow}80`,
           border: `5px solid ${r.color}`,
         }}>
-          {/* 内側の金枠 */}
+          {/* 内側の金枠（padding に合わせて調整） */}
           <div style={{
-            position:'absolute', top:'6px', left:'6px', right:'6px', bottom:'6px',
+            position:'absolute', top:'8px', left:'8px', right:'8px', bottom:'8px',
             border: `2px solid ${r.color}`, opacity: 0.7,
             borderRadius: '12px', pointerEvents:'none', zIndex: 1,
           }}/>
           {/* 四隅の金角飾り */}
-          {[{tl:1},{tr:1},{bl:1},{br:1}].map((c, i) => {
+          {[0,1,2,3].map((i) => {
             const positions = [
-              {top:'8px', left:'8px', bt:`3px solid ${r.color}`, bl:`3px solid ${r.color}`, br: '0', bbr:'0', radius:'8px 0 0 0'},
-              {top:'8px', right:'8px', bt:`3px solid ${r.color}`, br:`3px solid ${r.color}`, radius:'0 8px 0 0'},
-              {bottom:'8px', left:'8px', bb:`3px solid ${r.color}`, bl:`3px solid ${r.color}`, radius:'0 0 0 8px'},
-              {bottom:'8px', right:'8px', bb:`3px solid ${r.color}`, br:`3px solid ${r.color}`, radius:'0 0 8px 0'},
+              {top:'10px', left:'10px', bt:`3px solid ${r.color}`, bl:`3px solid ${r.color}`, radius:'8px 0 0 0'},
+              {top:'10px', right:'10px', bt:`3px solid ${r.color}`, br:`3px solid ${r.color}`, radius:'0 8px 0 0'},
+              {bottom:'10px', left:'10px', bb:`3px solid ${r.color}`, bl:`3px solid ${r.color}`, radius:'0 0 0 8px'},
+              {bottom:'10px', right:'10px', bb:`3px solid ${r.color}`, br:`3px solid ${r.color}`, radius:'0 0 8px 0'},
             ];
             const p = positions[i];
             return <div key={i} style={{
@@ -6128,22 +6161,9 @@ function IshimonZukan() {
               borderRadius: p.radius,
             }}/>;
           })}
-          {/* リボン（★★★レア） */}
-          <div style={{
-            position:'absolute', top:'-2px', left:'50%', transform:'translateX(-50%)',
-            background: `linear-gradient(180deg, ${r.color}, ${r.glow})`,
-            color: '#5A1A00',
-            fontSize:'11px', fontWeight:900,
-            padding:'6px 22px 8px',
-            borderRadius:'0 0 14px 14px',
-            border: '2px solid white', borderTop: 'none',
-            letterSpacing:'0.08em',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            zIndex: 5,
-          }}>{'★'.repeat(mon.rarity)} {r.label}</div>
 
-          {/* 内容ラッパー */}
-          <div style={{ position:'relative', zIndex:2, padding:'22px 4px 4px' }}>
+          {/* 内容ラッパー（リボンの下に画像が少し重なる構成） */}
+          <div style={{ position:'relative', zIndex:2, paddingTop:'16px' }}>
             {/* 石モン画像エリア */}
             <div style={{
               position:'relative', borderRadius:'10px', overflow:'hidden',
@@ -6161,7 +6181,7 @@ function IshimonZukan() {
                 </span>
               </div>
               {mon.imageDataUrl ? (
-                <img src={mon.imageDataUrl} crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+                <img src={mon.imageDataUrl} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
               ) : (
                 <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'80px'}}>{t.emoji}</div>
               )}
@@ -6178,12 +6198,12 @@ function IshimonZukan() {
               </div>
             </div>
 
-            {/* ステータス + 元画像（横並び） */}
+            {/* ステータス + 元画像（横並び・縦サイズ少し短く） */}
             <div style={{display:'flex',gap:'8px',marginTop:'8px'}}>
               <div style={{
                 flex:1, background:'rgba(0,0,0,0.4)',
                 borderRadius:'10px', border:`2px solid ${r.color}`,
-                padding:'8px 10px',
+                padding:'6px 10px',  /* 縦パディング少し縮小 */
               }}>
                 {[
                   {label:'HP', val:cur.hp, color:'#52B788'},
@@ -6191,9 +6211,9 @@ function IshimonZukan() {
                   {label:'DEF', val:cur.bougyo, color:'#3DA5F5'},
                   {label:'SPD', val:cur.speed, color:'#FFC42B'},
                 ].map((s,i)=>(
-                  <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:i<3?'4px':0}}>
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:i<3?'3px':0}}>
                     <span style={{fontSize:'10px',fontWeight:900,color:'#FFD700',width:'28px'}}>{s.label}</span>
-                    <div style={{flex:1,height:'6px',background:'rgba(255,255,255,0.2)',borderRadius:'3px',overflow:'hidden'}}>
+                    <div style={{flex:1,height:'5px',background:'rgba(255,255,255,0.2)',borderRadius:'3px',overflow:'hidden'}}>
                       <div style={{width:`${pct(s.val)}%`,height:'100%',background:s.color,borderRadius:'3px'}}/>
                     </div>
                     <span style={{fontSize:'11px',fontWeight:900,color:'#fff',minWidth:'24px',textAlign:'right'}}>{s.val}</span>
@@ -6201,8 +6221,8 @@ function IshimonZukan() {
                 ))}
               </div>
               {mon.originalPhoto && (
-                <div style={{width:'90px',background:'#fff',borderRadius:'8px',padding:'4px',border:`2px solid ${r.color}`}}>
-                  <img src={mon.originalPhoto} crossOrigin="anonymous" style={{width:'100%',aspectRatio:'1/1',objectFit:'cover',borderRadius:'4px',display:'block'}}/>
+                <div style={{width:'82px',background:'#fff',borderRadius:'8px',padding:'4px',border:`2px solid ${r.color}`,display:'flex',flexDirection:'column'}}>
+                  <img src={mon.originalPhoto} style={{width:'100%',aspectRatio:'1/1',objectFit:'cover',borderRadius:'4px',display:'block'}}/>
                   <div style={{fontSize:'8px',fontWeight:900,color:'#5A1A00',textAlign:'center',marginTop:'2px'}}>元画像</div>
                 </div>
               )}
@@ -6220,21 +6240,49 @@ function IshimonZukan() {
               </div>
             )}
 
-            {/* フッター */}
-            <div style={{textAlign:'center',marginTop:'6px'}}>
-              <div style={{color:'#fff',fontSize:'11px',fontWeight:900,letterSpacing:'0.05em'}}>ishimonzukan.com</div>
-              <div style={{color:'rgba(255,255,255,0.5)',fontSize:'7px',fontWeight:700,marginTop:'1px'}}>※画像はAI生成 / 元画像から作成</div>
-            </div>
-
-            {/* シリアルナンバー（右下に控えめに） */}
+            {/* フッター（左右分割: 左=URL+AI注記 / 右=大きくID） */}
             <div style={{
-              position:'absolute', bottom:'-18px', right:'2px',
-              fontSize:'9px', fontWeight:900,
-              color:'rgba(255,255,255,0.6)',
-              letterSpacing:'0.1em',
-              fontFamily:'monospace',
-            }}>ID #{(mon.id || '').slice(-4).padStart(4,'0').toUpperCase()}</div>
+              marginTop:'10px',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'space-between',
+              gap:'8px',
+              paddingTop:'8px',
+              borderTop:'1px solid rgba(255,215,0,0.25)',
+            }}>
+              <div style={{textAlign:'left',flex:1,minWidth:0}}>
+                <div style={{color:'#fff',fontSize:'11px',fontWeight:900,letterSpacing:'0.05em'}}>ishimonzukan.com</div>
+                <div style={{color:'rgba(255,255,255,0.5)',fontSize:'7px',fontWeight:700,marginTop:'1px'}}>※画像はAI生成 / 元画像から作成</div>
+              </div>
+              <div style={{
+                fontSize:'14px', fontWeight:900,
+                color:'#FFD700',
+                letterSpacing:'0.12em',
+                fontFamily:'monospace',
+                textShadow:'0 1px 2px rgba(0,0,0,0.6)',
+                whiteSpace:'nowrap',
+              }}>{(() => {
+                const m = (mon.id || '').match(/(\d{10,})/);
+                const ts = m ? parseInt(m[1]) : 0;
+                const code = ts ? ts.toString(36).slice(-5).toUpperCase() : 'XXXXX';
+                return `ID  ${code}`;
+              })()}</div>
+            </div>
           </div>
+
+          {/* リボン（★★★レア）— 最前面に */}
+          <div style={{
+            position:'absolute', top:'-2px', left:'50%', transform:'translateX(-50%)',
+            background: `linear-gradient(180deg, ${r.color}, ${r.glow})`,
+            color: '#5A1A00',
+            fontSize:'11px', fontWeight:900,
+            padding:'6px 22px 8px',
+            borderRadius:'0 0 14px 14px',
+            border: '2px solid white', borderTop: 'none',
+            letterSpacing:'0.08em',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            zIndex: 10,  /* 最前面 */
+          }}>{'★'.repeat(mon.rarity)} {r.label}</div>
         </div>
         {/* === シェアカード本体ここまで === */}
 
