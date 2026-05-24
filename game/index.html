@@ -7542,7 +7542,60 @@ function IshimonZukan() {
 
         {/* 🔬 開発協力モード */}
         <div className="mb-4">
-          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔬 開発協力</div>
+          <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔬 開発協力モード</div>
+          <div
+            style={{
+              background: 'linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,100,0,0.12))',
+              border: '2px solid rgba(255,215,0,0.55)',
+              borderRadius: '16px',
+              padding: '14px 14px 12px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+            {/* 装飾 */}
+            <div style={{position:'absolute',top:'8px',right:'12px',fontSize:'20px',opacity:0.5}}>✨</div>
+            <div style={{position:'absolute',bottom:'8px',right:'44px',fontSize:'16px',opacity:0.3}}>🪨</div>
+            {/* タイトル行 */}
+            <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'8px'}}>
+              <div style={{
+                width:'40px',height:'40px',borderRadius:'50%',flexShrink:0,
+                background:'linear-gradient(135deg,#FFD700,#FF8C00)',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:'20px',
+              }}>🤝</div>
+              <div style={{flex:1}}>
+                <div style={{color:'#fff',fontSize:'15px',fontWeight:900,lineHeight:1.2}}>
+                  開発協力モードで石モンを見せる
+                  <span style={{
+                    display:'inline-block',marginLeft:'6px',
+                    background:'linear-gradient(135deg,#FFD700,#FFA500)',
+                    color:'#1a1060',fontSize:'10px',fontWeight:900,
+                    padding:'1px 7px',borderRadius:'20px',verticalAlign:'middle',
+                  }}>任意</span>
+                </div>
+                <div style={{color:'rgba(255,255,255,0.75)',fontSize:'12px',marginTop:'2px',lineHeight:1.5}}>
+                  石の写真・位置情報（市区町村まで）をゲーム改善・紹介・将来のAI学習に活用する場合があります
+                </div>
+              </div>
+            </div>
+            {/* 説明文ボックス */}
+            <div style={{
+              background:'rgba(0,0,0,0.2)',borderRadius:'10px',
+              padding:'9px 11px',marginBottom:'10px',
+              color:'rgba(255,255,255,0.85)',fontSize:'12px',lineHeight:1.65,
+            }}>
+              このゲームは、みんなの<span style={{color:'#FFD700',fontWeight:900}}>石の写真・石モン画像・位置情報</span>をもとに改善・開発しています。ご協力いただけると、より良いゲームになります！<br/>
+              個人を特定する情報は収集しません。いつでもOFFにできます。
+            </div>
+            {/* トグル行 */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span style={{color:'rgba(255,255,255,0.6)',fontSize:'11px'}}>
+                {settings.devCoopMode ? '現在 ON になっています ✓' : '現在 OFF になっています'}
+              </span>
+              <Toggle on={!!settings.devCoopMode} onClick={() => updateSetting('devCoopMode', !settings.devCoopMode)} />
+            </div>
+          </div>
+        </div>
           <div className="space-y-2">
             <div style={{
               background: settings.devCoopMode
