@@ -7679,10 +7679,10 @@ function IshimonZukan() {
     const importFileRef = useRef(null);
     const [importStatus, setImportStatus] = useState('');
 
-    // 開いたらページ上部にスクロール
-    useEffect(() => {
-      window.scrollTo(0, 0);
-    }, []);
+    // 開いたらページ上部にスクロール — トグル切替でジャンプする副作用があるため無効化 (2026-05-25)
+    // useEffect(() => {
+    //   window.scrollTo(0, 0);
+    // }, []);
 
     const handleExport = async () => {
       try {
