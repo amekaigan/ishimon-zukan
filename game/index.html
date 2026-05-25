@@ -6586,7 +6586,7 @@ function IshimonZukan() {
             )}
           </div>
 
-          {/* v2.16.0: シェアカードボタン */}
+          {/* v2.16.0: シェアカードボタン
           <button onClick={() => setShowShareCard(mon)}
             className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform mb-2"
             style={{
@@ -6598,7 +6598,7 @@ function IshimonZukan() {
             }}>
             <span style={{position:'absolute',top:'4px',right:'10px',fontSize:'13px',opacity:0.6}}>✨</span>
             📤 シェアカードを作る
-          </button>
+          </button> */}
 
           {/* お気に入り & グループ登録 */}
           {(() => {
@@ -8092,12 +8092,34 @@ function IshimonZukan() {
           <button
             onClick={async () => {
               try {
+                // 1. データ保存
                 await savePlayer(player);
                 await saveCollection(collection);
               } catch (e) { /* 保存失敗しても続行 */ }
+              
+              try {
+                // 2. Service Worker があれば登録解除
+                if ('serviceWorker' in navigator) {
+                  const regs = await navigator.serviceWorker.getRegistrations();
+                  await Promise.all(regs.map(r => r.unregister()));
+                }
+              } catch (e) { /* 失敗しても続行 */ }
+              
+              try {
+                // 3. Cache Storage を全削除
+                if ('caches' in window) {
+                  const keys = await caches.keys();
+                  await Promise.all(keys.map(k => caches.delete(k)));
+                }
+              } catch (e) { /* 失敗しても続行 */ }
+              
+              // 4. クエリパラメータを更新してリロード
               const url = new URL(window.location.href);
               url.searchParams.set('v', String(Date.now()));
-              window.location.replace(url.toString());
+              url.searchParams.set('cb', Math.random().toString(36).slice(2, 8));
+              
+              // 5. iOS Safari でも確実にリロード(reload(true) は非推奨だがフォールバック)
+              window.location.href = url.toString();
             }}
             className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3"
             style={{ background: 'linear-gradient(135deg, #FFB347, #FF6B35)', boxShadow: '0 4px 0 #B85C00', border: '2px solid #FFD700' }}>
