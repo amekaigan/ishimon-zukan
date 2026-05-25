@@ -8091,6 +8091,30 @@ function IshimonZukan() {
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔄 アプリ更新</div>
           <button
             onClick={async () => {
+              // 0. 即座にローディング表示を画面に追加（ユーザーへのフィードバック）
+              const overlay = document.createElement('div');
+              overlay.id = 'update-overlay';
+              overlay.style.cssText = `
+                position: fixed; inset: 0; z-index: 99999;
+                background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                color: white; font-weight: 900; font-family: sans-serif;
+                animation: fadeIn 0.2s;
+              `;
+              overlay.innerHTML = `
+                <div style="font-size:48px;animation:spin 1s linear infinite;">🔄</div>
+                <div style="margin-top:20px;font-size:18px;letter-spacing:0.1em;">最新版に更新中...</div>
+                <div style="margin-top:8px;font-size:12px;opacity:0.7;">10秒ほどかかります</div>
+                <style>
+                  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+                  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+                </style>
+              `;
+              document.body.appendChild(overlay);
+              
+              // 描画を確実に反映させる(同期処理に挟まれないよう少し待つ)
+              await new Promise(r => setTimeout(r, 50));
+              
               try {
                 // 1. データ保存
                 await savePlayer(player);
@@ -8118,7 +8142,7 @@ function IshimonZukan() {
               url.searchParams.set('v', String(Date.now()));
               url.searchParams.set('cb', Math.random().toString(36).slice(2, 8));
               
-              // 5. iOS Safari でも確実にリロード(reload(true) は非推奨だがフォールバック)
+              // 5. リロード（オーバーレイ表示のまま遷移）
               window.location.href = url.toString();
             }}
             className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3"
