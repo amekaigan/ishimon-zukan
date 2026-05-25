@@ -6184,8 +6184,8 @@ function IshimonZukan() {
             }}/>;
           })}
 
-          {/* 内容ラッパー（リボンの下に画像が少し重なる構成） */}
-          <div style={{ position:'relative', zIndex:2, paddingTop:'16px' }}>
+          {/* 内容ラッパー */}
+          <div style={{ position:'relative', zIndex:2 }}>
             {/* 石モン画像エリア */}
             <div style={{
               position:'relative', borderRadius:'10px', overflow:'hidden',
@@ -6207,25 +6207,35 @@ function IshimonZukan() {
               ) : (
                 <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'80px'}}>{t.emoji}</div>
               )}
-              {/* 名前オーバーレイ（足元に重ねて大きく） */}
+              {/* 名前オーバーレイ（背景透過・太枠線+全方向シャドウで目立たせる） */}
               <div style={{
-                position:'absolute',bottom:'-2px',left:0,right:0,
-                background:'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.9) 100%)',
-                padding:'30px 8px 8px',textAlign:'center',zIndex:3,
+                position:'absolute',bottom:'8px',left:0,right:0,
+                textAlign:'center',zIndex:3,
+                padding:'0 8px',
               }}>
                 <div style={{
-                  fontSize:'26px',fontWeight:900,color:'#fff',letterSpacing:'0.08em',
-                  textShadow:`0 0 8px rgba(255,180,0,0.8), 0 3px 0 ${t.dark}`,
+                  fontSize:'26px',fontWeight:900,color:'#fff',
+                  letterSpacing:'0.08em',
+                  WebkitTextStroke: '2.5px ' + t.dark,
+                  paintOrder: 'stroke fill',
+                  textShadow: `
+                    0 0 6px rgba(0,0,0,0.9),
+                    0 0 12px rgba(0,0,0,0.7),
+                    2px 0 0 rgba(0,0,0,0.8),
+                    -2px 0 0 rgba(0,0,0,0.8),
+                    0 2px 0 rgba(0,0,0,0.8),
+                    0 -2px 0 rgba(0,0,0,0.8)
+                  `,
                 }}>{mon.name}</div>
               </div>
             </div>
 
-            {/* ステータス + 元画像（横並び・縦サイズ少し短く） */}
+            {/* ステータス + 元画像（横並び） */}
             <div style={{display:'flex',gap:'8px',marginTop:'8px'}}>
               <div style={{
                 flex:1, background:'rgba(0,0,0,0.4)',
                 borderRadius:'10px', border:`2px solid ${r.color}`,
-                padding:'6px 10px',  /* 縦パディング少し縮小 */
+                padding:'6px 10px',
               }}>
                 {[
                   {label:'HP', val:cur.hp, color:'#52B788'},
@@ -6262,44 +6272,61 @@ function IshimonZukan() {
               </div>
             )}
 
-            {/* フッター（左右分割: 左=URL+AI注記 / 右=大きくID） */}
+            {/* フッター（横線なし・左ロゴ画像 / 右はID+AI注記） */}
             <div style={{
               marginTop:'10px',
               display:'flex',
               alignItems:'center',
               justifyContent:'space-between',
               gap:'8px',
-              paddingTop:'8px',
-              borderTop:'1px solid rgba(255,215,0,0.25)',
             }}>
-              <div style={{textAlign:'left',flex:1,minWidth:0}}>
-                <div style={{color:'#fff',fontSize:'11px',fontWeight:900,letterSpacing:'0.05em'}}>ishimonzukan.com</div>
-                <div style={{color:'rgba(255,255,255,0.5)',fontSize:'7px',fontWeight:700,marginTop:'1px'}}>※画像はAI生成 / 元画像から作成</div>
+              {/* 左：ロゴ画像 */}
+              <img
+                src="/logo.png"
+                alt="石モン図鑑"
+                style={{
+                  height:'32px',
+                  width:'auto',
+                  objectFit:'contain',
+                  filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
+                }}
+              />
+              {/* 右：上にID、下に※画像はAI… */}
+              <div style={{textAlign:'right',display:'flex',flexDirection:'column',gap:'2px'}}>
+                <div style={{
+                  fontSize:'11px', fontWeight:900,
+                  color:'#FFD700',
+                  letterSpacing:'0.08em',
+                  fontFamily:'monospace',
+                  textShadow:'0 1px 2px rgba(0,0,0,0.6)',
+                  whiteSpace:'nowrap',
+                }}>{generateCardId(mon)}</div>
+                <div style={{
+                  color:'rgba(255,255,255,0.5)',
+                  fontSize:'7px',
+                  fontWeight:700,
+                  whiteSpace:'nowrap',
+                }}>※画像はAI生成 / 元画像から作成</div>
               </div>
-              <div style={{
-                fontSize:'11px', fontWeight:900,
-                color:'#FFD700',
-                letterSpacing:'0.08em',
-                fontFamily:'monospace',
-                textShadow:'0 1px 2px rgba(0,0,0,0.6)',
-                whiteSpace:'nowrap',
-              }}>{generateCardId(mon)}</div>
             </div>
           </div>
 
-          {/* リボン（★★★レア）— 最前面に */}
+          {/* ★リボン — 画像の上端をまたぐ位置に重ねる */}
           <div style={{
-            position:'absolute', top:'-2px', left:'50%', transform:'translateX(-50%)',
+            position:'absolute',
+            top:'56px',  /* padding(14) + paddingTop(16) + 画像エリアの上端あたりに重なる */
+            left:'50%', transform:'translateX(-50%)',
             background: `linear-gradient(180deg, ${r.color}, ${r.glow})`,
             color: '#5A1A00',
-            fontSize:'11px', fontWeight:900,
-            padding:'6px 22px 8px',
-            borderRadius:'0 0 14px 14px',
-            border: '2px solid white', borderTop: 'none',
-            letterSpacing:'0.08em',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            zIndex: 10,  /* 最前面 */
-          }}>{'★'.repeat(mon.rarity)} {r.label}</div>
+            fontSize:'16px', fontWeight:900,
+            padding:'4px 18px 5px',
+            borderRadius:'20px',
+            border: '2.5px solid white',
+            letterSpacing:'0.15em',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            zIndex: 10,
+            whiteSpace:'nowrap',
+          }}>{'★'.repeat(mon.rarity)}</div>
         </div>
         {/* === シェアカード本体ここまで === */}
 
