@@ -2307,6 +2307,22 @@ function IshimonZukan() {
   };
 
   const generateMon = async (imageDataUrl) => {
+    // 全体タイムアウト保険（2026-05-25追加）: 120秒で強制的に終了させる
+    let _generateMonTimedOut = false;
+    const _generateMonTimeoutId = setTimeout(() => {
+      _generateMonTimedOut = true;
+      setIsLoading(false);
+      setLoadingMsg('');
+      setError('時間がかかりすぎたため中止しました。もう一度お試しください 🔄');
+      // 消費した石のかけらを返す
+      try {
+        const refund = { ...player, stoneFragments: (player.stoneFragments || 0) + CAPTURE_COST };
+        setPlayer(refund);
+        savePlayer(refund);
+      } catch (e) {}
+      setPreviewImage(null);
+    }, 120000);
+
     // 機能追加(v2.11.0): 石モン所有上限チェック
     if (isCapacityFull()) {
       const cap = getMonCapacity();
@@ -2435,13 +2451,10 @@ function IshimonZukan() {
       if (!jsonStr) throw new Error('JSON not found in response');
       const mon = JSON.parse(jsonStr);
 
-      // not_stone チェック
-      if (mon.error === 'not_stone') {
-        setCapturing(false);
-        setLoading(false);
-        setError('石や岩の写真を撮ってください📷');
-        return;
-      }
+      // not_stone チェック — 削除（2026-05-25）
+      // 「何を石モン化するかはユーザーに委ねる」設計思想のため、判定そのものを廃止。
+      // AIが「石じゃない」と判断しても、そのまま石モンとして扱う。
+      // ※ そもそも判定精度が低かった経緯もあり、ユーザー側でツッコめる余地として残す。
 
       // 必須フィールドのバリデーション
       if (!mon.name || !mon.baseStats || typeof mon.rarity !== 'number') {
@@ -2546,8 +2559,12 @@ function IshimonZukan() {
         setError('失敗しました。もう一度お試しください');
       }
     } finally {
-      setIsLoading(false);
-      setLoadingMsg('');
+      // タイムアウトをクリア（正常完了時）
+      clearTimeout(_generateMonTimeoutId);
+      if (!_generateMonTimedOut) {
+        setIsLoading(false);
+        setLoadingMsg('');
+      }
     }
   };
 
