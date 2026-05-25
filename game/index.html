@@ -6068,27 +6068,16 @@ function IshimonZukan() {
       if (!cardRef.current || !window.htmlToImage) return;
       setGenerating(true);
       try {
-        // iOS Safari対策: 画像を確実にbase64化（既にdata:でも検証して再変換）
-        const imgs = cardRef.current.querySelectorAll('img');
-        await Promise.all(Array.from(imgs).map(async (img) => {
-          // 既にdata:URLならスキップ
-          if (img.src && img.src.startsWith('data:')) {
-            // ただし、読み込み完了を待つ
-            if (!img.complete || img.naturalWidth === 0) {
-              await new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve;
-                setTimeout(resolve, 1500);
-              });
-            }
-            return;
-          }
-          if (!img.src) return;
+        // === ステップ1: 全ての <img> を data:URL 化 ===
+        const imgs = Array.from(cardRef.current.querySelectorAll('img'));
+        await Promise.all(imgs.map(async (img) => {
+          const orig = img.src;
+          if (!orig) return;
+          img.removeAttribute('crossorigin');
+          if (orig.startsWith('data:')) return;
           try {
-            // crossOrigin属性を外してから fetch（CORS汚染を回避）
-            img.removeAttribute('crossorigin');
-            const res = await fetch(img.src, { mode: 'cors', cache: 'no-cache' });
-            if (!res.ok) throw new Error('fetch failed');
+            const res = await fetch(orig, { mode: 'cors', cache: 'no-cache' });
+            if (!res.ok) throw new Error('fetch failed: ' + res.status);
             const blob = await res.blob();
             const dataUrl = await new Promise((resolve, reject) => {
               const reader = new FileReader();
@@ -6096,35 +6085,42 @@ function IshimonZukan() {
               reader.onerror = reject;
               reader.readAsDataURL(blob);
             });
-            // 新しいImageオブジェクトで読み込み完了を確認してから差し替え
-            await new Promise((resolve) => {
-              const testImg = new Image();
-              testImg.onload = () => { img.src = dataUrl; resolve(); };
-              testImg.onerror = () => { img.src = dataUrl; resolve(); };
-              testImg.src = dataUrl;
-            });
+            img.src = dataUrl;
           } catch (e) {
-            console.warn('画像base64化失敗:', img.src, e);
+            console.warn('[ShareCard] 画像base64化失敗:', orig.slice(0, 60), e);
           }
         }));
-        // 全画像のロード完了を待つ追加保険
-        await Promise.all(Array.from(cardRef.current.querySelectorAll('img')).map(img => {
-          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-          return new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = resolve;
-            setTimeout(resolve, 2000);
-          });
+        
+        // === ステップ2: 全画像の decode 完了を待つ ===
+        await Promise.all(imgs.map(async (img) => {
+          if (!img.src) return;
+          try {
+            if (img.decode) {
+              await img.decode();
+            } else {
+              await new Promise((resolve) => {
+                if (img.complete && img.naturalWidth > 0) return resolve();
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+                setTimeout(resolve, 3000);
+              });
+            }
+          } catch (_) {}
         }));
-        await new Promise(r => setTimeout(r, 500));
+        
+        // === ステップ3: 描画安定のため待機 ===
+        await new Promise(r => setTimeout(r, 800));
+        
+        // === ステップ4: html-to-image でキャプチャ ===
         const dataUrl = await window.htmlToImage.toPng(cardRef.current, {
           pixelRatio: 2,
-          cacheBust: true,
+          cacheBust: false,
           backgroundColor: '#1a0a3a',
           skipFonts: true,
-          imagePlaceholder: undefined,
+          fetchRequestInit: { cache: 'no-cache' },
         });
-        // ダウンロード
+        
+        // === ステップ5: ダウンロード ===
         const link = document.createElement('a');
         link.download = `ishimon_${mon.name}_${Date.now()}.png`;
         link.href = dataUrl;
@@ -6132,7 +6128,7 @@ function IshimonZukan() {
         window.ga4?.event?.('share_card_saved', { mon_name: mon.name, rarity: mon.rarity });
       } catch (e) {
         console.error('シェアカード生成失敗:', e);
-        alert('画像の生成に失敗しました。もう一度お試しください。');
+        alert('画像の生成に失敗しました。\nエラー: ' + (e.message || e));
       } finally {
         setGenerating(false);
       }
@@ -6312,22 +6308,29 @@ function IshimonZukan() {
             </div>
           </div>
 
-          {/* ★リボン — 画像の上端をまたぐ位置に重ねる */}
+          {/* ★リボン — 画像の上端をまたぐ豪華楕円バッジ */}
           <div style={{
             position:'absolute',
-            top:'56px',  /* padding(14) + paddingTop(16) + 画像エリアの上端あたりに重なる */
+            top:'48px',
             left:'50%', transform:'translateX(-50%)',
-            background: `linear-gradient(180deg, ${r.color}, ${r.glow})`,
-            color: '#5A1A00',
-            fontSize:'16px', fontWeight:900,
-            padding:'4px 18px 5px',
-            borderRadius:'20px',
-            border: '2.5px solid white',
-            letterSpacing:'0.15em',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            background: 'linear-gradient(180deg, #2a1a3a 0%, #1a0a2a 100%)',
+            color: '#FFD700',
+            fontSize: mon.rarity >= 4 ? '14px' : '13px',
+            fontWeight:900,
+            padding:'5px 20px 6px',
+            borderRadius:'24px',
+            border: `1.5px solid ${r.color}`,
+            outline: `2px solid rgba(0,0,0,0.4)`,
+            outlineOffset: '-4px',
+            letterSpacing:'0.12em',
+            boxShadow: `0 4px 14px rgba(0,0,0,0.6), 0 0 16px ${r.glow}66, inset 0 1px 0 rgba(255,255,255,0.15)`,
             zIndex: 10,
             whiteSpace:'nowrap',
-          }}>{'★'.repeat(mon.rarity)}</div>
+            textShadow: `0 0 6px ${r.glow}, 0 1px 2px rgba(0,0,0,0.8)`,
+          }}>
+            <span style={{color: r.color, letterSpacing:'0.05em', marginRight:'6px'}}>{'★'.repeat(mon.rarity)}</span>
+            <span style={{color:'#fff', fontSize:'11px'}}>{r.label}</span>
+          </div>
         </div>
         {/* === シェアカード本体ここまで === */}
 
