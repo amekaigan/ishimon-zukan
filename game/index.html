@@ -6032,6 +6032,28 @@ function IshimonZukan() {
   // ===========================================
   // シェアカード（SNS用画像生成）※v2.16.0で追加
   // ===========================================
+  // カードID生成: ST02-FI3-XXXXXXXX 形式
+  const generateCardId = (mon) => {
+    // ブランド + 世代（メジャーバージョン2桁）
+    const majorVer = parseInt(APP_VERSION.split('.')[0]) || 2;
+    const seriesCode = `ST${String(majorVer).padStart(2, '0')}`;
+    // タイプ2文字略号
+    const typeShort = {
+      '火': 'FI', '水': 'AQ', '土': 'ER', '電気': 'TH',
+      '空': 'SK', 'ドラゴン': 'DR', '精霊': 'SP',
+    };
+    const typeCode = (typeShort[mon.type] || 'XX') + (mon.rarity || 1);
+    // 個体ハッシュ8桁
+    const idStr = mon.id || '';
+    const tsMatch = idStr.match(/(\d{10,})/);
+    const ts = tsMatch ? parseInt(tsMatch[1]) : Date.now();
+    const randMatch = idStr.match(/-([a-z0-9]{2,6})$/i);
+    const tsHash = ts.toString(36).toUpperCase();
+    const randPart = randMatch ? randMatch[1].toUpperCase() : 'XX';
+    const hash = (tsHash.slice(-6) + randPart.slice(-2)).padEnd(8, '0').slice(0, 8);
+    return `${seriesCode}-${typeCode}-${hash}`;
+  };
+
   const ShareCardModal = ({ mon, onClose }) => {
     const [generating, setGenerating] = React.useState(false);
     const cardRef = React.useRef(null);
@@ -6255,18 +6277,13 @@ function IshimonZukan() {
                 <div style={{color:'rgba(255,255,255,0.5)',fontSize:'7px',fontWeight:700,marginTop:'1px'}}>※画像はAI生成 / 元画像から作成</div>
               </div>
               <div style={{
-                fontSize:'14px', fontWeight:900,
+                fontSize:'11px', fontWeight:900,
                 color:'#FFD700',
-                letterSpacing:'0.12em',
+                letterSpacing:'0.08em',
                 fontFamily:'monospace',
                 textShadow:'0 1px 2px rgba(0,0,0,0.6)',
                 whiteSpace:'nowrap',
-              }}>{(() => {
-                const m = (mon.id || '').match(/(\d{10,})/);
-                const ts = m ? parseInt(m[1]) : 0;
-                const code = ts ? ts.toString(36).slice(-5).toUpperCase() : 'XXXXX';
-                return `ID  ${code}`;
-              })()}</div>
+              }}>{generateCardId(mon)}</div>
             </div>
           </div>
 
