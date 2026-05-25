@@ -6120,12 +6120,44 @@ function IshimonZukan() {
           fetchRequestInit: { cache: 'no-cache' },
         });
         
-        // === ステップ5: ダウンロード ===
-        const link = document.createElement('a');
-        link.download = `ishimon_${mon.name}_${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
-        window.ga4?.event?.('share_card_saved', { mon_name: mon.name, rarity: mon.rarity });
+        // === ステップ5: 共有シート起動 or ダウンロード ===
+        // dataUrl を Blob → File に変換
+        const blob = await (await fetch(dataUrl)).blob();
+        const fileName = `ishimon_${mon.name}_${Date.now()}.png`;
+        const file = new File([blob], fileName, { type: 'image/png' });
+        
+        // Web Share API が画像共有に対応しているか判定
+        const canShareFile = navigator.canShare && navigator.canShare({ files: [file] });
+        
+        if (canShareFile) {
+          // iOSやAndroidの共有シートを起動
+          try {
+            await navigator.share({
+              files: [file],
+              title: `${mon.name} - 石モン図鑑`,
+              text: `${mon.name} を捕まえた! #石モン図鑑\nhttps://ishimonzukan.com`,
+            });
+            window.ga4?.event?.('share_card_shared', { mon_name: mon.name, rarity: mon.rarity });
+          } catch (shareErr) {
+            // ユーザーがキャンセル or 共有失敗 → ダウンロードにフォールバック
+            if (shareErr.name !== 'AbortError') {
+              console.warn('共有失敗、ダウンロードに切替:', shareErr);
+              const link = document.createElement('a');
+              link.download = fileName;
+              link.href = dataUrl;
+              link.click();
+              window.ga4?.event?.('share_card_saved', { mon_name: mon.name, rarity: mon.rarity });
+            }
+            // AbortError(キャンセル)の時は何もしない
+          }
+        } else {
+          // PCブラウザなど対応していない場合は通常ダウンロード
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = dataUrl;
+          link.click();
+          window.ga4?.event?.('share_card_saved', { mon_name: mon.name, rarity: mon.rarity });
+        }
       } catch (e) {
         console.error('シェアカード生成失敗:', e);
         alert('画像の生成に失敗しました。\nエラー: ' + (e.message || e));
