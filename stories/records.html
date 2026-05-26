@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<!-- SEO -->
+<title>あの日を忘れない仕組み | 石モン図鑑マガジン #2</title>
+<meta name="description" content="石モン図鑑には、元の石の写真・拾った場所・日付が一緒に記録されます。なぜその仕組みを作ったのか。「アルバム」のような図鑑への思いを語ります。">
+<meta name="keywords" content="石モン図鑑,思い出,記録,アルバム,位置情報,日付">
+<link rel="canonical" href="https://ishimonzukan.com/stories/records.html">
+<link rel="icon" type="image/png" href="/favicon.png">
+
+<!-- OGP -->
+<meta property="og:title" content="あの日を忘れない仕組み | 石モン図鑑マガジン #2">
+<meta property="og:description" content="石モン図鑑には、元の石の写真・拾った場所・日付が一緒に記録される。それぞれに込めた意味の話。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ishimonzukan.com/stories/records.html">
+<meta property="og:image" content="https://ishimonzukan.com/ogp_ishimon.png">
+<meta property="og:site_name" content="石モン図鑑">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="あの日を忘れない仕組み | 石モン図鑑マガジン #2">
+<meta name="twitter:description" content="石モン図鑑には、元の石の写真・拾った場所・日付が一緒に記録される。それぞれに込めた意味の話。">
+<meta name="twitter:image" content="https://ishimonzukan.com/ogp_ishimon.png">
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-J4CZ7ZZST3');
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+
+<!-- Common CSS -->
+<link rel="stylesheet" href="/common.css">
+
+<!-- Page-specific -->
+<style>
+.records-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 32px 0;
+}
+.record-card {
+  border-radius: 16px;
+  padding: 22px;
+  border: 2px solid;
+}
+.record-card.photo {
+  background: linear-gradient(135deg, rgba(255,107,53,0.06), rgba(255,215,0,0.06));
+  border-color: rgba(255,107,53,0.3);
+}
+.record-card.place {
+  background: linear-gradient(135deg, rgba(61,165,245,0.06), rgba(90,26,120,0.06));
+  border-color: rgba(61,165,245,0.3);
+}
+.record-card.date {
+  background: linear-gradient(135deg, rgba(82,183,136,0.06), rgba(199,31,142,0.06));
+  border-color: rgba(82,183,136,0.3);
+}
+.record-card .card-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.record-card .card-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #2a0a4a;
+  margin-bottom: 10px;
+}
+.record-card .card-body {
+  font-size: 14px;
+  color: #555;
+  line-height: 2;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="breadcrumb">
+    <a href="/">ホーム</a> &rsaquo;
+    <a href="/about.html">石モン図鑑とは</a> &rsaquo;
+    石モン図鑑マガジン
+  </div>
+
+  <div class="article-header">
+    <div class="section-label-tag">📖 石モン図鑑マガジン #2 — 開発者の声</div>
+    <h1 class="article-title">あの日を、<br>忘れない仕組み。</h1>
+    <div class="article-meta">石モン図鑑 / ishimonzukan.com</div>
+  </div>
+
+  <div class="prose">
+    <p>
+      前の話（<a href="./memories.html">石モンに、思い出が宿る話</a>）で、
+      「バグで石モンが消えた時、思い出が消えたように悲しかった」という話をしました。
+    </p>
+    <p>
+      あの経験があったから、石モン図鑑には、<br>
+      石モンの画像と一緒に<strong>3つのことを記録する仕組み</strong>を作りました。
+    </p>
+
+    <div class="divider"></div>
+
+    <p>
+      その3つがこれです。
+    </p>
+  </div>
+
+  <div class="records-grid">
+    <div class="record-card photo">
+      <div class="card-icon">📷</div>
+      <div class="card-title">① 元の石の写真</div>
+      <div class="card-body">
+        石モンになる前の姿。あなたが実際に見つけた、あの石の写真がそのまま残ります。<br>
+        AIが生み出した石モンの横に、「変身前の姿」として一緒に表示されます。
+      </div>
+    </div>
+    <div class="record-card place">
+      <div class="card-icon">📍</div>
+      <div class="card-title">② 拾った場所</div>
+      <div class="card-body">
+        どこで見つけた石なのか。公園の角、海辺、旅先の路地裏。<br>
+        石モンを開くたびに「あの場所」が思い出せるように、地図情報と一緒に記録されます。
+      </div>
+    </div>
+    <div class="record-card date">
+      <div class="card-icon">📅</div>
+      <div class="card-title">③ その日の日付</div>
+      <div class="card-body">
+        この石モンが生まれたのはいつか。<br>
+        半年後、1年後に図鑑を開いたとき「あ、これあの日の石モンだ」と気づける、小さなタイムスタンプです。
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="prose">
+    <p>
+      この3つを一緒に残す理由は、シンプルです。
+    </p>
+    <p>
+      石モンの画像だけでは、<br>
+      時間が経つとどんな石だったか忘れてしまう。<br>
+      でも元の石の写真があれば、<br>
+      あの不思議な形、あの質感が、そのまま手元に残る。
+    </p>
+    <p>
+      場所を残すのは、「あの場所でまた探したい」と思えるから。<br>
+      子どもに「前にここで見つけたよ」と話せるから。
+    </p>
+    <p>
+      日付を残すのは、石モン図鑑が<strong>思い出のアルバム</strong>になるように。<br>
+      強さやレアリティだけじゃなく、<br>
+      「いつ、どこで、誰と」が積み重なってこそ、<br>
+      本当の意味での「自分だけの図鑑」になると思っているから。
+    </p>
+
+    <div class="divider"></div>
+
+    <p>
+      アルバムって、不思議なものです。
+    </p>
+    <p>
+      昔のアルバムを開いた時、写真を見てまず思うのは、<br>
+      「きれいな写真だな」じゃなくて、<br>
+      「あ、この日どこ行ったっけ」「この時みんな何してたんだろう」<br>
+      という記憶の引き出しが開く感覚。
+    </p>
+    <p>
+      石モン図鑑も、そういうものになれたら、と思っています。
+    </p>
+
+    <div class="highlight-box">
+      <p>
+        何年後かに子どもが図鑑を開いて、<br>
+        「これ、パパと海で見つけた石モンだ」<br>
+        「この日、すごい雨だったよね」
+      </p>
+      <p>
+        そういう会話が生まれるような図鑑に。
+      </p>
+    </div>
+
+    <p>
+      石モン図鑑は、まだ進化中のゲームです。<br>
+      これから地域ごとに石モンを集める機能や、<br>
+      思い出ごとにまとめて見られる機能なども、<br>
+      少しずつ作っていく予定です。
+    </p>
+    <p>
+      あなたの石モンが、いつか大切な記録になりますように。
+    </p>
+  </div>
+
+  <div class="sign">── 石モン図鑑</div>
+
+  <div class="story-nav">
+    <a href="./memories.html">
+      <div class="nav-label">← マガジン #1</div>
+      石モンに、思い出が宿る話
+    </a>
+    <a href="/about.html">
+      <div class="nav-label">↑ 最初から読む</div>
+      石モン図鑑とは
+    </a>
+  </div>
+
+  <div class="cta-wrap">
+    <a href="/game/" class="cta-btn">▶ 石モンを探しに行く</a>
+    <div class="cta-sub">無料・ブラウザだけで遊べます</div>
+  </div>
+
+  <nav class="footer-nav">
+    <a href="/">ホーム</a>
+    <span class="sep">·</span>
+    <a href="/about.html">石モン図鑑とは</a>
+    <span class="sep">·</span>
+    <a href="/privacy.html">プライバシーポリシー</a>
+    <span class="sep">·</span>
+    <a href="/terms.html">利用規約</a>
+  </nav>
+
+  <div class="meta-footer">石モン図鑑 / ishimonzukan.com</div>
+</div>
+</body>
+</html>
