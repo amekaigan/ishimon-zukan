@@ -3,19 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>石モン図鑑とは | 足元の石が、世界に一つの石モンになる</title>
-<meta name="description" content="足元の石ころが、世界に一つの石モンになる。石モン図鑑のコンセプト、誕生のきっかけ、開発への思いをお伝えします。">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<!-- SEO -->
+<title>石モン図鑑とは | 足元の石が世界に一つのモンスターになる無料ブラウザゲーム</title>
+<meta name="description" content="石モン図鑑は、足元の石をスマホで撮るとAIがその石だけのモンスターを生み出す無料ブラウザゲーム。開発のきっかけ、コンセプト、家族で楽しめる遊び方を紹介します。">
+<meta name="keywords" content="石モン図鑑,石モン,AI,モンスター生成,ブラウザゲーム,無料,子ども,家族で遊ぶ">
+<link rel="canonical" href="https://ishimonzukan.com/about.html">
 <link rel="icon" type="image/png" href="/favicon.png">
+
 <!-- OGP -->
-<meta property="og:title" content="石モン図鑑とは | 足元の石が、世界に一つの石モンになる">
-<meta property="og:description" content="足元の石ころが、世界に一つの石モンになる。街を歩くだけで冒険になる、家族の思い出を濃くするゲームです。">
+<meta property="og:title" content="石モン図鑑とは | 足元の石が世界に一つのモンスターになる">
+<meta property="og:description" content="足元の石をスマホで撮るだけ。AIが世界に一つだけの石モンを生み出します。家族で楽しめる、街が冒険になるゲーム。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://ishimonzukan.com/about.html">
-<meta property="og:image" content="https://ishimonzukan.com/images/ogp.png">
+<meta property="og:image" content="https://ishimonzukan.com/ogp_ishimon.png">
+<meta property="og:site_name" content="石モン図鑑">
+<meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+<meta name="twitter:title" content="石モン図鑑とは | 足元の石が世界に一つのモンスターになる">
+<meta name="twitter:description" content="足元の石をスマホで撮るだけ。AIが世界に一つだけの石モンを生み出します。">
+<meta name="twitter:image" content="https://ishimonzukan.com/ogp_ishimon.png">
+
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
 <script>
@@ -24,39 +35,29 @@
   gtag('js', new Date());
   gtag('config', 'G-J4CZ7ZZST3');
 </script>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'M PLUS Rounded 1c', sans-serif;
-  background: linear-gradient(180deg, #1a0a3a 0%, #3a1a6a 40%, #C71F8E 80%, #FF6B35 100%);
-  background-attachment: fixed;
-  color: #333;
-  line-height: 1.9;
-  min-height: 100vh;
-  padding: 20px 12px 80px;
-}
-.container {
-  max-width: 680px;
-  margin: 0 auto;
-  background: #fff;
-  border-radius: 24px;
-  padding: 32px 24px;
-  box-shadow: 0 12px 60px rgba(0,0,0,0.35);
-}
 
-/* ヘッダー */
-.header {
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+
+<!-- Common CSS -->
+<link rel="stylesheet" href="/common.css">
+
+<!-- Page-specific styles -->
+<style>
+.about-header {
   text-align: center;
   padding-bottom: 24px;
   margin-bottom: 32px;
   border-bottom: 2px dashed rgba(0,0,0,0.1);
 }
-.header-logo {
+.about-header-logo {
   height: 48px;
   width: auto;
   margin-bottom: 12px;
 }
-.header-tagline {
+.about-header-tagline {
   font-size: 17px;
   font-weight: 900;
   color: #5A1A78;
@@ -64,186 +65,37 @@ body {
   margin-bottom: 8px;
 }
 @media (max-width: 480px) {
-  .header-tagline { font-size: 15px; }
+  .about-header-tagline { font-size: 15px; }
 }
-.header-sub {
+.about-header-sub {
   font-size: 11px;
   font-weight: 700;
   color: #aaa;
   letter-spacing: 0.15em;
 }
-
-/* 章 */
 .chapter {
   margin-bottom: 48px;
 }
-.chapter-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(90,26,120,0.08);
-  color: #5A1A78;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  padding: 5px 14px;
-  border-radius: 6px;
-  border-left: 4px solid #C71F8E;
-  margin-bottom: 16px;
-}
-h2 {
-  font-size: 22px;
-  font-weight: 900;
-  color: #2a0a4a;
-  margin-bottom: 20px;
-  line-height: 1.5;
-  border-bottom: 2px solid rgba(199,31,142,0.15);
-  padding-bottom: 10px;
-}
-@media (max-width: 480px) {
-  h2 { font-size: 18px; }
-}
-
-/* 本文 */
-.prose p {
-  font-size: 15px;
-  color: #444;
-  margin-bottom: 18px;
-  line-height: 2;
-}
-.prose p:last-child { margin-bottom: 0; }
-.prose strong {
-  color: #C71F8E;
-  font-weight: 900;
-}
-.prose .quote {
-  font-size: 20px;
-  font-weight: 900;
-  color: #2a0a4a;
-  text-align: center;
-  padding: 16px 0;
-  line-height: 1.6;
-}
-@media (max-width: 480px) {
-  .prose .quote { font-size: 17px; }
-}
-
-/* 区切り線 */
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(199,31,142,0.2), transparent);
-  margin: 40px 0;
-}
-
-/* ハイライトボックス */
-.highlight-box {
-  background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(199,31,142,0.08));
-  border: 1.5px solid rgba(255,215,0,0.5);
-  border-radius: 16px;
-  padding: 20px 22px;
-  margin: 24px 0;
-}
-.highlight-box p {
-  font-size: 14px;
-  font-weight: 700;
-  color: #3a1a00;
-  line-height: 2;
-  margin-bottom: 10px;
-}
-.highlight-box p:last-child { margin-bottom: 0; }
-
-/* サイン */
-.sign {
-  text-align: right;
-  font-size: 13px;
-  font-weight: 900;
-  color: #aaa;
-  margin-top: 28px;
-  padding-top: 16px;
-  border-top: 1px dashed rgba(0,0,0,0.1);
-}
-
-/* CTAボタン */
-.cta-wrap {
-  text-align: center;
-  margin: 40px 0 8px;
-}
-.cta-btn {
-  display: inline-block;
-  background: linear-gradient(135deg, #FF6B35, #C71F8E, #5A1A78);
-  color: #fff;
-  font-family: 'M PLUS Rounded 1c', sans-serif;
-  font-size: 16px;
-  font-weight: 900;
-  text-decoration: none;
-  padding: 16px 40px;
-  border-radius: 999px;
-  box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 8px 24px rgba(199,31,142,0.4);
-  letter-spacing: 0.06em;
-  transition: transform 0.1s, box-shadow 0.1s;
-}
-.cta-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 0 rgba(0,0,0,0.2), 0 12px 28px rgba(199,31,142,0.5);
-}
-.cta-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 3px 0 rgba(0,0,0,0.2), 0 4px 16px rgba(199,31,142,0.3);
-}
-.cta-sub {
-  font-size: 11px;
-  color: #bbb;
-  font-weight: 700;
-  margin-top: 10px;
-}
-
-/* フッターナビ */
-.footer-nav {
-  text-align: center;
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 2px dashed rgba(0,0,0,0.1);
-}
-.footer-nav a {
-  display: inline-block;
-  color: #5A1A78;
-  font-weight: 900;
-  font-size: 13px;
-  text-decoration: none;
-  padding: 8px 14px;
-  margin: 0 4px;
-  border-radius: 999px;
-  background: rgba(199,125,255,0.15);
-  border: 1.5px solid rgba(90,26,120,0.3);
-}
-.footer-nav a:hover { background: rgba(199,125,255,0.3); }
-.meta-footer {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 10px;
-  color: #ccc;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+.chapter:last-of-type {
+  margin-bottom: 24px;
 }
 </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- ヘッダー -->
-  <div class="header">
-    <img src="images/logo-color.png" alt="石モン図鑑" class="header-logo"
+  <div class="about-header">
+    <img src="/images/logo-color.png" alt="石モン図鑑" class="about-header-logo"
       onerror="this.style.display='none'; document.querySelector('.header-fallback').style.display='block';">
     <div class="header-fallback" style="display:none; font-size:28px; margin-bottom:8px;">🪨 石モン図鑑</div>
-    <div class="header-tagline">
+    <h1 class="about-header-tagline">
       足元の石ころが、<br>世界に一つの石モンになる。
-    </div>
-    <div class="header-sub">ABOUT ISHIMON ZUKAN</div>
+    </h1>
+    <div class="about-header-sub">ABOUT ISHIMON ZUKAN</div>
   </div>
 
-  <!-- 章1: はじまり -->
   <div class="chapter">
-    <div class="chapter-label">🌱 01 — はじまり</div>
+    <div class="section-label-tag">🌱 01 — はじまり</div>
     <div class="prose">
       <p class="quote">「見て！」</p>
       <p>
@@ -263,9 +115,8 @@ h2 {
 
   <div class="divider"></div>
 
-  <!-- 章2: 石という存在 -->
   <div class="chapter">
-    <div class="chapter-label">💎 02 — 石という存在</div>
+    <div class="section-label-tag">💎 02 — 石という存在</div>
     <h2>どこから来たのか、<br>どうして丸いのか。</h2>
     <div class="prose">
       <p>
@@ -294,9 +145,8 @@ h2 {
 
   <div class="divider"></div>
 
-  <!-- 章3: 石モン図鑑とは -->
   <div class="chapter">
-    <div class="chapter-label">✨ 03 — 石モン図鑑とは</div>
+    <div class="section-label-tag">✨ 03 — 石モン図鑑とは</div>
     <h2>気になった石の<br>写メを撮るだけ。</h2>
     <div class="prose">
       <p>
@@ -329,9 +179,8 @@ h2 {
 
   <div class="divider"></div>
 
-  <!-- 章4: 子どもも大人も -->
   <div class="chapter">
-    <div class="chapter-label">👨‍👩‍👧 04 — 子どもも、大人も。</div>
+    <div class="section-label-tag">👨‍👩‍👧 04 — 子どもも、大人も。</div>
     <h2>実は、大人の方が<br>ハマるかもしれない。</h2>
     <div class="prose">
       <p>
@@ -365,9 +214,8 @@ h2 {
 
   <div class="divider"></div>
 
-  <!-- 章5: これから -->
   <div class="chapter">
-    <div class="chapter-label">🌍 05 — これから</div>
+    <div class="section-label-tag">🌍 05 — これから</div>
     <h2>まだ始まったばかり。</h2>
     <div class="prose">
       <p>
@@ -423,19 +271,32 @@ h2 {
     <div class="sign">── 石モン図鑑</div>
   </div>
 
-  <!-- CTA -->
+  <!-- 関連記事ナビ -->
+  <div class="story-nav">
+    <a href="/stories/memories.html">
+      <div class="nav-label">石モン図鑑マガジン #1 →</div>
+      石モンに、思い出が宿る話
+    </a>
+    <a href="/stories/records.html">
+      <div class="nav-label">石モン図鑑マガジン #2 →</div>
+      あの日を忘れない仕組み
+    </a>
+  </div>
+
   <div class="cta-wrap">
     <a href="/game/" class="cta-btn">▶ 石モンを探しに行く</a>
     <div class="cta-sub">無料・ブラウザだけで遊べます</div>
   </div>
 
-  <!-- フッターナビ -->
-  <div class="footer-nav">
-    <a href="javascript:history.back()">← 戻る</a>
-    <a href="/privacy.html">🔒 プライバシーポリシー</a>
-    <a href="/terms.html">📜 利用規約</a>
-    <a href="/">🏠 ホームへ</a>
-  </div>
+  <nav class="footer-nav">
+    <a href="/">ホーム</a>
+    <span class="sep">·</span>
+    <a href="/stories/memories.html">マガジン</a>
+    <span class="sep">·</span>
+    <a href="/privacy.html">プライバシーポリシー</a>
+    <span class="sep">·</span>
+    <a href="/terms.html">利用規約</a>
+  </nav>
 
   <div class="meta-footer">石モン図鑑 / ishimonzukan.com</div>
 </div>
