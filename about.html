@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>石モン図鑑とは | 足元の石が、世界に一つの石モンになる</title>
+<meta name="description" content="足元の石ころが、世界に一つの石モンになる。石モン図鑑のコンセプト、誕生のきっかけ、開発への思いをお伝えします。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<!-- OGP -->
+<meta property="og:title" content="石モン図鑑とは | 足元の石が、世界に一つの石モンになる">
+<meta property="og:description" content="足元の石ころが、世界に一つの石モンになる。街を歩くだけで冒険になる、家族の思い出を濃くするゲームです。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ishimonzukan.com/about.html">
+<meta property="og:image" content="https://ishimonzukan.com/images/ogp.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  background: linear-gradient(180deg, #1a0a3a 0%, #3a1a6a 40%, #C71F8E 80%, #FF6B35 100%);
+  background-attachment: fixed;
+  color: #333;
+  line-height: 1.9;
+  min-height: 100vh;
+  padding: 20px 12px 80px;
+}
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px 24px;
+  box-shadow: 0 12px 60px rgba(0,0,0,0.35);
+}
+
+/* ヘッダー */
+.header {
+  text-align: center;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  border-bottom: 2px dashed rgba(0,0,0,0.1);
+}
+.header-logo {
+  height: 48px;
+  width: auto;
+  margin-bottom: 12px;
+}
+.header-tagline {
+  font-size: 17px;
+  font-weight: 900;
+  color: #5A1A78;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+@media (max-width: 480px) {
+  .header-tagline { font-size: 15px; }
+}
+.header-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: #aaa;
+  letter-spacing: 0.15em;
+}
+
+/* 章 */
+.chapter {
+  margin-bottom: 48px;
+}
+.chapter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(90,26,120,0.08);
+  color: #5A1A78;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border-left: 4px solid #C71F8E;
+  margin-bottom: 16px;
+}
+h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: #2a0a4a;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  border-bottom: 2px solid rgba(199,31,142,0.15);
+  padding-bottom: 10px;
+}
+@media (max-width: 480px) {
+  h2 { font-size: 18px; }
+}
+
+/* 本文 */
+.prose p {
+  font-size: 15px;
+  color: #444;
+  margin-bottom: 18px;
+  line-height: 2;
+}
+.prose p:last-child { margin-bottom: 0; }
+.prose strong {
+  color: #C71F8E;
+  font-weight: 900;
+}
+.prose .quote {
+  font-size: 20px;
+  font-weight: 900;
+  color: #2a0a4a;
+  text-align: center;
+  padding: 16px 0;
+  line-height: 1.6;
+}
+@media (max-width: 480px) {
+  .prose .quote { font-size: 17px; }
+}
+
+/* 区切り線 */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(199,31,142,0.2), transparent);
+  margin: 40px 0;
+}
+
+/* ハイライトボックス */
+.highlight-box {
+  background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(199,31,142,0.08));
+  border: 1.5px solid rgba(255,215,0,0.5);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin: 24px 0;
+}
+.highlight-box p {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3a1a00;
+  line-height: 2;
+  margin-bottom: 10px;
+}
+.highlight-box p:last-child { margin-bottom: 0; }
+
+/* サイン */
+.sign {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 900;
+  color: #aaa;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+}
+
+/* CTAボタン */
+.cta-wrap {
+  text-align: center;
+  margin: 40px 0 8px;
+}
+.cta-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #FF6B35, #C71F8E, #5A1A78);
+  color: #fff;
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  text-decoration: none;
+  padding: 16px 40px;
+  border-radius: 999px;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 8px 24px rgba(199,31,142,0.4);
+  letter-spacing: 0.06em;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 rgba(0,0,0,0.2), 0 12px 28px rgba(199,31,142,0.5);
+}
+.cta-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.2), 0 4px 16px rgba(199,31,142,0.3);
+}
+.cta-sub {
+  font-size: 11px;
+  color: #bbb;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+/* フッターナビ */
+.footer-nav {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px dashed rgba(0,0,0,0.1);
+}
+.footer-nav a {
+  display: inline-block;
+  color: #5A1A78;
+  font-weight: 900;
+  font-size: 13px;
+  text-decoration: none;
+  padding: 8px 14px;
+  margin: 0 4px;
+  border-radius: 999px;
+  background: rgba(199,125,255,0.15);
+  border: 1.5px solid rgba(90,26,120,0.3);
+}
+.footer-nav a:hover { background: rgba(199,125,255,0.3); }
+.meta-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 10px;
+  color: #ccc;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <img src="images/logo-color.png" alt="石モン図鑑" class="header-logo"
+      onerror="this.style.display='none'; document.querySelector('.header-fallback').style.display='block';">
+    <div class="header-fallback" style="display:none; font-size:28px; margin-bottom:8px;">🪨 石モン図鑑</div>
+    <div class="header-tagline">
+      足元の石ころが、<br>世界に一つの石モンになる。
+    </div>
+    <div class="header-sub">ABOUT ISHIMON ZUKAN</div>
+  </div>
+
+  <!-- 章1: はじまり -->
+  <div class="chapter">
+    <div class="chapter-label">🌱 01 — はじまり</div>
+    <div class="prose">
+      <p class="quote">「見て！」</p>
+      <p>
+        子どもがポケットから取り出すのは、ただの石ころ。<br>
+        でも本人は誇らしげで、まるで宝物を見つけた冒険者みたいな顔をしている。
+      </p>
+      <p>
+        河原の丸い石、海辺で見つけたきれいな石、<br>
+        公園で拾った、ちょっと変な模様の入った石。<br>
+        どこにでもある、何の変哲もない石。
+      </p>
+      <p>
+        でも子どもたちにとっては、それは「特別な石」なんです。
+      </p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 章2: 石という存在 -->
+  <div class="chapter">
+    <div class="chapter-label">💎 02 — 石という存在</div>
+    <h2>どこから来たのか、<br>どうして丸いのか。</h2>
+    <div class="prose">
+      <p>
+        思えば、石って不思議な存在です。
+      </p>
+      <div class="highlight-box">
+        <p>どこから来たんだろう？</p>
+        <p>どうして丸くなったんだろう？</p>
+        <p>どうしてこんな模様が入っているんだろう？</p>
+      </div>
+      <p>
+        特別好き、というわけじゃなくても、<br>
+        ふと手に取ると、ちょっと考えてしまう。
+      </p>
+      <p>
+        何億年もの時間をくぐり抜けて、<br>
+        今日たまたまここに転がっている。<br>
+        そう思うと、足元の石ころ一つにも、<br>
+        ちゃんとしたバックボーンがあるんだなと気づきます。
+      </p>
+      <p>
+        そして何より、石は<strong>どこにでもある</strong>。
+      </p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 章3: 石モン図鑑とは -->
+  <div class="chapter">
+    <div class="chapter-label">✨ 03 — 石モン図鑑とは</div>
+    <h2>気になった石の<br>写メを撮るだけ。</h2>
+    <div class="prose">
+      <p>
+        <strong>石モン図鑑</strong>は、スマホで石の写真を撮ると、
+        AI がその石だけのオリジナルモンスター「石モン（いしモン）」を
+        自動で生み出してくれる、無料で遊べるブラウザゲームです。
+      </p>
+      <p>
+        やることは、たったこれだけ。
+      </p>
+      <div class="highlight-box">
+        <p>① 気になった石を見つける</p>
+        <p>② スマホで写真を撮る</p>
+        <p>③ 世界に一体だけの石モンが生まれる</p>
+      </div>
+      <p>
+        同じ石は二つとないように、生まれる石モンも世界に一体だけ。<br>
+        あなたが今日、その場所で、その石を選んだから生まれた存在です。
+      </p>
+      <p>
+        集めて、図鑑を埋めて、育てて、シェアして。<br>
+        街を歩くだけで、世界がちょっとだけ冒険に変わります。
+      </p>
+      <p>
+        特別なものは何もいりません。<br>
+        <strong>足元の石ころと、スマホだけ。</strong>
+      </p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 章4: 子どもも大人も -->
+  <div class="chapter">
+    <div class="chapter-label">👨‍👩‍👧 04 — 子どもも、大人も。</div>
+    <h2>実は、大人の方が<br>ハマるかもしれない。</h2>
+    <div class="prose">
+      <p>
+        このゲームは、最初は子どもたちのために作りました。
+      </p>
+      <p>
+        石をポケットに入れて持ち帰ってしまう、<br>
+        あの目をキラキラさせた子どもたちが、<br>
+        もっと夢中になれる遊びを届けたかったから。
+      </p>
+      <p>
+        でも作っているうちに、気づきました。<br>
+        <strong>実は、大人の方がハマるかもしれない。</strong>
+      </p>
+      <p>
+        通勤路の脇道で足を止めたり、<br>
+        旅先で「あ、ここの石いいかも」と思ったり。<br>
+        子どもの頃に持っていた「見つける目」が、<br>
+        ふと戻ってくる感覚。
+      </p>
+      <p>
+        子どもと一緒に石を探すのもいい。<br>
+        一人で散歩しながら集めるのもいい。
+      </p>
+      <p>
+        同じ場所、同じ街でも、<br>
+        「石モンを探す目」で見ると、世界は急に色を持ちはじめます。
+      </p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 章5: これから -->
+  <div class="chapter">
+    <div class="chapter-label">🌍 05 — これから</div>
+    <h2>まだ始まったばかり。</h2>
+    <div class="prose">
+      <p>
+        石モン図鑑は、まだ始まったばかりのゲームです。<br>
+        今はベータ版として、少しずつ進化しています。
+      </p>
+      <p>
+        図鑑を地域別で集められるようにしたり、<br>
+        もっと珍しい石モンが生まれるようにしたり、<br>
+        いつか、世界中の石モンが集まる場所にしたり。
+      </p>
+      <p>
+        やってみたいことは、まだまだたくさんあります。
+      </p>
+      <p>
+        もしこのゲームを気に入ってくれたら、<br>
+        あなたが見つけた石モンを、ぜひシェアしてください。
+      </p>
+      <div class="highlight-box">
+        <p>
+          もし、最近ちょっと忙しくて、<br>
+          子どもとゆっくり遊べていないなと感じているあなた。
+        </p>
+        <p>
+          今度の週末、少しだけ外に出てみてください。<br>
+          行き先は近所の公園でも、いつもの散歩道でもいい。<br>
+          子どもと一緒に、足元の石を眺めてみる。<br>
+          それだけで、たぶん何かが始まります。
+        </p>
+        <p>
+          「これ、石モンにできるかな？」<br>
+          って、子どもがしゃがみ込んだら、<br>
+          もうそこが、二人だけの冒険の場所です。
+        </p>
+      </div>
+      <p>
+        石モン図鑑は、戦わなくてもいい。<br>
+        誰かと比べなくてもいい。
+      </p>
+      <p>
+        ただ、家族と一緒に歩いて、<br>
+        気になった石を撮って、<br>
+        生まれた石モンを、ちょっとだけ大切にしてみる。
+      </p>
+      <p>
+        それだけで、いつかその石モンを開いたとき、<br>
+        あの日のことが、ふと胸に戻ってくる。
+      </p>
+      <p>
+        そういうゲームでありたいと思っています。
+      </p>
+    </div>
+    <div class="sign">── 石モン図鑑</div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-wrap">
+    <a href="/game/" class="cta-btn">▶ 石モンを探しに行く</a>
+    <div class="cta-sub">無料・ブラウザだけで遊べます</div>
+  </div>
+
+  <!-- フッターナビ -->
+  <div class="footer-nav">
+    <a href="javascript:history.back()">← 戻る</a>
+    <a href="/privacy.html">🔒 プライバシーポリシー</a>
+    <a href="/terms.html">📜 利用規約</a>
+    <a href="/">🏠 ホームへ</a>
+  </div>
+
+  <div class="meta-footer">石モン図鑑 / ishimonzukan.com</div>
+</div>
+</body>
+</html>
