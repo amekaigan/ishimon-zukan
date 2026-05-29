@@ -51,7 +51,7 @@ body{font-family:'M PLUS Rounded 1c',sans-serif;background:var(--bg);color:var(-
 .footer-nav .sep{color:rgba(255,255,255,0.25);user-select:none;}
 
 /* ===== NAV ===== */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 32px;background:rgba(26,10,46,0.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(199,125,255,0.2);}
+nav:not(.footer-nav){position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 32px;background:rgba(26,10,46,0.9);backdrop-filter:blur(12px);border-bottom:1px solid rgba(199,125,255,0.2);}
 .nav-logo img{height:36px;width:auto;display:block;}
 .nav-cta{background:linear-gradient(135deg,var(--gold),var(--ember));color:white;font-weight:900;font-size:13px;padding:10px 20px;border-radius:999px;text-decoration:none;box-shadow:0 4px 16px rgba(255,107,53,0.4);transition:transform 0.2s,box-shadow 0.2s;white-space:nowrap;}
 .nav-cta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,107,53,0.5);}
