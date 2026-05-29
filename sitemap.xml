@@ -24,3 +24,38 @@
     <priority>0.3</priority>
   </url>
 </urlset>
+<!-- ABOUT -->
+  <url>
+    <loc>https://ishimonzukan.com/about.html</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <!-- マガジン #1 思い出が宿る話 -->
+  <url>
+    <loc>https://ishimonzukan.com/stories/memories.html</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- マガジン #2 あの日を忘れない仕組み -->
+  <url>
+    <loc>https://ishimonzukan.com/stories/records.html</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- プライバシーポリシー -->
+  <url>
+    <loc>https://ishimonzukan.com/privacy.html</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <!-- 利用規約 -->
+  <url>
+    <loc>https://ishimonzukan.com/terms.html</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
