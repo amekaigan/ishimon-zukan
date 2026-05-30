@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.17.4';
+const APP_VERSION = '2.18.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1465,6 +1465,10 @@ function IshimonZukan() {
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const [newMon, setNewMon] = useState(null);
+  // v2.18.0: 生成完了後すぐ出さず「会いに行く」を待つ(待ち時間の体感ゼロ化)
+  const [pendingMon, setPendingMon] = useState(null);
+  // 生成中に思い出メモを書く欄(uncontrolled=タイピングで再描画させない)
+  const captureMemoRef = useRef(null);
   const [showEvolveAnim, setShowEvolveAnim] = useState(null);
 
   // バトル状態
@@ -2552,7 +2556,7 @@ function IshimonZukan() {
         imagePrompt: imgPrompt, // テイスト記録用
         needsImageRegen: !aiImage, // AI画像未取得フラグ
       };
-      setNewMon(entry);
+      setPendingMon(entry); // v2.18.0: すぐ出さず「会いに行く」待ち
       const updated = [entry, ...collection];
       setCollection(updated);
       await saveCollection(updated);
@@ -2588,7 +2592,7 @@ function IshimonZukan() {
           needsImageRegen: !aiImage,
           imagePrompt: imgPrompt,
         };
-        setNewMon(entry);
+        setPendingMon(entry); // v2.18.0: すぐ出さず「会いに行く」待ち
         const updated = [entry, ...collection];
         setCollection(updated);
         await saveCollection(updated);
@@ -2606,6 +2610,21 @@ function IshimonZukan() {
         setLoadingMsg('');
       }
     }
+  };
+
+  // ===== v2.18.0: 「会いに行く」リビール。メモを石モンに付けて保存してから表示 =====
+  const revealPendingMon = async () => {
+    if (!pendingMon) return;
+    const memo = (captureMemoRef.current?.value || '').trim();
+    const revealed = memo ? { ...pendingMon, memo } : pendingMon;
+    if (memo) {
+      const updated = collection.map(c => c.id === pendingMon.id ? revealed : c);
+      setCollection(updated);
+      try { await saveCollection(updated); } catch (e) {}
+    }
+    setNewMon(revealed);
+    setPendingMon(null);
+    if (captureMemoRef.current) captureMemoRef.current.value = '';
   };
 
   // ===== AI画像で再生成（既存の石モンの絵柄を変える、キャッシュ更新）=====
@@ -6606,6 +6625,12 @@ function IshimonZukan() {
                     <span>{mon.location.name}</span>
                   </div>
                 )}
+                {mon.memo && (
+                  <div className="flex items-start gap-1.5 text-gray-700">
+                    <span className="text-xs leading-3">📝</span>
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{mon.memo}</span>
+                  </div>
+                )}
                 {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
                   <div className="mt-2">
                     <div className="text-gray-600 text-[10px] font-bold mb-1.5">📷 出会った時の石</div>
@@ -8770,7 +8795,35 @@ function IshimonZukan() {
       {selected && <MonCard mon={selected} onClose={() => setSelected(null)} />}
       {showShareCard && <ShareCardModal mon={showShareCard} onClose={() => setShowShareCard(null)} />}
       {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); }} />}
-      {isLoading && <LoadingView />}
+      {(isLoading || pendingMon) && <LoadingView />}
+      {/* v2.18.0: 生成中に思い出を書くパネル + 「会いに行く」ボタン */}
+      {(isLoading || pendingMon) && (
+        <div className="fixed left-0 right-0 bottom-0 z-[60] px-4 pt-6 pb-[max(16px,env(safe-area-inset-bottom))]"
+          style={{ background: 'linear-gradient(180deg, rgba(26,10,5,0) 0%, rgba(26,10,5,0.92) 38%)' }}>
+          <div className="mx-auto w-full max-w-sm rounded-3xl p-4"
+            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,215,0,0.4)', backdropFilter: 'blur(10px)' }}>
+            <div className="text-yellow-200 text-[11px] font-black tracking-wider mb-2 text-center">
+              ✍️ この瞬間の思い出を 残しておこう（あとで読み返せます）
+            </div>
+            <textarea ref={captureMemoRef} rows={2} maxLength={300}
+              placeholder="どこで見つけた？ 誰と一緒だった？（書かなくてもOK）"
+              className="w-full rounded-2xl px-3 py-2 text-white text-sm font-bold resize-none"
+              style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', outline: 'none' }} />
+            {pendingMon ? (
+              <button onClick={revealPendingMon}
+                className="mt-3 w-full py-3 rounded-2xl font-black text-base active:scale-95 transition-transform"
+                style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 rgba(0,0,0,0.3)', color: '#5A1A78' }}>
+                ✨ 生まれたよ！会いに行く →
+              </button>
+            ) : (
+              <div className="mt-3 w-full py-3 rounded-2xl text-center text-white/70 font-black text-sm"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px dashed rgba(255,255,255,0.25)' }}>
+                石モンが 生まれるのを 待っています...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {showEvolveAnim && <EvolveAnimView mon={showEvolveAnim} />}
 
       {/* 機能追加(v2.9.0): 起動時の初期ロード画面（最前面） */}
