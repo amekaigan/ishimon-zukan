@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.17.3';
+const APP_VERSION = '2.17.4';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1449,6 +1449,9 @@ function IshimonZukan() {
   //   この間はホーム画面の代わりに InitialLoadingView を表示し、
   //   「name: 'トレーナー' / level: 1」のチラ見えを防ぐ。
   const [initialLoading, setInitialLoading] = useState(true);
+  // v2.17.4: 実データが入るまでホームを出さない(「トレーナー Lv.1 / きらめき石0」のチラ見え対策)
+  const [dataReady, setDataReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   // 機能追加(v2.10.0): 長押しメニューと削除確認モーダル
   const [longPressMon, setLongPressMon] = useState(null);  // 長押しメニュー表示中の石モン
   const [deleteConfirmMon, setDeleteConfirmMon] = useState(null);  // 削除確認モーダル中の石モン
@@ -1852,9 +1855,11 @@ function IshimonZukan() {
           //    UX改善のためオンボーディングを先に見せてから同意するフローに)
           setShowOnboarding(true);
         }
+        setDataReady(true); // v2.17.4: ここまで到達=playerが実データ/新規初期値で確定
       } catch (e) {
         console.error(e);
         setCollection(SAMPLES);
+        setLoadError(true); // v2.17.4: 失敗時はホームを出さず再読み込みを促す
       } finally {
         // 機能追加(v2.9.0): 初期ロード完了。成功・失敗どちらでも必ずローディング解除。
         setInitialLoading(false);
@@ -5947,9 +5952,17 @@ function IshimonZukan() {
           </div>
 
           {/* ステータステキスト */}
-          <div className="text-white/60 text-[11px] font-bold mt-5">
-            データを よみこんでいます...
-          </div>
+          {loadError ? (
+            <button onClick={() => location.reload()}
+              className="mt-5 px-5 py-2 rounded-full font-black text-sm active:scale-95 transition-transform"
+              style={{ background: '#FFD700', color: '#5A1A78', boxShadow: '0 4px 0 rgba(0,0,0,0.25)' }}>
+              うまく よみこめませんでした · タップして再読み込み
+            </button>
+          ) : (
+            <div className="text-white/60 text-[11px] font-bold mt-5">
+              データを よみこんでいます...
+            </div>
+          )}
         </div>
 
         <style>{`
@@ -8761,7 +8774,7 @@ function IshimonZukan() {
       {showEvolveAnim && <EvolveAnimView mon={showEvolveAnim} />}
 
       {/* 機能追加(v2.9.0): 起動時の初期ロード画面（最前面） */}
-      {initialLoading && <InitialLoadingView />}
+      {(initialLoading || !dataReady) && <InitialLoadingView />}
 
       {/* 機能追加(v2.10.0): 長押しメニュー */}
       {longPressMon && (
