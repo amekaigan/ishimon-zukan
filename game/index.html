@@ -314,7 +314,28 @@ window.storage = {
       // v2.7.4 STEP1.5: localStorage側にも保存時刻を記録（新旧比較用）
       _markLocalSaved(key, Date.now());
       // Firestoreにも保存（ログイン中のみ）
-      if (window._currentUid && window._firebase) {
+      // ★ v2.17.3 データ消失対策: 空/デモ状態でFirestoreの本物を上書きさせない。
+      //   端末が重く認証がタイムアウトすると未ログイン扱いになり、空の初期データが
+      //   生成されてFirestoreの本物を踏み潰す事故が起きていた(石モン・名前・バトル数リセット)。
+      //   localStorageには従来通り保存するが、Firestoreへの「空上書き」だけを禁止する。
+      let _blockFirestoreWrite = false;
+      try {
+        if (key === 'ishimon-player-v3') {
+          const _p = JSON.parse(value);
+          if (!_p || !_p.name) _blockFirestoreWrite = true; // 名前空 = オンボーディング前の初期データ
+        } else if (key === 'ishimon-collection-v3') {
+          const _c = JSON.parse(value);
+          // 空 or 全部デモ(demo-) = サンプルしか無い初期状態
+          if (!Array.isArray(_c) || _c.length === 0 ||
+              _c.every(m => typeof m?.id === 'string' && m.id.startsWith('demo-'))) {
+            _blockFirestoreWrite = true;
+          }
+        }
+      } catch (_) {}
+      if (_blockFirestoreWrite) {
+        console.warn('[storage.set] 空/デモ状態のためFirestore書き込みをスキップ(本物を保護):', key);
+      }
+      if (window._currentUid && window._firebase && !_blockFirestoreWrite) {
         await _fsSet(key, value);
       }
       return { key, value, shared: !!shared };
@@ -394,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.17.2';
+const APP_VERSION = '2.17.3';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
