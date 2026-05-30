@@ -680,6 +680,24 @@ const getOrGenerateMonImage = async (mon, seed) => {
 //   - 輪郭を thick bold black outlines に強化（薄い輪郭の👎対策）
 //   - 塗りに matte を追加（写実的なつや塗りの👎対策）
 //   - 目を「2つ・左右対称」と明示（3大原因①対策）
+// Persistent Storage API リクエスト(localStorage 自動削除対策)
+// v2.17.1 で追加。iOS Safari の容量逼迫時の自動削除を防ぐ防衛策。
+(async () => {
+  if (navigator.storage && navigator.storage.persist) {
+    try {
+      const isPersisted = await navigator.storage.persisted();
+      if (!isPersisted) {
+        const granted = await navigator.storage.persist();
+        console.log('[Storage] persistent granted:', granted);
+      } else {
+        console.log('[Storage] already persistent');
+      }
+    } catch (e) {
+      console.warn('[Storage] persist failed:', e);
+    }
+  }
+})();
+
 const ISHIMON_STYLE_DNA = [
   // 【体型】
   'cute monster character, original mascot, tiny 2-head-tall chibi baby form, big round head clearly separated from small body',
