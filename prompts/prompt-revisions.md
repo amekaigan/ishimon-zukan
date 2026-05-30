@@ -1,3 +1,40 @@
+## v_C: シズモンXX 時代へのフルロールバック (2026-05-30)
+
+**変更箇所**: `ISHIMON_STYLE_DNA` 定数を削除 + `buildMonPrompt` 関数全体を旧構造に戻す
+
+**経緯**:
+- Fix 1(`anime cel-shaded illustration style` 追加)→ ロールバック後も「丸くて個性がない」問題が継続
+- 観察フェーズの結果:Fix 1 だけでなく v6 全体の制約累積が個性消失の真犯人と判定
+- シズモンXX 時代のプロンプトを精査 → 構造的に「縛らない設計」だったと発覚
+
+**何が変わったか(主要な差分)**:
+
+| 要素 | v6 era | シズモンXX 時代(復活) |
+|---|---|---|
+| 体型 | `tiny 2-head-tall chibi baby form, big round head clearly separated from small body` | 体型縛りなし(stage で表現) |
+| 目 | `exactly two large symmetrical shiny eyes (same size and color)` | `big shiny anime eyes with two highlight dots` |
+| 塗り | `flat matte cel-shading` | `cel-shaded illustration with thick black outlines` |
+| 画風 | `Bikkuriman sticker style, Digimon anime style` | `Bikkuriman sticker style mixed with Digimon anime style` |
+| ドラゴン | `purple-violet body, curved horns, defined arms and legs` | `horns and wings, purple scales, sharp claws, **fierce expression**` |
+| 精霊 | `soft pink-lavender body, defined arms and legs` | `glowing halo, pink ethereal mist, floating sparkles` |
+| stage 3 | `majestic crown` | `majestic crown, **royal regalia, divine presence**` |
+| ★5 装飾 | `gemstones magical sparkles`(1要素) | `crown rainbow aura, divine sparkles, royal ornaments`(4要素) |
+| 構図 | `centered front pose` | `centered front-facing pose, **full body visible**, magical particles` |
+| 否定 | `no text, no watermark` | `no text, no logos, no watermark, **no humans**` |
+
+**判定基準**:
+- ✅ 個性ある石モンが復活 → 採用、新 v_baseline 化
+- ❌ 別の問題が出る → さらにピンポイント Fix で対応
+
+**テスト結果**: [日付] にXX体生成
+- 「シズモンXX 級」の出現率: __ 
+- 「丸いだけ」の出現率: __
+- タイプ別個性の出方: __ 
+
+**気づき**: (テスト後にメモ)
+
+---
+
 ## v1.2 Fix 3: レア度ロジック再設計(2026-MM-DD)
 
 **変更箇所**: `buildMonPrompt` 関数の `typeMap` と `rarityMap` を、`typeEssence` と `rarityDecor`(タイプ×レア度の2階層)に再構成
