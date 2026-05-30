@@ -394,7 +394,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.17.1';
+const APP_VERSION = '2.17.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -698,98 +698,32 @@ const getOrGenerateMonImage = async (mon, seed) => {
   }
 })();
 
-const ISHIMON_STYLE_DNA = [
-  // 【体型】
-  'cute monster character, original mascot, tiny 2-head-tall chibi baby form, big round head clearly separated from small body',
-  // 【アートスタイル】強い画風アンカー＋太い黒輪郭＋マットなセル画塗り
-  'Bikkuriman sticker style, Digimon anime style, cel-shaded, thick bold black outlines, flat matte cel-shading',
-  // 【瞳】数を2つに明示・左右対称
-  'exactly two large symmetrical shiny eyes (same size and color), white highlight',
-  // 【背景・構図】
-  'centered front pose, gradient background',
-  // 【品質】
-  'vibrant colors, no text, no watermark, kid-friendly',
-].join(', ');
-
-// 石モン用プロンプト構築（時刻・場所・特徴を含む豊かなプロンプト）
+// 石モン用プロンプト構築（シズモンXX 時代の構造に rollback）
+// v_C (2026-05-30): v6 era プロンプト + Fix 3(typeEssence/rarityDecor) を全廃止し、
+// シズモンXX 時代のシンプルな typeMap + stageMap + rarityMap 構造に戻す。
+// ISHIMON_STYLE_DNA 定数も廃止、全スタイル指定は parts 配列に inline 展開。
+// 詳細は prompts/prompt-revisions.md の v_C エントリ参照。
 const buildMonPrompt = (mon, options = {}) => {
-  // タイプの核(全レア度共通、装飾なし)
-  // 精霊の'defined arms and legs'は「卵形問題」対策
-  // 土・空はGOOD実績のシンプル版を採用
-  const typeEssence = {
-    '火': 'fire element, dark body with red-orange flame glow, defined arms and legs',
-    '水': 'water element, soft aqua blue body, defined arms and legs',
-    '土': 'earth element, brown rocky body, defined arms and legs',
-    '電気': 'electric element, bright yellow body, defined arms and legs',
-    '空': 'sky element, sky blue body, defined arms and legs',
-    'ドラゴン': 'dragon element, purple-violet body, curved horns, defined arms and legs',
-    '精霊': 'spirit element, soft pink-lavender body, defined arms and legs',
-  };
-
-  // タイプ × レア度ごとの装飾:★5 が圧倒的に豪華になるよう設計
-  const rarityDecor = {
-    '火': {
-      1: '',
-      2: 'small ember spark accents',
-      3: 'ember crystals, fiery eyes',
-      4: 'ember crystals, fiery eyes, flame aura',
-      5: 'large ember crystals, blazing fiery eyes, full flame aura, fire crown of flames',
-    },
-    '水': {
-      1: '',
-      2: 'tiny water droplet accents',
-      3: 'water droplet crystals',
-      4: 'water droplet crystals, shimmering scales',
-      5: 'large water droplet crystals, iridescent scales, flowing water aura, blue gem crown',
-    },
-    '土': {
-      1: '',
-      2: 'small moss accents',
-      3: 'moss pebbles, small stone spikes',
-      4: 'moss pebbles, stone spikes, small crystals on body',
-      5: 'mossy stone spikes, large crystals embedded in body, earthen crown of stones',
-    },
-    '電気': {
-      1: '',
-      2: 'small spark accents',
-      3: 'lightning bolt markings',
-      4: 'lightning bolt markings, sparkling static aura',
-      5: 'bold lightning bolt markings, intense static aura, electric crown of energy',
-    },
-    '空': {
-      1: '',
-      2: 'small cloud accents',
-      3: 'cloud fluffy wings',
-      4: 'cloud fluffy wings, sky aura',
-      5: 'cloud fluffy wings, expansive sky aura, rainbow halo, cloud crown',
-    },
-    'ドラゴン': {
-      1: '',
-      2: 'small scale accents',
-      3: 'iridescent scales, small bat wings',
-      4: 'iridescent scales, bat wings, crystal claws',
-      5: 'ornate iridescent scales, large bat wings, crystal claws, dragon crown of horns and gems',
-    },
-    '精霊': {
-      1: '',
-      2: 'small sparkle accents',
-      3: 'small golden tiara, light sparkle aura',
-      4: 'golden crown, magical sparkle aura',
-      5: 'ornate golden crown, ethereal wings, multi-layered magical sparkle aura, glowing gemstone accents',
-    },
+  const typeMap = {
+    '火': 'fire element with flame body, glowing red-orange aura, ember sparks',
+    '水': 'water element with droplet shape, glossy translucent blue body, water ripples',
+    '土': 'earth element with rocky textured body, brown gray stone, mossy patches',
+    '電気': 'electric element with lightning patterns on yellow body, sparking energy',
+    '空': 'sky element with fluffy cloud body, cyan and white, wind swirls',
+    'ドラゴン': 'dragon element with horns and wings, purple scales, sharp claws, fierce expression',
+    '精霊': 'spirit element with glowing halo, pink ethereal mist, floating sparkles',
   };
   const stageMap = {
-    1: '2-head-tall chibi baby form, simple cute',
-    2: '3-head-tall champion form, balanced proportions',
-    3: '3.5-head-tall ultimate form, majestic crown',
+    1: '2-head-tall chibi baby form, small and cute, large eyes',
+    2: '3-head-tall champion form, balanced proportions, more detailed',
+    3: '3.5-head-tall ultimate form, majestic crown, royal regalia, divine presence',
   };
-
   const rarityMap = {
-    1: 'simple plain, no extra decoration',
-    2: 'a few tiny crystal accents',
-    3: 'small crystals',
-    4: 'large crystals glow',
-    5: 'gemstones magical sparkles',
+    1: 'simple plain design',
+    2: 'small crystal accents, subtle pattern',
+    3: 'large crystals embedded, mild glow effect',
+    4: 'gemstones magical sparkles, radiant aura',
+    5: 'crown rainbow aura, divine sparkles, royal ornaments',
   };
 
   // 時刻を入れて毎回違う絵柄に
@@ -797,15 +731,19 @@ const buildMonPrompt = (mon, options = {}) => {
   const hour = now.getHours();
   const timeOfDay = hour < 6 ? 'dawn' : hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
 
-  const type = mon.type || '土';
-  const rarity = mon.rarity || 1;
-
   const parts = [
-    ISHIMON_STYLE_DNA, // ★ 石モン図鑑スタイルDNA（ブランド統一）
-    typeEssence[type] || typeEssence['土'],
-    rarityDecor[type]?.[rarity] || '',
+    'cute monster character, original mascot design',
+    'Bikkuriman sticker style mixed with Digimon anime style',
+    'cel-shaded illustration with thick black outlines',
+    'big shiny anime eyes with two highlight dots',
+    typeMap[mon.type] || typeMap['土'],
     stageMap[mon.stage] || stageMap[1],
+    rarityMap[mon.rarity] || rarityMap[1],
     `${timeOfDay} atmosphere`,
+    'centered front-facing pose, full body visible',
+    'gradient background, magical particles',
+    'high quality, vibrant colors, kid-friendly',
+    'no text, no logos, no watermark, no humans',
   ];
 
   return parts.filter(Boolean).join(', ');
