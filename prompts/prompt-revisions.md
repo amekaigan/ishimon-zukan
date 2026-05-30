@@ -37,37 +37,24 @@
 
 ---
 
-## v1.1 Fix 1: アウトライン強化(2026-MM-DD)
+## v1.1 Fix 1: アウトライン強化 (2026-MM-DD)
 
-**変更箇所**: `ISHIMON_STYLE_DNA` 内のアートスタイル行
-
-**Before:**
-```
-thick bold black outlines
-```
-
-**After:**
-```
-thick bold BLACK INK outlines, anime cel-shaded illustration style
-```
-
-**変更点**:
-- `black` → `BLACK INK`(大文字 + インク追加 = 線がはっきり)
-- `anime cel-shaded illustration style` を追加(画風を positive で明示)
-- **NOT〜系の否定形は一切入れていない**(過剰制約による単調化リスクを回避)
+**変更**: `thick bold black outlines` → `thick bold BLACK INK outlines, anime cel-shaded illustration style`
 
 **理由**:
-2026-05-29 のテイスト分析で、BAD 11件中 6件(55%)の主因が「境界線が弱い・リアルなグラデーションになってる」と判明。アウトラインの positive 強化から始める。
+2026-05-29 のテイスト分析で、BAD 11件中 6件(55%)の主因が「境界線が弱い・リアルなグラデーション」と判明。
 
-**テスト結果**: [日付] にXX体生成
-- GOOD: __ 件
-- BAD: __ 件
-- 前回比: __
+**テスト結果**: 2026-05-30、5体生成
+- GOOD: 3 件
+- BAD: 2 件(うちアウトライン問題1件、別問題1件)
+- **副次的影響**: ⚠️ 全体の個性低下を観察。「anime cel-shaded illustration style」が style anchor として強く効きすぎ、生成物が「anime風キャラ」に収束してる疑い。
 
-**判定**: ☐ 採用 / ☐ 第二段階へ escalate / ☐ ロールバック
+**判定**: ❌ **ロールバック**(個性低下が許容できない)
 
 **気づき**:
-- (テスト後にメモ)
+- アウトライン制御は弱く効くが、個性が犠牲になるトレードオフ
+- 「過剰制約による単調化」リスクが現実化(a さんの当初予言が的中)
+- 累積制約(v1〜v6)の重みも疑わしい → 将来 Fix C(根本見直し)候補
 
 ---
 
