@@ -1467,6 +1467,7 @@ function IshimonZukan() {
   const [newMon, setNewMon] = useState(null);
   // v2.18.0: 生成完了後すぐ出さず「会いに行く」を待つ(待ち時間の体感ゼロ化)
   const [pendingMon, setPendingMon] = useState(null);
+  const [revealFlash, setRevealFlash] = useState(false); // v2.18.0: リビール時の白フラッシュ
   // 生成中に思い出メモを書く欄(uncontrolled=タイピングで再描画させない)
   const captureMemoRef = useRef(null);
   const [showEvolveAnim, setShowEvolveAnim] = useState(null);
@@ -2613,18 +2614,25 @@ function IshimonZukan() {
   };
 
   // ===== v2.18.0: 「会いに行く」リビール。メモを石モンに付けて保存してから表示 =====
-  const revealPendingMon = async () => {
+  const revealPendingMon = () => {
     if (!pendingMon) return;
     const memo = (captureMemoRef.current?.value || '').trim();
     const revealed = memo ? { ...pendingMon, memo } : pendingMon;
-    if (memo) {
-      const updated = collection.map(c => c.id === pendingMon.id ? revealed : c);
-      setCollection(updated);
-      try { await saveCollection(updated); } catch (e) {}
-    }
+    setIsLoading(false);   // ★これが無いとカードが出られず待たされていた
+    setRevealFlash(true);  // 白フラッシュ演出
+    setTimeout(() => setRevealFlash(false), 650);
     setNewMon(revealed);
     setPendingMon(null);
     if (captureMemoRef.current) captureMemoRef.current.value = '';
+    if (memo) { // メモ保存は裏で(リビールはブロックしない)
+      setCollection(prev => {
+        const next = prev.some(c => c.id === pendingMon.id)
+          ? prev.map(c => c.id === pendingMon.id ? revealed : c)
+          : [revealed, ...prev];
+        saveCollection(next);
+        return next;
+      });
+    }
   };
 
   // ===== AI画像で再生成（既存の石モンの絵柄を変える、キャッシュ更新）=====
@@ -6030,14 +6038,14 @@ function IshimonZukan() {
     const walkRotate = [0, -5, 0, 5][walkPhase];
 
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={{ background: 'radial-gradient(circle, #FF6B35 0%, #1a0a05 70%)' }}>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-start px-6 pt-12" style={{ background: 'radial-gradient(circle, #FF6B35 0%, #1a0a05 70%)' }}>
         {/* 石モンを"観察"中の演出 */}
         <div className="relative mb-6">
           <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 0deg, #FFD700, #FF6B35, #FF3D7F, #FFD700)', filter: 'blur(30px)', animation: 'spin 3s linear infinite' }} />
           {previewImage && (
             <div className="relative">
               <img src={previewImage}
-                className="relative w-44 h-44 object-cover rounded-full"
+                className="relative w-36 h-36 object-cover rounded-full"
                 style={{ border: '5px solid #FFD700', boxShadow: '0 0 60px #FFAA00' }} />
               {/* ルーペアイコン（観察中の表現） */}
               <div className="absolute text-4xl"
@@ -6058,7 +6066,6 @@ function IshimonZukan() {
           {loadingMsg}
         </div>
 
-        <Loader2 className="w-5 h-5 text-yellow-300 animate-spin mb-6" />
 
         {/* 豆知識・占い枠 */}
         <div key={tipIdx}
@@ -6079,15 +6086,6 @@ function IshimonZukan() {
 
         <div className="text-white/40 text-[10px] font-bold mt-4">
           AIが世界に1つだけの石モンを描いています...
-        </div>
-
-        {/* 石は持ち帰らない注意（生成中に自然に読んでもらう） */}
-        <div className="mt-4 px-4 py-2 rounded-xl text-center max-w-xs"
-          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}>
-          <div className="text-white/60 text-[10px] font-bold leading-relaxed">
-            🪨 石はその場所に残してあげよう<br/>
-            思い出は石モンと一緒に持ち帰ろう！
-          </div>
         </div>
 
         <style>{`
@@ -8795,6 +8793,13 @@ function IshimonZukan() {
       {selected && <MonCard mon={selected} onClose={() => setSelected(null)} />}
       {showShareCard && <ShareCardModal mon={showShareCard} onClose={() => setShowShareCard(null)} />}
       {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); }} />}
+      {/* v2.18.0: リビール時の白フラッシュ(石モン誕生の演出) */}
+      {revealFlash && (
+        <>
+          <div className="fixed inset-0 z-[120] pointer-events-none" style={{ background: '#fff', animation: 'revealFlash 0.65s ease-out forwards' }} />
+          <style>{`@keyframes revealFlash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }`}</style>
+        </>
+      )}
       {(isLoading || pendingMon) && <LoadingView />}
       {/* v2.18.0: 生成中に思い出を書くパネル + 「会いに行く」ボタン */}
       {(isLoading || pendingMon) && (
