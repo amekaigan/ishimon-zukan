@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.21.0';
+const APP_VERSION = '2.21.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6496,6 +6496,7 @@ function IshimonZukan() {
   // v2.21.0: 詳細画面でメモ編集
   const [editingMemoId, setEditingMemoId] = useState(null);
   const memoEditRef = useRef(null);
+  const monScrollRef = useRef(0); // v2.21.1: 詳細画面が作り直されてもスクロール位置を保つ
   const saveMonMemo = (monId) => {
     const text = (memoEditRef.current?.value || '').trim();
     setCollection(prev => {
@@ -6522,7 +6523,10 @@ function IshimonZukan() {
     const expRatio = lv >= MAX_LEVEL ? 1 : (mon.exp || 0) / expNeeded;
 
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-start justify-start p-3 pt-6 pb-12 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
+      <div className="fixed inset-0 z-50 flex flex-col items-start justify-start p-3 pt-6 pb-12 overflow-y-auto"
+        style={{ background: 'rgba(0,0,0,0.85)' }}
+        ref={el => { if (el) el.scrollTop = monScrollRef.current; }}
+        onScroll={e => { monScrollRef.current = e.currentTarget.scrollTop; }}>
         <div className="relative w-full max-w-sm rounded-3xl p-5 mx-auto"
           style={{ background: `linear-gradient(180deg, ${t.light} 0%, ${t.bg} 50%, ${t.dark} 100%)`, border: `4px solid ${r.color}`, boxShadow: `0 0 60px ${r.glow}80, 0 8px 0 ${t.dark}` }}>
           <CloseButton onClick={onClose} />
@@ -6668,7 +6672,7 @@ function IshimonZukan() {
                       <span className="text-xs leading-3">📝</span>
                       <span className="text-[11px] font-bold">思い出メモ</span>
                     </div>
-                    <textarea ref={memoEditRef} rows={3} maxLength={300} defaultValue={mon.memo || ''}
+                    <textarea ref={memoEditRef} rows={3} maxLength={250} defaultValue={mon.memo || ''}
                       placeholder="どこで見つけた？ 誰と一緒だった？"
                       className="w-full rounded-xl px-3 py-2 text-sm font-bold text-gray-800 resize-none"
                       style={{ background: '#fff', border: '1px solid #E8C98A', outline: 'none' }} />
@@ -8865,9 +8869,9 @@ function IshimonZukan() {
         <BottomTabBar />
       )}
 
-      {selected && <MonCard mon={selected} onClose={() => setSelected(null)} />}
+      {selected && <MonCard mon={selected} onClose={() => { setSelected(null); monScrollRef.current = 0; }} />}
       {showShareCard && <ShareCardModal mon={showShareCard} onClose={() => setShowShareCard(null)} />}
-      {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); }} />}
+      {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); monScrollRef.current = 0; }} />}
       {/* v2.18.0: リビール時の白フラッシュ(石モン誕生の演出) */}
       {revealFlash && (
         <>
@@ -8918,7 +8922,7 @@ function IshimonZukan() {
                 );
               })}
             </div>
-            <textarea ref={captureMemoRef} rows={2} maxLength={300}
+            <textarea ref={captureMemoRef} rows={2} maxLength={250}
               placeholder="どこで見つけた？ 誰と一緒だった？（書かなくてもOK）"
               className="w-full rounded-2xl px-3 py-2.5 text-white text-sm font-bold resize-none"
               style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', outline: 'none' }} />
