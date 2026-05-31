@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.18.0';
+const APP_VERSION = '2.18.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2563,12 +2563,8 @@ function IshimonZukan() {
       await saveCollection(updated);
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
-      // AI画像が取得できなかった場合はバックグラウンドで再生成を試みる
-      if (entry.needsImageRegen) {
-        setTimeout(() => {
-          regenerateMonImage(entry);
-        }, 3000); // 3秒後に再試行
-      }
+      // v2.18.1: 自動再生成は「会いに行く」後に回す(メモ入力中の割り込み&メモ消失を防ぐ)
+      //   → revealPendingMon 内でトリガーする
     } catch (err) {
       console.error('generateMon error:', err);
       try {
@@ -2624,6 +2620,10 @@ function IshimonZukan() {
     setNewMon(revealed);
     setPendingMon(null);
     if (captureMemoRef.current) captureMemoRef.current.value = '';
+    // v2.18.1: 画像がダミー(Pollination遅延)なら、会いに行った後に裏で再生成
+    if (revealed.needsImageRegen) {
+      setTimeout(() => regenerateMonImage(revealed), 800);
+    }
     if (memo) { // メモ保存は裏で(リビールはブロックしない)
       setCollection(prev => {
         const next = prev.some(c => c.id === pendingMon.id)
@@ -2654,11 +2654,12 @@ function IshimonZukan() {
       clearTimeout(timeoutId);
       if (aiImage) {
         await saveCachedImage(mon, aiImage); // キャッシュも更新
-        const updated = collection.map(c => c.id === mon.id ? { ...c, imageDataUrl: aiImage } : c);
-        setCollection(updated);
-        await saveCollection(updated);
-        if (selected?.id === mon.id) setSelected({ ...mon, imageDataUrl: aiImage });
-        if (newMon?.id === mon.id) setNewMon({ ...mon, imageDataUrl: aiImage });
+        // v2.18.1: 関数型updateで最新のcollection(メモ等)を壊さず画像だけ差し替え
+        let saved = null;
+        setCollection(prev => { saved = prev.map(c => c.id === mon.id ? { ...c, imageDataUrl: aiImage } : c); return saved; });
+        if (saved) await saveCollection(saved);
+        setSelected(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
+        setNewMon(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
       } else {
         setError('AI生成に失敗しました。15秒後に再度お試しください');
       }
