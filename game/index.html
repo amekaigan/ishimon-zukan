@@ -8890,6 +8890,15 @@ function IshimonZukan() {
           <div className="absolute bottom-0 left-0 right-0 pb-12 pt-6 flex flex-col items-center gap-4"
             style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}>
             <p className="text-white/80 text-sm font-bold">いしに カメラを むけてね！</p>
+            {/* v2.18.2: 子ども向け 石を持ち帰らない案内(ふりがな付き) */}
+            <div className="ishi-note px-4 py-2 rounded-2xl text-center leading-loose"
+              style={{ background: 'rgba(0,0,0,0.45)', border: '1.5px solid rgba(255,215,0,0.6)', maxWidth: '20rem' }}>
+              <span className="text-yellow-100 text-[13px] font-black">
+                🪨 <ruby>石<rt>いし</rt></ruby>は<ruby>元<rt>もと</rt></ruby>の<ruby>場所<rt>ばしょ</rt></ruby>に<ruby>戻<rt>もど</rt></ruby>してね！<br/>
+                <ruby>思<rt>おも</rt></ruby>い<ruby>出<rt>で</rt></ruby>だけ <ruby>石<rt>いし</rt></ruby>モンと<ruby>持<rt>も</rt></ruby>ち<ruby>帰<rt>かえ</rt></ruby>ろう！
+              </span>
+              <style>{`.ishi-note rt { font-size: 0.62em; font-weight: 700; opacity: 0.95; }`}</style>
+            </div>
             <div className="flex items-center gap-8">
               <button onClick={stopCamera}
                 className="bg-white/20 rounded-full p-4 active:bg-white/40 backdrop-blur-sm"
