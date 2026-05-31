@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.19.0';
+const APP_VERSION = '2.20.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1470,6 +1470,7 @@ function IshimonZukan() {
   const [revealFlash, setRevealFlash] = useState(false); // v2.18.0: リビール時の白フラッシュ
   // v2.19.0: 思い出スタンプ(タップだけで残せる)。各グループ単一選択、もう一度押すと解除。
   const [captureStamps, setCaptureStamps] = useState({});
+  const [activeStampTab, setActiveStampTab] = useState('天気'); // v2.20.0: スタンプのタブ切替
   const CAPTURE_STAMPS = {
     '天気': ['☀️はれ', '☁️くもり', '☔あめ', '❄️ゆき'],
     '気分': ['😊たのしい', '😌しずか', '🥹なつかしい', '✨わくわく'],
@@ -2632,7 +2633,7 @@ function IshimonZukan() {
     const revealed = hasExtra ? { ...pendingMon, ...extra } : pendingMon;
     setIsLoading(false);   // ★これが無いとカードが出られず待たされていた
     setRevealFlash(true);  // 白フラッシュ演出
-    setTimeout(() => setRevealFlash(false), 650);
+    setTimeout(() => setRevealFlash(false), 900);
     setNewMon(revealed);
     setPendingMon(null);
     if (captureMemoRef.current) captureMemoRef.current.value = '';
@@ -6059,21 +6060,25 @@ function IshimonZukan() {
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-start px-6 pt-12" style={{ background: 'radial-gradient(circle, #FF6B35 0%, #1a0a05 70%)' }}>
         {/* 石モンを"観察"中の演出 */}
         <div className="relative mb-6">
-          <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 0deg, #FFD700, #FF6B35, #FF3D7F, #FFD700)', filter: 'blur(30px)', animation: 'spin 3s linear infinite' }} />
+          <div className="absolute inset-0 rounded-full" style={{ background: 'conic-gradient(from 0deg, #FFD700, #FF6B35, #FF3D7F, #FFD700)', filter: 'blur(30px)', animation: pendingMon ? 'none' : 'spin 3s linear infinite' }} />
           {previewImage && (
             <div className="relative">
               <img src={previewImage}
                 className="relative w-36 h-36 object-cover rounded-full"
                 style={{ border: '5px solid #FFD700', boxShadow: '0 0 60px #FFAA00' }} />
-              {/* ルーペアイコン（観察中の表現） */}
-              <div className="absolute text-4xl"
-                style={{
-                  top: '20%',
-                  left: `calc(50% + ${walkX - 30}px)`,
-                  transform: `rotate(${walkRotate}deg)`,
-                  transition: 'all 0.6s ease-in-out',
-                  filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.8))',
-                }}>🔍</div>
+              {/* ルーペ(観察中) / 完成マーク(できた時) */}
+              {pendingMon ? (
+                <div className="absolute text-4xl" style={{ top: '30%', left: 'calc(50% - 20px)', filter: 'drop-shadow(0 0 12px rgba(255,215,0,0.9))' }}>✨</div>
+              ) : (
+                <div className="absolute text-4xl"
+                  style={{
+                    top: '20%',
+                    left: `calc(50% + ${walkX - 30}px)`,
+                    transform: `rotate(${walkRotate}deg)`,
+                    transition: 'all 0.6s ease-in-out',
+                    filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.8))',
+                  }}>🔍</div>
+              )}
             </div>
           )}
         </div>
@@ -6081,7 +6086,7 @@ function IshimonZukan() {
         {/* メインメッセージ */}
         <div className="text-yellow-300 text-lg font-black tracking-wider mb-4 text-center"
           style={{ textShadow: '0 0 20px #FFAA00' }}>
-          {loadingMsg}
+          {pendingMon ? '✨ できたよ！会いに行こう' : loadingMsg}
         </div>
 
 
@@ -8824,8 +8829,8 @@ function IshimonZukan() {
       {/* v2.18.0: リビール時の白フラッシュ(石モン誕生の演出) */}
       {revealFlash && (
         <>
-          <div className="fixed inset-0 z-[120] pointer-events-none" style={{ background: '#fff', animation: 'revealFlash 0.65s ease-out forwards' }} />
-          <style>{`@keyframes revealFlash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }`}</style>
+          <div className="fixed inset-0 z-[120] pointer-events-none" style={{ background: '#fff', animation: 'revealFlash 0.9s ease-out forwards' }} />
+          <style>{`@keyframes revealFlash { 0% { opacity: 0; } 10% { opacity: 1; } 35% { opacity: 1; } 100% { opacity: 0; } }`}</style>
         </>
       )}
       {(isLoading || pendingMon) && <LoadingView />}
@@ -8835,35 +8840,54 @@ function IshimonZukan() {
           style={{ background: 'linear-gradient(180deg, rgba(26,10,5,0) 0%, rgba(26,10,5,0.92) 38%)' }}>
           <div className="mx-auto w-full max-w-sm rounded-3xl p-4"
             style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,215,0,0.4)', backdropFilter: 'blur(10px)' }}>
-            <div className="text-yellow-200 text-[10px] font-black tracking-wide mb-2 text-center leading-snug">
-              ✍️ この瞬間の思い出を 残しておこう<br/>（あとで読み返せます）
+            {/* v2.20.0: 見出し(大きめ) */}
+            <div className="text-center mb-3">
+              <div className="text-yellow-200 text-lg font-black">✍️ 思い出を残そう</div>
+              <div className="text-yellow-200/70 text-[11px] font-bold">（あとで振り返れるよ）</div>
             </div>
-            {/* v2.19.0: 思い出スタンプ(タップだけでOK) */}
-            <div className="mb-2 space-y-1">
-              {Object.entries(CAPTURE_STAMPS).map(([group, items]) => (
-                <div key={group} className="flex items-center gap-1.5">
-                  <span className="text-white/50 text-[10px] font-black w-9 shrink-0">{group}</span>
-                  <div className="flex gap-1 overflow-x-auto">
-                    {items.map(val => {
-                      const on = captureStamps[group] === val;
-                      return (
-                        <button key={val} onClick={() => toggleCaptureStamp(group, val)}
-                          className="shrink-0 px-2 py-1 rounded-full text-[11px] font-bold active:scale-95 transition-transform"
-                          style={on
-                            ? { background: '#FFD700', color: '#5A1A78', border: '1px solid #FFD700' }
-                            : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                          {val}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+            {/* v2.20.0: スタンプ タブUI(タブ内は2行・横スクロール、ボタン大きめ) */}
+            <div className="flex gap-1 mb-2">
+              {Object.keys(CAPTURE_STAMPS).map(group => {
+                const active = activeStampTab === group;
+                const chosen = !!captureStamps[group];
+                return (
+                  <button key={group} onClick={() => setActiveStampTab(group)}
+                    className="flex-1 py-1.5 rounded-xl text-xs font-black active:scale-95 transition-transform relative"
+                    style={active
+                      ? { background: 'rgba(255,215,0,0.25)', color: '#FFD700', border: '1px solid rgba(255,215,0,0.7)' }
+                      : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    {group}
+                    {chosen && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full" style={{ background: '#FFD700' }} />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mb-3 grid grid-rows-2 grid-flow-col auto-cols-max gap-2 overflow-x-auto pb-1" style={{ minHeight: '5.5rem' }}>
+              {CAPTURE_STAMPS[activeStampTab].map(val => {
+                const on = captureStamps[activeStampTab] === val;
+                return (
+                  <button key={val} onClick={() => toggleCaptureStamp(activeStampTab, val)}
+                    className="px-4 py-2.5 rounded-2xl text-sm font-bold active:scale-95 transition-transform whitespace-nowrap"
+                    style={on
+                      ? { background: '#FFD700', color: '#5A1A78', border: '2px solid #FFD700' }
+                      : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.9)', border: '2px solid rgba(255,255,255,0.2)' }}>
+                    {val}
+                  </button>
+                );
+              })}
             </div>
             <textarea ref={captureMemoRef} rows={2} maxLength={300}
               placeholder="どこで見つけた？ 誰と一緒だった？（書かなくてもOK）"
-              className="w-full rounded-2xl px-3 py-2 text-white text-sm font-bold resize-none"
+              className="w-full rounded-2xl px-3 py-2.5 text-white text-sm font-bold resize-none"
               style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', outline: 'none' }} />
+            {/* v2.20.0: 自由フォームの確定(キーボードを閉じる) */}
+            <div className="flex justify-end mt-1">
+              <button onClick={() => captureMemoRef.current && captureMemoRef.current.blur()}
+                className="px-4 py-1.5 rounded-full text-xs font-black active:scale-95 transition-transform"
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}>
+                ✓ 入力おわり
+              </button>
+            </div>
             {pendingMon ? (
               <button onClick={revealPendingMon}
                 className="mt-3 w-full py-3 rounded-2xl font-black text-base active:scale-95 transition-transform"
