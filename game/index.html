@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.20.0';
+const APP_VERSION = '2.20.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8889,11 +8889,19 @@ function IshimonZukan() {
               </button>
             </div>
             {pendingMon ? (
-              <button onClick={revealPendingMon}
-                className="mt-3 w-full py-3 rounded-2xl font-black text-base active:scale-95 transition-transform"
-                style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 rgba(0,0,0,0.3)', color: '#5A1A78' }}>
-                ✨ 生まれたよ！会いに行く →
-              </button>
+              <>
+                <button onClick={revealPendingMon}
+                  className="reveal-cta mt-3 w-full py-3 rounded-2xl font-black text-base active:scale-95 transition-transform"
+                  style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 rgba(0,0,0,0.3)', color: '#5A1A78' }}>
+                  ✨ 生まれたよ！会いに行く →
+                </button>
+                <style>{`
+                  @keyframes ctaGlow { 0%,100% { box-shadow: 0 4px 0 rgba(0,0,0,0.3), 0 0 0 0 rgba(255,200,0,0); } 50% { box-shadow: 0 4px 0 rgba(0,0,0,0.3), 0 0 22px 5px rgba(255,200,0,0.8); } }
+                  @keyframes ctaShine { 0% { transform: translateX(-130%) skewX(-20deg); } 55%,100% { transform: translateX(330%) skewX(-20deg); } }
+                  .reveal-cta { position: relative; overflow: hidden; animation: ctaGlow 1.3s ease-in-out infinite; }
+                  .reveal-cta::before { content:''; position:absolute; top:0; bottom:0; left:0; width:35%; background:linear-gradient(100deg, transparent, rgba(255,255,255,0.7), transparent); animation: ctaShine 1.8s ease-in-out infinite; pointer-events:none; }
+                `}</style>
+              </>
             ) : (
               <div className="mt-3 w-full py-3 rounded-2xl text-center text-white/70 font-black text-sm"
                 style={{ background: 'rgba(255,255,255,0.08)', border: '1px dashed rgba(255,255,255,0.25)' }}>
