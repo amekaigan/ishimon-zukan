@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.20.1';
+const APP_VERSION = '2.21.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6493,6 +6493,21 @@ function IshimonZukan() {
   // ===========================================
   // 石モン詳細カード
   // ===========================================
+  // v2.21.0: 詳細画面でメモ編集
+  const [editingMemoId, setEditingMemoId] = useState(null);
+  const memoEditRef = useRef(null);
+  const saveMonMemo = (monId) => {
+    const text = (memoEditRef.current?.value || '').trim();
+    setCollection(prev => {
+      const next = prev.map(c => c.id === monId ? { ...c, memo: text } : c);
+      saveCollection(next);
+      return next;
+    });
+    setSelected(prev => (prev && prev.id === monId) ? { ...prev, memo: text } : prev);
+    setNewMon(prev => (prev && prev.id === monId) ? { ...prev, memo: text } : prev);
+    setEditingMemoId(null);
+  };
+
   const MonCard = ({ mon, onClose }) => {
     const t = TYPES[mon.type] || TYPES['土'];
     const r = getRarityLabel(mon.rarity);
@@ -6646,11 +6661,38 @@ function IshimonZukan() {
                     <span>{mon.location.name}</span>
                   </div>
                 )}
-                {mon.memo && (
+                {/* v2.21.0: 思い出メモ(表示・編集・追加) */}
+                {editingMemoId === mon.id ? (
+                  <div className="mt-1">
+                    <div className="flex items-center gap-1.5 mb-1 text-gray-500">
+                      <span className="text-xs leading-3">📝</span>
+                      <span className="text-[11px] font-bold">思い出メモ</span>
+                    </div>
+                    <textarea ref={memoEditRef} rows={3} maxLength={300} defaultValue={mon.memo || ''}
+                      placeholder="どこで見つけた？ 誰と一緒だった？"
+                      className="w-full rounded-xl px-3 py-2 text-sm font-bold text-gray-800 resize-none"
+                      style={{ background: '#fff', border: '1px solid #E8C98A', outline: 'none' }} />
+                    <div className="flex gap-2 mt-1.5">
+                      <button onClick={() => saveMonMemo(mon.id)}
+                        className="px-4 py-1.5 rounded-full text-xs font-black text-white active:scale-95 transition-transform"
+                        style={{ background: '#E8A33D' }}>保存</button>
+                      <button onClick={() => setEditingMemoId(null)}
+                        className="px-4 py-1.5 rounded-full text-xs font-bold text-gray-500 active:scale-95 transition-transform"
+                        style={{ background: '#EEEEEE' }}>キャンセル</button>
+                    </div>
+                  </div>
+                ) : mon.memo ? (
                   <div className="flex items-start gap-1.5 text-gray-700">
                     <span className="text-xs leading-3">📝</span>
                     <span style={{ whiteSpace: 'pre-wrap' }}>{mon.memo}</span>
+                    <button onClick={() => setEditingMemoId(mon.id)}
+                      className="ml-1 shrink-0 text-[11px] font-bold text-amber-600 active:scale-95">✏️編集</button>
                   </div>
+                ) : (
+                  <button onClick={() => setEditingMemoId(mon.id)}
+                    className="flex items-center gap-1 text-[12px] font-bold text-amber-600 active:scale-95 transition-transform">
+                    <span>📝</span><span>思い出メモを追加</span>
+                  </button>
                 )}
                 {Array.isArray(mon.stamps) && mon.stamps.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5 mt-1">
