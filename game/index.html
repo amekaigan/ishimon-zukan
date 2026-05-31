@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.18.2';
+const APP_VERSION = '2.19.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1468,6 +1468,17 @@ function IshimonZukan() {
   // v2.18.0: 生成完了後すぐ出さず「会いに行く」を待つ(待ち時間の体感ゼロ化)
   const [pendingMon, setPendingMon] = useState(null);
   const [revealFlash, setRevealFlash] = useState(false); // v2.18.0: リビール時の白フラッシュ
+  // v2.19.0: 思い出スタンプ(タップだけで残せる)。各グループ単一選択、もう一度押すと解除。
+  const [captureStamps, setCaptureStamps] = useState({});
+  const CAPTURE_STAMPS = {
+    '天気': ['☀️はれ', '☁️くもり', '☔あめ', '❄️ゆき'],
+    '気分': ['😊たのしい', '😌しずか', '🥹なつかしい', '✨わくわく'],
+    '場所': ['🌊海', '🏞️公園', '🏠家', '✈️旅行'],
+    'その他': ['⭐とくべつ', '🎁もらった', '👀みつけた', '🤝いっしょ'],
+  };
+  const toggleCaptureStamp = (group, val) => {
+    setCaptureStamps(prev => ({ ...prev, [group]: prev[group] === val ? null : val }));
+  };
   // 生成中に思い出メモを書く欄(uncontrolled=タイピングで再描画させない)
   const captureMemoRef = useRef(null);
   const [showEvolveAnim, setShowEvolveAnim] = useState(null);
@@ -2613,18 +2624,24 @@ function IshimonZukan() {
   const revealPendingMon = () => {
     if (!pendingMon) return;
     const memo = (captureMemoRef.current?.value || '').trim();
-    const revealed = memo ? { ...pendingMon, memo } : pendingMon;
+    const stamps = Object.values(captureStamps).filter(Boolean); // v2.19.0: 選択スタンプ
+    const extra = {};
+    if (memo) extra.memo = memo;
+    if (stamps.length) extra.stamps = stamps;
+    const hasExtra = Object.keys(extra).length > 0;
+    const revealed = hasExtra ? { ...pendingMon, ...extra } : pendingMon;
     setIsLoading(false);   // ★これが無いとカードが出られず待たされていた
     setRevealFlash(true);  // 白フラッシュ演出
     setTimeout(() => setRevealFlash(false), 650);
     setNewMon(revealed);
     setPendingMon(null);
     if (captureMemoRef.current) captureMemoRef.current.value = '';
+    setCaptureStamps({}); // v2.19.0: 次の撮影に持ち越さない
     // v2.18.1: 画像がダミー(Pollination遅延)なら、会いに行った後に裏で再生成
     if (revealed.needsImageRegen) {
       setTimeout(() => regenerateMonImage(revealed), 800);
     }
-    if (memo) { // メモ保存は裏で(リビールはブロックしない)
+    if (hasExtra) { // v2.19.0: メモ or スタンプがあれば保存(裏で)
       setCollection(prev => {
         const next = prev.some(c => c.id === pendingMon.id)
           ? prev.map(c => c.id === pendingMon.id ? revealed : c)
@@ -6630,6 +6647,16 @@ function IshimonZukan() {
                     <span style={{ whiteSpace: 'pre-wrap' }}>{mon.memo}</span>
                   </div>
                 )}
+                {Array.isArray(mon.stamps) && mon.stamps.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    {mon.stamps.map((s, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-full text-[11px] font-bold"
+                        style={{ background: '#FBE8C9', color: '#8A5A1A', border: '1px solid #E8C98A' }}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
                   <div className="mt-2">
                     <div className="text-gray-600 text-[10px] font-bold mb-1.5">📷 出会った時の石</div>
@@ -8810,6 +8837,28 @@ function IshimonZukan() {
             style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,215,0,0.4)', backdropFilter: 'blur(10px)' }}>
             <div className="text-yellow-200 text-[10px] font-black tracking-wide mb-2 text-center leading-snug">
               ✍️ この瞬間の思い出を 残しておこう<br/>（あとで読み返せます）
+            </div>
+            {/* v2.19.0: 思い出スタンプ(タップだけでOK) */}
+            <div className="mb-2 space-y-1">
+              {Object.entries(CAPTURE_STAMPS).map(([group, items]) => (
+                <div key={group} className="flex items-center gap-1.5">
+                  <span className="text-white/50 text-[10px] font-black w-9 shrink-0">{group}</span>
+                  <div className="flex gap-1 overflow-x-auto">
+                    {items.map(val => {
+                      const on = captureStamps[group] === val;
+                      return (
+                        <button key={val} onClick={() => toggleCaptureStamp(group, val)}
+                          className="shrink-0 px-2 py-1 rounded-full text-[11px] font-bold active:scale-95 transition-transform"
+                          style={on
+                            ? { background: '#FFD700', color: '#5A1A78', border: '1px solid #FFD700' }
+                            : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                          {val}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
             <textarea ref={captureMemoRef} rows={2} maxLength={300}
               placeholder="どこで見つけた？ 誰と一緒だった？（書かなくてもOK）"
