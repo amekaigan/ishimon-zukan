@@ -415,7 +415,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.23.0';
+const APP_VERSION = '2.23.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1483,6 +1483,10 @@ function IshimonZukan() {
   // 生成中に思い出メモを書く欄(uncontrolled=タイピングで再描画させない)
   const captureMemoRef = useRef(null);
   const [showEvolveAnim, setShowEvolveAnim] = useState(null);
+  // v2.23.1: 進化後の新画像がまだ生成中の石モンID。
+  //   10秒の待機枠を超えると進化後ステータスは出るが画像は古い(進化前)ままになるため、
+  //   このIDの間は詳細画像に「描いています…」を重ねて誤認を防ぐ(保存しない一時state)。
+  const [evolvingImageId, setEvolvingImageId] = useState(null);
 
   // バトル状態
   const [battleStage, setBattleStage] = useState(null);
@@ -2896,6 +2900,11 @@ function IshimonZukan() {
       ]);
       if (imageRace?.image) {
         evolved.imageDataUrl = imageRace.image;
+        setEvolvingImageId(null); // 画像が間に合った → オーバーレイ不要
+      } else {
+        // v2.23.1: 新画像がまだ来ていない。古い画像が「進化後の姿」のフリをするのを防ぐため
+        //   このIDを記録 → 詳細画像に「描いています…」を表示。本物は下の .then で差し替える。
+        setEvolvingImageId(evolved.id);
       }
 
       // 進化データをUIに反映（同期処理・失敗しない）
@@ -2930,6 +2939,7 @@ function IshimonZukan() {
       // もしまだ画像が来てなかった場合、後で来たら反映
       if (!imageRace?.image) {
         imagePromise.then(({ image }) => {
+          setEvolvingImageId(null); // v2.23.1: 「描いています…」を解除(画像が来ても来なくても)
           if (image) {
             const finalEvolved = { ...evolved, imageDataUrl: image };
             // バグ修正(v2.7.2): 古いcollection変数ではなく、最新stateから配列を作り、
@@ -6575,7 +6585,15 @@ function IshimonZukan() {
           {mon.imageDataUrl ? (
             <div className="relative mb-3">
               <div className="absolute inset-0 rounded-2xl blur-xl" style={{ background: r.glow, opacity: 0.5 }} />
-              <img src={mon.imageDataUrl} className="relative w-full rounded-2xl" style={{ aspectRatio: '1/1', objectFit: 'contain', background: 'rgba(0,0,0,0.15)', border: '2px solid white' }} />
+              <img src={mon.imageDataUrl} className="relative w-full rounded-2xl" style={{ aspectRatio: '1/1', objectFit: 'contain', background: 'rgba(0,0,0,0.15)', border: '2px solid white', opacity: evolvingImageId === mon.id ? 0.35 : 1 }} />
+              {evolvingImageId === mon.id && (
+                <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-2"
+                  style={{ background: 'rgba(0,0,0,0.45)', border: '2px solid #FFD700' }}>
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                  <div className="text-white font-black text-sm">✨ 新しい姿を描いています…</div>
+                  <div className="text-white/70 text-[11px]">少し待ってね(最大30秒ほど)</div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="w-full rounded-2xl flex items-center justify-center mb-3" style={{ aspectRatio: '1/1', background: `${t.dark}66`, border: '2px solid white' }}>
