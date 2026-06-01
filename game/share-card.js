@@ -34,7 +34,7 @@
   var CW = W - CX * 2;  // 内容の幅 (= 画像の一辺)
 
   // レア度ラベルの略字(★の値で引く)。好みでここを書き換えればOK
-  var RARITY_ABBR = { 5: 'L', 4: 'SR', 3: 'R', 2: 'U', 1: 'N' };
+  var RARITY_ABBR = { 5: 'SL', 4: 'SR', 3: 'R', 2: 'U', 1: 'N' };
 
   // ---------- 小道具 ----------
   function roundRect(ctx, x, y, w, h, r) {
