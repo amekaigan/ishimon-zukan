@@ -33,6 +33,9 @@
   var CX = 16;          // 内容の左端
   var CW = W - CX * 2;  // 内容の幅 (= 画像の一辺)
 
+  // レア度ラベルの略字(★の値で引く)。好みでここを書き換えればOK
+  var RARITY_ABBR = { 5: 'L', 4: 'SR', 3: 'R', 2: 'U', 1: 'N' };
+
   // ---------- 小道具 ----------
   function roundRect(ctx, x, y, w, h, r) {
     if (r > w / 2) r = w / 2;
@@ -121,6 +124,30 @@
     return { w: w, h: h };
   }
 
+  // ---------- 縁取り文字(背景の丸枠なし・視認性確保) ----------
+  // shadow(任意のグロー) → 太い縁取り → 本体塗り の順で重ね、どんな画像の上でも読めるように
+  function outlinedText(ctx, text, x, y, o) {
+    ctx.font = (o.weight || 900) + ' ' + o.size + 'px ' + FONT;
+    ctx.textAlign = o.align || 'left';
+    ctx.textBaseline = o.baseline || 'alphabetic';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    // 影/グロー(本体と同じ位置に1回置いてから上を塗り直す)
+    ctx.save();
+    ctx.shadowColor = o.glow || 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = o.shadowBlur != null ? o.shadowBlur : 4;
+    ctx.fillStyle = o.fill;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+    // 縁取り
+    ctx.lineWidth = o.strokeW != null ? o.strokeW : 3;
+    ctx.strokeStyle = o.stroke || 'rgba(0,0,0,0.9)';
+    ctx.strokeText(text, x, y);
+    // 本体
+    ctx.fillStyle = o.fill;
+    ctx.fillText(text, x, y);
+  }
+
   // ===========================================================================
   // メイン
   // ===========================================================================
@@ -154,7 +181,7 @@
     var canvas = document.createElement('canvas');
     var ctx = canvas.getContext('2d');
 
-    var imageY = 16, imageSize = CW;
+    var imageY = 22, imageSize = CW;
     var afterImage = imageY + imageSize;
     var statsY = afterImage + 8;
     var statsH = hasPhoto ? 92 : 80;
@@ -209,12 +236,12 @@
     roundRect(ctx, CX, imageY, imageSize, imageSize, 10);
     ctx.lineWidth = 3; ctx.strokeStyle = '#FFD700'; ctx.stroke();
 
-    // --- タイプ/段階バッジ(画像左上) ---
-    var bx = CX + 8, by = imageY + 8;
-    var b1 = drawPill(ctx, (t.emoji || '') + ' ' + (t.name || ''), bx, by,
-      { size: 10, bg: 'rgba(255,255,255,0.92)', color: '#5A1A78', border: '#ffffff' });
-    drawPill(ctx, (stage.emoji || '') + ' ' + (stage.label || ''), bx, by + b1.h + 5,
-      { size: 10, bg: 'rgba(60,30,0,0.85)', color: '#FFD700', border: '#ffffff' });
+    // --- タイプ/段階バッジ(画像左上・縁取り文字・丸枠なし) ---
+    var bx = CX + 14, byType = imageY + 26, byStage = byType + 19;
+    outlinedText(ctx, (t.emoji || '') + ' ' + (t.name || ''), bx, byType,
+      { size: 14, fill: '#ffffff', stroke: t.dark || 'rgba(0,0,0,0.9)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
+    outlinedText(ctx, (stage.emoji || '') + ' ' + (stage.label || ''), bx, byStage,
+      { size: 12, fill: '#FFE08A', stroke: 'rgba(0,0,0,0.92)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
 
     // --- 名前オーバーレイ(画像下・縁取り+影) ---
     var name = String(data.name || '');
@@ -352,36 +379,29 @@
     roundRect(ctx, 2.5, 2.5, W - 5, H - 5, 18);
     ctx.lineWidth = 5; ctx.strokeStyle = r.color || '#FFD700'; ctx.stroke();
 
-    // ===== ★リボン(画像上端をまたぐ) — 最後に重ねる =====
+    // ===== ★レア度(上部中央・内側の枠線の上・縁取り文字・丸枠なし) — 最後に重ねる =====
     var stars = '★'.repeat(Math.max(0, Math.min(5, r.value || 0)));
-    var label = String(r.label || '');
-    var starSize = (r.value >= 4) ? 14 : 13, labelSize = 11, ribGap = 6;
+    var abbr = RARITY_ABBR[r.value] || String(r.label || '');
+    var starSize = (r.value >= 4) ? 16 : 15, abbrSize = 14, rGap = 8;
     ctx.font = '900 ' + starSize + 'px ' + FONT;
     var starW = ctx.measureText(stars).width;
-    ctx.font = '900 ' + labelSize + 'px ' + FONT;
-    var labelTextW = ctx.measureText(label).width;
-    var ribPadX = 20, ribH = 26;
-    var ribW = starW + ribGap + labelTextW + ribPadX * 2;
-    var ribX = (W - ribW) / 2, ribY = imageY + 18;
-    // 本体(濃色グラデ)
-    var rg = ctx.createLinearGradient(0, ribY, 0, ribY + ribH);
-    rg.addColorStop(0, '#2a1a3a'); rg.addColorStop(1, '#1a0a2a');
-    roundRect(ctx, ribX, ribY, ribW, ribH, ribH / 2);
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 4;
-    ctx.fillStyle = rg; ctx.fill();
-    ctx.restore();
-    ctx.lineWidth = 1.5; ctx.strokeStyle = r.color || '#FFD700'; ctx.stroke();
-    // 文字(★=レア色 / ラベル=白)
-    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-    var tx = ribX + ribPadX, tcy = ribY + ribH / 2 + 0.5;
-    ctx.save();
-    ctx.shadowColor = withAlpha(r.glow || r.color || '#FFD700', 0.9); ctx.shadowBlur = 6;
-    ctx.font = '900 ' + starSize + 'px ' + FONT; ctx.fillStyle = r.color || '#FFD700';
-    ctx.fillText(stars, tx, tcy);
-    ctx.restore();
-    ctx.font = '900 ' + labelSize + 'px ' + FONT; ctx.fillStyle = '#fff';
-    ctx.fillText(label, tx + starW + ribGap, tcy);
+    ctx.font = '900 ' + abbrSize + 'px ' + FONT;
+    var abbrW = abbr ? ctx.measureText(abbr).width : 0;
+    var totalW = starW + (abbr ? rGap + abbrW : 0);
+    var gx = (W - totalW) / 2, gy = 12; // 内側の枠線(y=8)の上あたり
+    // 星(レア色・グロー付き)
+    outlinedText(ctx, stars, gx, gy, {
+      size: starSize, fill: r.color || '#FFD700', stroke: 'rgba(0,0,0,0.95)', strokeW: 4,
+      glow: withAlpha(r.glow || r.color || '#FFD700', 0.95), shadowBlur: 8,
+      align: 'left', baseline: 'middle',
+    });
+    // 略字(白)
+    if (abbr) {
+      outlinedText(ctx, abbr, gx + starW + rGap, gy, {
+        size: abbrSize, fill: '#ffffff', stroke: 'rgba(0,0,0,0.95)', strokeW: 4,
+        glow: 'rgba(0,0,0,0.9)', shadowBlur: 6, align: 'left', baseline: 'middle',
+      });
+    }
     ctx.textBaseline = 'alphabetic';
 
     // ===== 出力(PNG Blob) =====
