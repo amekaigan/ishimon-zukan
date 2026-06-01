@@ -43,6 +43,8 @@
 <meta property="og:locale" content="ja_JP">
 <!-- html-to-image (シェアカード生成用) -->
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+<!-- シェアカード描画 (Canvas API版) -->
+<script src="share-card.js"></script>
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="石モン図鑑">
@@ -415,7 +417,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.23.1';
+const APP_VERSION = '2.24.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6209,73 +6211,43 @@ function IshimonZukan() {
     const max = Math.max(cur.hp, cur.kogeki, cur.bougyo, cur.speed, 180);
     const pct = (v) => Math.round((v / max) * 100);
 
+    const downloadBlob = (blob, fileName) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = fileName; link.href = url; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    };
+
     const handleSave = async () => {
-      if (!cardRef.current || !window.htmlToImage) return;
+      if (!window.drawShareCard) { alert('描画モジュールの読み込み待ちです。少し待って再度お試しください。'); return; }
       setGenerating(true);
       try {
-        // === ステップ1: 全ての <img> を data:URL 化 ===
-        const imgs = Array.from(cardRef.current.querySelectorAll('img'));
-        await Promise.all(imgs.map(async (img) => {
-          const orig = img.src;
-          if (!orig) return;
-          img.removeAttribute('crossorigin');
-          if (orig.startsWith('data:')) return;
-          try {
-            const res = await fetch(orig, { mode: 'cors', cache: 'no-cache' });
-            if (!res.ok) throw new Error('fetch failed: ' + res.status);
-            const blob = await res.blob();
-            const dataUrl = await new Promise((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-            img.src = dataUrl;
-          } catch (e) {
-            console.warn('[ShareCard] 画像base64化失敗:', orig.slice(0, 60), e);
-          }
-        }));
-        
-        // === ステップ2: 全画像の decode 完了を待つ ===
-        await Promise.all(imgs.map(async (img) => {
-          if (!img.src) return;
-          try {
-            if (img.decode) {
-              await img.decode();
-            } else {
-              await new Promise((resolve) => {
-                if (img.complete && img.naturalWidth > 0) return resolve();
-                img.addEventListener('load', resolve, { once: true });
-                img.addEventListener('error', resolve, { once: true });
-                setTimeout(resolve, 3000);
-              });
-            }
-          } catch (_) {}
-        }));
-        
-        // === ステップ3: 描画安定のため待機 ===
-        await new Promise(r => setTimeout(r, 800));
-        
-        // === ステップ4: html-to-image でキャプチャ ===
-        const dataUrl = await window.htmlToImage.toPng(cardRef.current, {
-          pixelRatio: 2,
-          cacheBust: false,
-          backgroundColor: '#1a0a3a',
-          skipFonts: true,
-          fetchRequestInit: { cache: 'no-cache' },
-        });
-        
-        // === ステップ5: 共有シート起動 or ダウンロード ===
-        // dataUrl を Blob → File に変換
-        const blob = await (await fetch(dataUrl)).blob();
+        // === Canvas でカードを描画 → PNG Blob ===
+        const cardData = {
+          name: mon.name,
+          type: { emoji: t.emoji, name: t.name, light: t.light, bg: t.bg, dark: t.dark },
+          rarity: { value: mon.rarity, color: r.color, glow: r.glow, label: r.label },
+          stage: { emoji: stage.emoji, label: stage.label },
+          stats: [
+            { label: 'HP', val: cur.hp, color: '#52B788' },
+            { label: 'ATK', val: cur.kogeki, color: '#FF6B35' },
+            { label: 'DEF', val: cur.bougyo, color: '#3DA5F5' },
+            { label: 'SPD', val: cur.speed, color: '#FFC42B' },
+          ],
+          imageDataUrl: mon.imageDataUrl || null,
+          originalPhoto: mon.originalPhoto || null,
+          description: mon.description || '',
+          cardId: generateCardId(mon),
+          logoUrl: 'logo-white.png',
+        };
+        const blob = await window.drawShareCard(cardData);
+
+        // === 共有シート起動 or ダウンロード ===
         const fileName = `ishimon_${mon.name}_${Date.now()}.png`;
         const file = new File([blob], fileName, { type: 'image/png' });
-        
-        // Web Share API が画像共有に対応しているか判定
         const canShareFile = navigator.canShare && navigator.canShare({ files: [file] });
-        
+
         if (canShareFile) {
-          // iOSやAndroidの共有シートを起動
           try {
             await navigator.share({
               files: [file],
@@ -6284,23 +6256,14 @@ function IshimonZukan() {
             });
             window.ga4?.event?.('share_card_shared', { mon_name: mon.name, rarity: mon.rarity });
           } catch (shareErr) {
-            // ユーザーがキャンセル or 共有失敗 → ダウンロードにフォールバック
             if (shareErr.name !== 'AbortError') {
               console.warn('共有失敗、ダウンロードに切替:', shareErr);
-              const link = document.createElement('a');
-              link.download = fileName;
-              link.href = dataUrl;
-              link.click();
+              downloadBlob(blob, fileName);
               window.ga4?.event?.('share_card_saved', { mon_name: mon.name, rarity: mon.rarity });
             }
-            // AbortError(キャンセル)の時は何もしない
           }
         } else {
-          // PCブラウザなど対応していない場合は通常ダウンロード
-          const link = document.createElement('a');
-          link.download = fileName;
-          link.href = dataUrl;
-          link.click();
+          downloadBlob(blob, fileName);
           window.ga4?.event?.('share_card_saved', { mon_name: mon.name, rarity: mon.rarity });
         }
       } catch (e) {
@@ -6801,7 +6764,7 @@ function IshimonZukan() {
             )}
           </div>
 
-          {/* v2.16.0: シェアカードボタン
+          {/* シェアカードボタン(Canvas版で復活) */}
           <button onClick={() => setShowShareCard(mon)}
             className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform mb-2"
             style={{
@@ -6813,7 +6776,7 @@ function IshimonZukan() {
             }}>
             <span style={{position:'absolute',top:'4px',right:'10px',fontSize:'13px',opacity:0.6}}>✨</span>
             📤 シェアカードを作る
-          </button> */}
+          </button>
 
           {/* お気に入り & グループ登録 */}
           {(() => {
