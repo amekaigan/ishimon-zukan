@@ -417,7 +417,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.24.0';
+const APP_VERSION = '2.25.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6519,6 +6519,24 @@ function IshimonZukan() {
     const canEvolve = mon.evolveTo && mon.stage < 3;
     const evolveCost = canEvolve ? (EVOLVE_COST[mon.rarity] || EVOLVE_COST[4]) : 0;
     const hasFragsForEvolve = (player.stoneFragments || 0) >= evolveCost;
+
+    // v2.25.0: この石モンを1体だけファイルに書き出す(別端末へ移動・ギフトの土台)
+    const exportSingleMon = () => {
+      try {
+        const payload = { appName: 'IshimonZukan', kind: 'mon', version: 1, exportedAt: new Date().toISOString(), mon };
+        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ishimon-mon-${(mon.name || 'stone')}-${Date.now()}.json`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        window.ga4?.event?.('mon_exported', { mon_name: mon.name, rarity: mon.rarity });
+      } catch (e) {
+        console.error('石モン書き出し失敗:', e);
+        alert('書き出しに失敗しました。');
+      }
+    };
     const cur = getCurrentStats(mon);
     const eq = getEquipBoost(mon);
     const lv = mon.level || 1;
@@ -6872,6 +6890,14 @@ function IshimonZukan() {
               {aiGenerating ? <>描いています...</> : <>✨ AIで オリジナルアートに変換！</>}
             </button>
           )}
+
+          {/* v2.25.0: この石モンを1体書き出す(別端末・友達に渡せる) */}
+          <button onClick={exportSingleMon}
+            className="w-full mt-3 py-2 rounded-xl text-white/80 font-bold text-xs active:scale-95 flex items-center justify-center gap-1.5"
+            style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(125,176,232,0.5)' }}>
+            <span className="text-sm">📦</span>
+            <span>この石モンを 書き出す（1体・データ）</span>
+          </button>
 
           {/* 機能追加(v2.10.0): 詳細画面からの削除ボタン。
               控えめなデザインで誤タップを抑制。実際の削除は2段階確認モーダルで安全。 */}
@@ -7859,6 +7885,45 @@ function IshimonZukan() {
   // ===========================================
   const SettingsView = () => {
     const importFileRef = useRef(null);
+    const importMonRef = useRef(null);
+    // v2.25.0: 石モンを1体「追加(マージ)」で取り込む。既存データは消さない。
+    const handleImportMon = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const m = (data && data.kind === 'mon') ? data.mon : null;
+        if (!data || data.appName !== 'IshimonZukan' || !m || !m.name) {
+          setImportStatus('❌ 石モン(1体)の書き出しファイルではありません');
+          setTimeout(() => setImportStatus(''), 4000);
+          return;
+        }
+        const ok = window.confirm(
+          `「${m.name}」を図鑑に追加します。\n今あるデータは消えません(追加のみ)。\n\nよろしいですか？`
+        );
+        if (!ok) return;
+        // 新しいIDを振ってID衝突を防ぐ(同じ子を何度取り込んでもOK)
+        const imported = {
+          ...m,
+          id: `import-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          importedAt: Date.now(),
+        };
+        delete imported.imagePending;
+        const next = [...collection, imported];
+        setCollection(next);
+        await window.storage.set('ishimon-collection-v3', JSON.stringify(next));
+        setImportStatus(`✅ 「${m.name}」を図鑑に追加しました！`);
+        setTimeout(() => setImportStatus(''), 4000);
+        window.ga4?.event?.('mon_imported', { mon_name: m.name, rarity: m.rarity });
+      } catch (err) {
+        console.error(err);
+        setImportStatus('❌ ファイルを読み込めませんでした');
+        setTimeout(() => setImportStatus(''), 4000);
+      } finally {
+        if (importMonRef.current) importMonRef.current.value = '';
+      }
+    };
     const [importStatus, setImportStatus] = useState('');
 
     // 開いたらページ上部にスクロール — トグル切替でジャンプする副作用があるため無効化 (2026-05-25)
@@ -8089,6 +8154,19 @@ function IshimonZukan() {
             </button>
             <input ref={importFileRef} type="file" accept="application/json,.json"
               onChange={handleImportFile} className="hidden" />
+
+            <button onClick={() => importMonRef.current?.click()}
+              className="w-full p-3 rounded-2xl text-white active:scale-95 flex items-center gap-3"
+              style={{ background: 'linear-gradient(135deg, #52B788, #2D6A4F)', boxShadow: '0 4px 0 #1B4332', border: '2px solid #95D5B2' }}>
+              <span className="text-2xl">📦</span>
+              <div className="flex-1 text-left">
+                <div className="font-black text-sm">石モンを1体 取り込む（追加）</div>
+                <div className="text-[10px] font-bold opacity-90">書き出しファイルを図鑑に追加。今のデータは消えません</div>
+              </div>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <input ref={importMonRef} type="file" accept="application/json,.json"
+              onChange={handleImportMon} className="hidden" />
 
             {importStatus && (
               <div className="rounded-xl p-2.5 text-center text-xs font-bold text-white"
