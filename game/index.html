@@ -417,7 +417,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.25.0';
+const APP_VERSION = '2.25.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -735,6 +735,11 @@ const buildMonPrompt = (mon, options = {}) => {
     '空': 'sky element with fluffy cloud body, cyan and white, wind swirls',
     'ドラゴン': 'dragon element with horns and wings, purple scales, sharp claws, fierce expression',
     '精霊': 'spirit element with glowing halo, pink ethereal mist, floating sparkles',
+    '氷': 'ice element, pale cyan crystalline body, frosty white edges, icicle spikes, snowflake sparkle',
+    'ゴースト': 'friendly ghost element, soft translucent pale-lavender body, wispy tail, big cute eyes, faint glow, kid-friendly',
+    '光': 'light element, radiant warm-white and gold body, soft glowing halo, gentle holy rays, sparkles',
+    '闇': 'twilight element, deep indigo-violet body, starry dusk aura, crescent-moon glow, mysterious gentle',
+    '古': 'ancient fossil element, amber and bronze body, fossil shell and trilobite patterns, glowing amber core, ancient runes',
   };
   const stageMap = {
     1: '2-head-tall chibi baby form, small and cute, large eyes',
@@ -986,6 +991,12 @@ const TYPES = {
   '空':     { emoji: '☁️', bg: '#7FCEC2', light: '#B5E5DD', dark: '#3D8B7F', name: 'スカイ' },
   'ドラゴン': { emoji: '🐉', bg: '#7B2CBF', light: '#B388E0', dark: '#4A0E78', name: 'ドラゴン' },
   '精霊':   { emoji: '✨', bg: '#FF6FB5', light: '#FFB0D5', dark: '#C73E78', name: 'スピリット' },
+  // v2.25.1: 新タイプ(定義のみ・通常抽選には未追加。hidden=所持するまで図鑑に出さない)
+  '氷':     { emoji: '❄️', bg: '#6FB8E0', light: '#BFEFFF', dark: '#2A5C8F', name: 'アイス', hidden: true },
+  'ゴースト': { emoji: '👻', bg: '#9A86C4', light: '#E6E0F5', dark: '#4A3A6A', name: 'ゴースト', hidden: true },
+  '光':     { emoji: '🌟', bg: '#FFD86B', light: '#FFF6D0', dark: '#B8860B', name: 'シャイン', hidden: true },
+  '闇':     { emoji: '🌙', bg: '#3A2A6A', light: '#6A5A9A', dark: '#1A1040', name: 'シャドウ', hidden: true },
+  '古':     { emoji: '🦴', bg: '#B5803A', light: '#E8C68A', dark: '#5A3A1A', name: 'エンシェント', hidden: true },
 };
 
 const TYPE_CHART = {
@@ -7570,7 +7581,7 @@ function IshimonZukan() {
                         style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.15)' }}>
                         <div className="text-yellow-300 text-[9px] font-black tracking-widest mb-1.5">🌈 タイプ別 所持数</div>
                         <div className="grid grid-cols-2 gap-1.5">
-                          {Object.keys(TYPES).map(tk => {
+                          {Object.keys(TYPES).filter(tk => !TYPES[tk].hidden || (typeCounts[tk] || 0) > 0).map(tk => {
                             const t = TYPES[tk];
                             const cnt = typeCounts[tk] || 0;
                             const maxCnt = Math.max(1, ...Object.values(typeCounts));
@@ -7886,6 +7897,35 @@ function IshimonZukan() {
   const SettingsView = () => {
     const importFileRef = useRef(null);
     const importMonRef = useRef(null);
+    // v2.25.1: オーナー用 タイプ テスト生成(野生抽選を待たず見た目を繰り返し確認)
+    const [testType, setTestType] = useState('火');
+    const [testRarity, setTestRarity] = useState(5);
+    const [testStage, setTestStage] = useState(1);
+    const runTypeTest = () => {
+      const tname = (TYPES[testType] && TYPES[testType].name) || testType;
+      const testMon = {
+        id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: `テスト ${tname} ★${testRarity}`,
+        type: testType,
+        rarity: testRarity,
+        stage: testStage,
+        baseStats: {
+          hp: 60 + testRarity * 18 + Math.floor(Math.random() * 20),
+          kogeki: 60 + testRarity * 16 + Math.floor(Math.random() * 20),
+          bougyo: 60 + testRarity * 16 + Math.floor(Math.random() * 20),
+          speed: 50 + testRarity * 14 + Math.floor(Math.random() * 20),
+        },
+        level: 1,
+        description: `(テスト生成) ${testType}タイプ / ★${testRarity} / ${testStage}段階`,
+        createdAt: Date.now(),
+        isTest: true,
+      };
+      const next = [testMon, ...collection];
+      setCollection(next);
+      saveCollection(next);
+      setSelected(testMon);
+      regenerateMonImage(testMon);
+    };
     // v2.25.0: 石モンを1体「追加(マージ)」で取り込む。既存データは消さない。
     const handleImportMon = async (e) => {
       const file = e.target.files?.[0];
@@ -8458,6 +8498,46 @@ function IshimonZukan() {
                       ⚠️ 混雑時は生成に30秒〜かかる場合があります
                     </div>
                   )}
+                </div>
+
+                {/* 🧪 タイプ テスト生成(オーナー) */}
+                <div className="mb-3">
+                  <div className="text-white/60 text-[10px] font-black tracking-widest mb-2">🧪 タイプ テスト生成</div>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {Object.keys(TYPES).map(tk => (
+                      <button key={tk} onClick={() => setTestType(tk)}
+                        className="px-2 py-1 rounded-lg text-xs font-black active:scale-95"
+                        style={{ background: testType === tk ? 'rgba(255,224,102,0.25)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${testType === tk ? '#FFD700' : 'rgba(255,255,255,0.15)'}`, color: '#fff' }}>
+                        {TYPES[tk].emoji}{TYPES[tk].name}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5 mb-2">
+                    {[1,2,3,4,5].map(rv => (
+                      <button key={rv} onClick={() => setTestRarity(rv)}
+                        className="flex-1 py-1.5 rounded-lg text-xs font-black active:scale-95"
+                        style={{ background: testRarity === rv ? 'rgba(255,224,102,0.25)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${testRarity === rv ? '#FFD700' : 'rgba(255,255,255,0.15)'}`, color: '#fff' }}>
+                        ★{rv}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5 mb-2">
+                    {[1,2,3].map(sv => (
+                      <button key={sv} onClick={() => setTestStage(sv)}
+                        className="flex-1 py-1.5 rounded-lg text-xs font-black active:scale-95"
+                        style={{ background: testStage === sv ? 'rgba(255,224,102,0.25)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${testStage === sv ? '#FFD700' : 'rgba(255,255,255,0.15)'}`, color: '#fff' }}>
+                        {sv}段階
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={runTypeTest}
+                    className="w-full py-2 rounded-xl text-white font-black text-sm active:scale-95"
+                    style={{ background: 'linear-gradient(135deg, #6A0DAD, #C77DFF)', border: '2px solid white' }}>
+                    🧪 この設定で生成して開く
+                  </button>
+                  <div className="text-white/40 text-[10px] leading-relaxed mt-1">
+                    生成した子は図鑑に「テスト」として追加されます。再生成は詳細画面の「AIで変換」、不要なら削除を。
+                  </div>
                 </div>
 
                 {/* 👍/👎 テイスト分析 */}
