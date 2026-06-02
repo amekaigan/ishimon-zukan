@@ -7901,30 +7901,44 @@ function IshimonZukan() {
     const [testType, setTestType] = useState('火');
     const [testRarity, setTestRarity] = useState(5);
     const [testStage, setTestStage] = useState(1);
-    const runTypeTest = () => {
-      const tname = (TYPES[testType] && TYPES[testType].name) || testType;
-      const testMon = {
-        id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        name: `テスト ${tname} ★${testRarity}`,
-        type: testType,
-        rarity: testRarity,
-        stage: testStage,
-        baseStats: {
-          hp: 60 + testRarity * 18 + Math.floor(Math.random() * 20),
-          kogeki: 60 + testRarity * 16 + Math.floor(Math.random() * 20),
-          bougyo: 60 + testRarity * 16 + Math.floor(Math.random() * 20),
-          speed: 50 + testRarity * 14 + Math.floor(Math.random() * 20),
-        },
-        level: 1,
-        description: `(テスト生成) ${testType}タイプ / ★${testRarity} / ${testStage}段階`,
-        createdAt: Date.now(),
-        isTest: true,
-      };
-      const next = [testMon, ...collection];
-      setCollection(next);
-      saveCollection(next);
-      setSelected(testMon);
-      regenerateMonImage(testMon);
+    const [testBusy, setTestBusy] = useState(false);
+    const runTypeTest = async () => {
+      if (testBusy) return;
+      setTestBusy(true);
+      try {
+        const tname = (TYPES[testType] && TYPES[testType].name) || testType;
+        const testMon = {
+          id: `test-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: `テスト ${tname} ★${testRarity}`,
+          type: testType,
+          rarity: testRarity,
+          stage: testStage,
+          baseStats: {
+            hp: 60 + testRarity * 18 + Math.floor(Math.random() * 20),
+            kogeki: 60 + testRarity * 16 + Math.floor(Math.random() * 20),
+            bougyo: 60 + testRarity * 16 + Math.floor(Math.random() * 20),
+            speed: 50 + testRarity * 14 + Math.floor(Math.random() * 20),
+          },
+          level: 1,
+          description: `(テスト生成) ${testType}タイプ / ★${testRarity} / ${testStage}段階`,
+          createdAt: Date.now(),
+          isTest: true,
+        };
+        // 先に画像を生成してから開く(キャプチャと同じ"完成したら出す"方式=体感が速い)。
+        // 毎回ランダムseedなので、同じ設定でも違う絵柄が出る(=繰り返しテスト向き)。
+        const prompt = buildMonPrompt(testMon);
+        const image = await generateAiImage(prompt, Math.floor(Math.random() * 1000000));
+        if (image) testMon.imageDataUrl = image;
+        const next = [testMon, ...collection];
+        setCollection(next);
+        await saveCollection(next);
+        setSelected(testMon); // 画像入りで開く
+      } catch (e) {
+        console.error('テスト生成失敗:', e);
+        alert('生成に失敗しました: ' + (e.message || e));
+      } finally {
+        setTestBusy(false);
+      }
     };
     // v2.25.0: 石モンを1体「追加(マージ)」で取り込む。既存データは消さない。
     const handleImportMon = async (e) => {
@@ -8530,10 +8544,10 @@ function IshimonZukan() {
                       </button>
                     ))}
                   </div>
-                  <button onClick={runTypeTest}
+                  <button onClick={runTypeTest} disabled={testBusy}
                     className="w-full py-2 rounded-xl text-white font-black text-sm active:scale-95"
-                    style={{ background: 'linear-gradient(135deg, #6A0DAD, #C77DFF)', border: '2px solid white' }}>
-                    🧪 この設定で生成して開く
+                    style={{ background: testBusy ? 'rgba(255,255,255,0.2)' : 'linear-gradient(135deg, #6A0DAD, #C77DFF)', border: '2px solid white', opacity: testBusy ? 0.7 : 1 }}>
+                    {testBusy ? '🎨 生成中…(完成したら開きます)' : '🧪 この設定で生成して開く'}
                   </button>
                   <div className="text-white/40 text-[10px] leading-relaxed mt-1">
                     生成した子は図鑑に「テスト」として追加されます。再生成は詳細画面の「AIで変換」、不要なら削除を。
