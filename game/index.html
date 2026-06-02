@@ -8430,9 +8430,11 @@ function IshimonZukan() {
               await new Promise(r => setTimeout(r, 50));
               
               try {
-                // 1. データ保存
-                await savePlayer(player);
-                await saveCollection(collection);
+                // 1. データ保存(ハング防止: 最大3秒で打ち切り。localStorageは即時、Firestoreは間に合わなければ次回に委ねる)
+                await Promise.race([
+                  Promise.all([savePlayer(player), saveCollection(collection)]),
+                  new Promise(r => setTimeout(r, 3000)),
+                ]);
               } catch (e) { /* 保存失敗しても続行 */ }
               
               try {
