@@ -1022,6 +1022,44 @@ const getRarityLabel = (r) => {
   return { label: 'ノーマル', color: '#ADB5BD', glow: '#6C757D' };
 };
 
+// 層(タイプの格): 1=自然 / 2=幻想 / 3=天(エンシェント)。視覚ルールの基準。
+const TYPE_LAYER = {
+  '火': 1, '水': 1, '土': 1, '電気': 1, '空': 1, '氷': 1,
+  'ドラゴン': 2, '精霊': 2, '光': 2, '闇': 2,
+  '古': 3,
+};
+
+// ★ カードの視覚演出を1か所で決める(アプリ内カードとシェアカードが共通で参照=ズレない)
+const getCardTreatment = (mon) => {
+  const layer = TYPE_LAYER[mon?.type] || 1;
+  const r = getRarityLabel(mon?.rarity || 1);
+  const isLegend = (mon?.rarity || 1) >= 5;
+
+  // 画像枠 = 種族の格(層)。第一層=通常 / 第二層=金 / 第三層=レインボー
+  let imageFrame = 'normal';
+  if (layer === 2) imageFrame = 'gold';
+  else if (layer === 3) imageFrame = 'rainbow';
+
+  // 背景効果 = でんせつ(★5)で金。ただし第三層は七色を優先(金は出さない=判断2)
+  let bgEffect = 'none';
+  if (isLegend) bgEffect = 'gold';
+  if (layer === 3) bgEffect = 'rainbow';
+
+  // オーラ
+  let aura = (layer === 2) ? 'gold' : (layer === 3) ? 'rainbow' : 'none';
+
+  return {
+    layer,                  // 1 | 2 | 3
+    outerFrame: r.color,    // 外枠色 = レア度色(でんせつ=金)
+    outerGlow: r.glow,
+    imageFrame,             // 'normal' | 'gold' | 'rainbow'
+    bgEffect,               // 'none' | 'gold' | 'rainbow'
+    aura,                   // 'none' | 'gold' | 'rainbow'
+    fullBleed: (layer === 3), // エンシェントは全面レイアウト(段階4で実装)
+    isLegend,
+  };
+};
+
 // ===========================================
 // 称号システム
 // ===========================================
