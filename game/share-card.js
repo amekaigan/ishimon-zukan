@@ -64,6 +64,26 @@
     return color;
   }
 
+  // カード固有の擬似乱数(同じカードは毎回同じ配置=チラつかない)
+  function seededRand(seed) {
+    var s = 0;
+    for (var i = 0; i < seed.length; i++) { s = (s * 31 + seed.charCodeAt(i)) >>> 0; }
+    return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  }
+  // 細く繊細な4方向のきらめき
+  function drawSparkle(ctx, x, y, R, color, rot) {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate((rot || 0) * Math.PI);
+    ctx.beginPath();
+    ctx.moveTo(0, -R); ctx.lineTo(R * 0.08, -R * 0.08); ctx.lineTo(R, 0);
+    ctx.lineTo(R * 0.08, R * 0.08); ctx.lineTo(0, R); ctx.lineTo(-R * 0.08, R * 0.08);
+    ctx.lineTo(-R, 0); ctx.lineTo(-R * 0.08, -R * 0.08); ctx.closePath();
+    ctx.fillStyle = withAlpha(color, 0.85); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, Math.max(0.6, R * 0.12), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+    ctx.restore();
+  }
+
   function loadImage(src) {
     return new Promise(function (resolve) {
       if (!src) return resolve(null);
@@ -218,6 +238,43 @@
     grad.addColorStop(1, t.dark || '#222');
     roundRect(ctx, 2.5, 2.5, W - 5, H - 5, 18);
     ctx.fillStyle = grad; ctx.fill();
+
+    // ===== レア度/層の背景演出(でんせつ=金 / 第三層=七色)=背景レイヤー =====
+    // ここで描くと、この後のキャラ画像(不透明)が中心を覆う＝顔に光が重ならない。
+    // ステータス枠・説明枠もこの後に描くので、放射光より前面に出る。
+    // 実物カードの「白引き」(キャラ部分はホロを透かさない)と同じ層構造。
+    if (trBgEffect === 'gold' || trBgEffect === 'rainbow') {
+      ctx.save();
+      roundRect(ctx, 5, 5, W - 10, H - 10, 14); ctx.clip();
+      var rbcols = ['#FF5D5D', '#FFD24D', '#5BE08A', '#4DB6FF', '#A77BFF'];
+      var ecx = W / 2, ecy = imageY + imageSize / 2;        // 放射の中心=画像中心(キャラの後ろから放射)
+      // 放射状の光
+      ctx.globalCompositeOperation = 'lighter';
+      var rayN = 20, rayLen = Math.max(W, H) * 1.15;
+      for (var ri = 0; ri < rayN; ri++) {
+        var a0 = (Math.PI * 2 / rayN) * ri + 0.15;
+        ctx.beginPath();
+        ctx.moveTo(ecx, ecy);
+        ctx.lineTo(ecx + Math.cos(a0) * rayLen, ecy + Math.sin(a0) * rayLen);
+        ctx.lineTo(ecx + Math.cos(a0 + 0.085) * rayLen, ecy + Math.sin(a0 + 0.085) * rayLen);
+        ctx.closePath();
+        ctx.fillStyle = (trBgEffect === 'rainbow')
+          ? withAlpha(rbcols[ri % rbcols.length], 0.06)
+          : 'rgba(255,205,80,0.06)';
+        ctx.fill();
+      }
+      // きらめき(位置・大きさをカード固有のランダムに / 細く繊細)
+      var rnd = seededRand(String(data.cardId || data.name || 'ishimon'));
+      var nSp = 24;
+      for (var si = 0; si < nSp; si++) {
+        var sx = 6 + rnd() * (W - 12);
+        var sy = 6 + rnd() * (H - 12);
+        var sR = 3 + rnd() * rnd() * 10;     // 小さめ多め・たまに大きい(不規則)
+        var sc = (trBgEffect === 'rainbow') ? rbcols[(si * 3) % rbcols.length] : '#FFEAB0';
+        drawSparkle(ctx, sx, sy, sR, sc, rnd());
+      }
+      ctx.restore();
+    }
 
     // ===== 内側の金枠(薄) =====
     roundRect(ctx, 8, 8, W - 16, H - 16, 12);
@@ -379,45 +436,6 @@
     ctx.font = '700 7px ' + FONT;
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.fillText('※画像はAI生成 / 元画像から作成', W - CX, fcy + 11);
-
-    // ===== レア度/層の背景演出(でんせつ=金 / 第三層=七色) =====
-    if (trBgEffect === 'gold' || trBgEffect === 'rainbow') {
-      ctx.save();
-      roundRect(ctx, 5, 5, W - 10, H - 10, 14); ctx.clip();
-      ctx.globalCompositeOperation = 'lighter';
-      var ecx = W / 2, ecy = imageY + imageSize / 2;        // 放射の中心=画像中心
-      var rbcols = ['#FF4D4D', '#FFE066', '#5BE08A', '#3DA5F5', '#9D7BFF'];
-      var rayN = 18, rayLen = Math.max(W, H) * 1.1;
-      for (var ri = 0; ri < rayN; ri++) {
-        var a0 = (Math.PI * 2 / rayN) * ri + 0.15;
-        ctx.beginPath();
-        ctx.moveTo(ecx, ecy);
-        ctx.lineTo(ecx + Math.cos(a0) * rayLen, ecy + Math.sin(a0) * rayLen);
-        ctx.lineTo(ecx + Math.cos(a0 + 0.10) * rayLen, ecy + Math.sin(a0 + 0.10) * rayLen);
-        ctx.closePath();
-        ctx.fillStyle = (trBgEffect === 'rainbow')
-          ? withAlpha(rbcols[ri % rbcols.length], 0.05)
-          : 'rgba(255,205,80,0.055)';
-        ctx.fill();
-      }
-      var sp = [[0.10,0.05],[0.90,0.05],[0.05,0.30],[0.95,0.30],[0.50,0.02],
-                [0.13,0.58],[0.87,0.58],[0.05,0.86],[0.95,0.86],[0.50,0.985],
-                [0.30,0.95],[0.70,0.95]];
-      for (var si = 0; si < sp.length; si++) {
-        var sx = sp[si][0] * W, sy = sp[si][1] * H, sr = 3 + (si % 3);
-        var sc = (trBgEffect === 'rainbow') ? rbcols[si % rbcols.length] : '#FFE8A0';
-        var sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2.2);
-        sg.addColorStop(0, withAlpha(sc, 0.95)); sg.addColorStop(1, withAlpha(sc, 0));
-        ctx.fillStyle = sg;
-        ctx.beginPath(); ctx.arc(sx, sy, sr * 2.2, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = withAlpha(sc, 0.9); ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(sx - sr * 2, sy); ctx.lineTo(sx + sr * 2, sy);
-        ctx.moveTo(sx, sy - sr * 2); ctx.lineTo(sx, sy + sr * 2);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
 
     // ===== 四隅の金角飾り =====
     var co = 10, cs = 18;
