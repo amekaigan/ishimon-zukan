@@ -165,6 +165,9 @@
     } catch (_) {}
 
     var t = data.type || {}, r = data.rarity || {}, stage = data.stage || {};
+    var tr = data.treatment || {};
+    var trImageFrame = tr.imageFrame || 'normal'; // 'normal'|'gold'|'rainbow'
+    var trBgEffect = tr.bgEffect || 'none';       // 'none'|'gold'|'rainbow'
     var stats = data.stats || [];
     var hasPhoto = !!data.originalPhoto;
     var hasDesc = !!(data.description && data.description.trim());
@@ -235,9 +238,24 @@
       ctx.textBaseline = 'alphabetic';
     }
     ctx.restore();
-    // 画像の金枠
+    // 画像枠(層で色が変わる: 通常=シルバー / 第二層=金 / 第三層=レインボー)
     roundRect(ctx, CX, imageY, imageSize, imageSize, 10);
-    ctx.lineWidth = 3; ctx.strokeStyle = '#FFD700'; ctx.stroke();
+    ctx.save();
+    ctx.lineWidth = 3.5;
+    if (trImageFrame === 'rainbow') {
+      var rbwf = ctx.createLinearGradient(CX, imageY, CX + imageSize, imageY + imageSize);
+      var rbwc = ['#FF4D4D', '#FFB13D', '#FFE83D', '#4DD24D', '#3DA5F5', '#7B5BFF', '#FF5BD0'];
+      rbwc.forEach(function (c, i) { rbwf.addColorStop(i / (rbwc.length - 1), c); });
+      ctx.strokeStyle = rbwf; ctx.lineWidth = 4.5;
+      ctx.shadowColor = 'rgba(170,120,255,0.85)'; ctx.shadowBlur = 16;
+    } else if (trImageFrame === 'gold') {
+      ctx.strokeStyle = '#FFD700';
+      ctx.shadowColor = 'rgba(255,200,40,0.9)'; ctx.shadowBlur = 14;
+    } else {
+      ctx.strokeStyle = '#EDEDED';
+    }
+    ctx.stroke();
+    ctx.restore();
 
     // --- タイプ/段階バッジ(画像左上・縁取り文字・丸枠なし) ---
     var bx = CX + 14, byType = imageY + 28, byStage = byType + 18;
@@ -361,6 +379,45 @@
     ctx.font = '700 7px ' + FONT;
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.fillText('※画像はAI生成 / 元画像から作成', W - CX, fcy + 11);
+
+    // ===== レア度/層の背景演出(でんせつ=金 / 第三層=七色) =====
+    if (trBgEffect === 'gold' || trBgEffect === 'rainbow') {
+      ctx.save();
+      roundRect(ctx, 5, 5, W - 10, H - 10, 14); ctx.clip();
+      ctx.globalCompositeOperation = 'lighter';
+      var ecx = W / 2, ecy = imageY + imageSize / 2;        // 放射の中心=画像中心
+      var rbcols = ['#FF4D4D', '#FFE066', '#5BE08A', '#3DA5F5', '#9D7BFF'];
+      var rayN = 18, rayLen = Math.max(W, H) * 1.1;
+      for (var ri = 0; ri < rayN; ri++) {
+        var a0 = (Math.PI * 2 / rayN) * ri + 0.15;
+        ctx.beginPath();
+        ctx.moveTo(ecx, ecy);
+        ctx.lineTo(ecx + Math.cos(a0) * rayLen, ecy + Math.sin(a0) * rayLen);
+        ctx.lineTo(ecx + Math.cos(a0 + 0.10) * rayLen, ecy + Math.sin(a0 + 0.10) * rayLen);
+        ctx.closePath();
+        ctx.fillStyle = (trBgEffect === 'rainbow')
+          ? withAlpha(rbcols[ri % rbcols.length], 0.05)
+          : 'rgba(255,205,80,0.055)';
+        ctx.fill();
+      }
+      var sp = [[0.10,0.05],[0.90,0.05],[0.05,0.30],[0.95,0.30],[0.50,0.02],
+                [0.13,0.58],[0.87,0.58],[0.05,0.86],[0.95,0.86],[0.50,0.985],
+                [0.30,0.95],[0.70,0.95]];
+      for (var si = 0; si < sp.length; si++) {
+        var sx = sp[si][0] * W, sy = sp[si][1] * H, sr = 3 + (si % 3);
+        var sc = (trBgEffect === 'rainbow') ? rbcols[si % rbcols.length] : '#FFE8A0';
+        var sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2.2);
+        sg.addColorStop(0, withAlpha(sc, 0.95)); sg.addColorStop(1, withAlpha(sc, 0));
+        ctx.fillStyle = sg;
+        ctx.beginPath(); ctx.arc(sx, sy, sr * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = withAlpha(sc, 0.9); ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(sx - sr * 2, sy); ctx.lineTo(sx + sr * 2, sy);
+        ctx.moveTo(sx, sy - sr * 2); ctx.lineTo(sx, sy + sr * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
 
     // ===== 四隅の金角飾り =====
     var co = 10, cs = 18;
