@@ -417,7 +417,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.26.0';
+const APP_VERSION = '2.26.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -483,10 +483,8 @@ const buildImageUrl = (prompt, seed) => {
     width: '512',
     height: '512',
     seed: String(seed || Math.floor(Math.random() * 1000000)),
-    nologo: 'true',
     model: 'flux',
   });
-  // キーは本物が設定されているときだけ付ける（プレースホルダのまま送るとエラーを誘発するため）
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
 
