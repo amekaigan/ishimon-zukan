@@ -44,7 +44,7 @@
 <!-- html-to-image (シェアカード生成用) -->
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
 <!-- シェアカード描画 (Canvas API版) -->
-<script src="share-card.js?v=3"></script>
+<script src="share-card.js?v=4"></script>
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="石モン図鑑">
@@ -417,7 +417,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.25.2';
+const APP_VERSION = '2.26.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6276,6 +6276,7 @@ function IshimonZukan() {
         description: mon.description || '',
         cardId: generateCardId(mon),
         logoUrl: 'logo-white.png',
+        treatment: getCardTreatment(mon),
       };
     };
 
