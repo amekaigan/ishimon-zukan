@@ -181,23 +181,26 @@
     var canvas = document.createElement('canvas');
     var ctx = canvas.getContext('2d');
 
-    var imageY = 22, imageSize = CW;
+    // ▼ カードは固定サイズ(説明文の長さで縦が伸び縮みしない=トレカ風)
+    var H = 572;                         // 固定の高さ(幅W=340)。ここを変えれば縦の長さを調整できる
+    var imageY = 16, imageSize = CW;     // 画像の上端を左右(16px)と揃える
     var afterImage = imageY + imageSize;
     var statsY = afterImage + 8;
-    var statsH = hasPhoto ? 92 : 80;
+    var statsH = 92;                     // 固定(写真の有無に関わらず一定)
     var statsEnd = statsY + statsH;
 
-    var descLines = [];
-    var descY = statsEnd + 8, descH = 0;
-    if (hasDesc) {
-      ctx.font = '700 10px ' + FONT; // 計測用
-      descLines = wrapText(ctx, data.description.trim(), CW - 20, 3);
-      descH = 14 + descLines.length * 15; // padding(7*2) + 行
-    }
-
-    var footerY = (hasDesc ? descY + descH : statsEnd) + 10;
     var footerH = 34;
-    var H = footerY + footerH + 16; // 下マージン
+    var footerY = H - 16 - footerH;      // フッターは常に下端に固定
+    var descTop = statsEnd + 8;
+    var descBottom = footerY - 10;
+    var descBoxH = descBottom - descTop; // 説明枠は固定高さ(残りスペース)
+    var descMaxLines = Math.max(1, Math.floor((descBoxH - 14) / 15));
+
+    var descLines = [];
+    if (hasDesc) {
+      ctx.font = '700 10px ' + FONT;     // 計測用
+      descLines = wrapText(ctx, data.description.trim(), CW - 20, descMaxLines);
+    }
 
     // --- 本番サイズ確定(ここでcontextはクリアされる) ---
     canvas.width = Math.round(W * SCALE);
@@ -237,11 +240,11 @@
     ctx.lineWidth = 3; ctx.strokeStyle = '#FFD700'; ctx.stroke();
 
     // --- タイプ/段階バッジ(画像左上・縁取り文字・丸枠なし) ---
-    var bx = CX + 14, byType = imageY + 26, byStage = byType + 19;
+    var bx = CX + 14, byType = imageY + 28, byStage = byType + 18;
     outlinedText(ctx, (t.emoji || '') + ' ' + (t.name || ''), bx, byType,
-      { size: 14, fill: '#ffffff', stroke: t.dark || 'rgba(0,0,0,0.9)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
+      { size: 13, fill: '#ffffff', stroke: t.dark || 'rgba(0,0,0,0.9)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
     outlinedText(ctx, (stage.emoji || '') + ' ' + (stage.label || ''), bx, byStage,
-      { size: 12, fill: '#FFE08A', stroke: 'rgba(0,0,0,0.92)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
+      { size: 13, fill: '#FFE08A', stroke: 'rgba(0,0,0,0.92)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
 
     // --- 名前オーバーレイ(画像下・縁取り+影) ---
     var name = String(data.name || '');
@@ -321,7 +324,7 @@
 
     // ===== 説明文 =====
     if (hasDesc) {
-      roundRect(ctx, CX, descY, CW, descH, 10);
+      roundRect(ctx, CX, descTop, CW, descBoxH, 10);
       ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fill();
       ctx.setLineDash([4, 3]); ctx.lineWidth = 1;
       ctx.strokeStyle = withAlpha('#FFD700', 0.5); ctx.stroke();
@@ -329,7 +332,7 @@
       ctx.font = '700 10px ' + FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = '#fff';
       descLines.forEach(function (ln, i) {
-        ctx.fillText(ln, CX + 10, descY + 7 + 11 + i * 15);
+        ctx.fillText(ln, CX + 10, descTop + 7 + 11 + i * 15);
       });
     }
 
@@ -388,7 +391,7 @@
     ctx.font = '900 ' + abbrSize + 'px ' + FONT;
     var abbrW = abbr ? ctx.measureText(abbr).width : 0;
     var totalW = starW + (abbr ? rGap + abbrW : 0);
-    var gx = (W - totalW) / 2, gy = 12; // 内側の枠線(y=8)の上あたり
+    var gx = (W - totalW) / 2, gy = 16; // 画像の上端にまたがる(下半分が画像に重なる)
     // 星(レア色・グロー付き)
     outlinedText(ctx, stars, gx, gy, {
       size: starSize, fill: r.color || '#FFD700', stroke: 'rgba(0,0,0,0.95)', strokeW: 4,
