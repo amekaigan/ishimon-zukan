@@ -480,10 +480,10 @@ const HF_MODEL = 'black-forest-labs/FLUX.1-schnell'; // Fluxモデル（無料�
 const buildImageUrl = (prompt, seed) => {
   const params = new URLSearchParams({
     prompt: prompt,
-    width: '512',
-    height: '512',
+    width: '1024',
+    height: '1024',
     seed: String(seed || Math.floor(Math.random() * 1000000)),
-    model: 'flux',
+    model: 'seedream',
   });
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
