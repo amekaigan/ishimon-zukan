@@ -417,7 +417,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.26.2';
+const APP_VERSION = '2.26.3';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -735,7 +735,7 @@ const buildMonPrompt = (mon, options = {}) => {
     '土': 'earth element with rocky textured body, brown gray stone, mossy patches',
     '電気': 'electric element with lightning patterns on yellow body, sparking energy',
     '空': 'sky element with fluffy cloud body, cyan and white, wind swirls',
-    'ドラゴン': 'dragon element with horns and wings, purple scales, sharp claws, fierce expression',
+    'ドラゴン': 'dragon element with horns and wings, purple scales, gentle cute expression',
     '精霊': 'spirit element with glowing halo, pink ethereal mist, floating sparkles',
     '氷': 'ice element, pale cyan crystalline body, frosty white edges, icicle spikes, snowflake sparkle',
     '光': 'light element, radiant warm-white and gold body, soft glowing halo, gentle holy rays, sparkles',
@@ -762,9 +762,9 @@ const buildMonPrompt = (mon, options = {}) => {
 
   const parts = [
     'cute monster character, original mascot design',
-    'Bikkuriman sticker style mixed with Digimon anime style',
-    'cel-shaded illustration with thick black outlines',
-    'big shiny anime eyes with two highlight dots',
+    'Digimon anime style, soft refined anime illustration, dreamy gentle atmosphere',
+    'soft anime cel-shading with gentle gradients, delicate clean linework, soft glowing rim light, luminous bloom',
+    'large symmetrical jewel-like eyes, sparkling gem irises, multi-colored glittering reflections, bright white catchlights',
     typeMap[mon.type] || typeMap['土'],
     stageMap[mon.stage] || stageMap[1],
     rarityMap[mon.rarity] || rarityMap[1],
