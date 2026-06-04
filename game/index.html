@@ -478,13 +478,18 @@ const HF_MODEL = 'black-forest-labs/FLUX.1-schnell'; // Fluxモデル（無料�
 
 // AI画像生成（エンジン切り替え対応）
 const buildImageUrl = (prompt, seed) => {
+  let engine = 'turbo';
+  try {
+    const s = localStorage.getItem('ishimon-settings-v1');
+    if (s) engine = JSON.parse(s).imageEngine || 'turbo';
+  } catch (e) {}
   const params = new URLSearchParams({
     prompt: prompt,
     width: '1024',
     height: '1024',
     seed: String(seed || Math.floor(Math.random() * 1000000)),
-    // model: 'seedream',
-    model: 'turbo',
+    engine: engine === 'pollinations' ? 'pollinations' : 'turbo',
+    model: engine === 'pollinations' ? 'flux' : 'turbo',
   });
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
@@ -548,10 +553,10 @@ const getCurrentLocation = async () => {
 // AI画像をfetchしてbase64で返す（エンジン切り替え対応）
 const generateAiImageRaw = async (prompt, seed) => {
   // 現在のエンジン設定を取得（settingsはReact外なのでlocalStorageから読む）
-  let engine = 'pollinations';
+  let engine = 'turbo';
   try {
     const s = localStorage.getItem('ishimon-settings-v1');
-    if (s) engine = JSON.parse(s).imageEngine || 'pollinations';
+    if (s) engine = JSON.parse(s).imageEngine || 'turbo';
   } catch (_) {}
 
   if (engine === 'huggingface') {
@@ -8367,7 +8372,8 @@ function IshimonZukan() {
                   <div className="text-white/60 text-[10px] font-black tracking-widest mb-2">🎨 画像生成エンジン</div>
                   <div className="flex gap-2">
                     {[
-                      { id: 'pollinations', label: 'Pollinations', desc: '高速・無料' },
+                      { id: 'turbo', label: 'Turbo', desc: '本命・高品質' },
+                      { id: 'pollinations', label: 'Pollinations', desc: '保険・高速' },
                       { id: 'huggingface', label: 'Hugging Face', desc: '安定・無料' },
                     ].map(e => (
                       <button key={e.id} onClick={() => updateSetting('imageEngine', e.id)}
