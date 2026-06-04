@@ -483,7 +483,8 @@ const buildImageUrl = (prompt, seed) => {
     width: '1024',
     height: '1024',
     seed: String(seed || Math.floor(Math.random() * 1000000)),
-    model: 'seedream',
+    // model: 'seedream',
+    model: 'flux',
   });
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
