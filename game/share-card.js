@@ -240,29 +240,15 @@
     ctx.fillStyle = grad; ctx.fill();
 
     // ===== レア度/層の背景演出(でんせつ=金 / 第三層=七色)=背景レイヤー =====
-    // ここで描くと、この後のキャラ画像(不透明)が中心を覆う＝顔に光が重ならない。
-    // ステータス枠・説明枠もこの後に描くので、放射光より前面に出る。
-    // 実物カードの「白引き」(キャラ部分はホロを透かさない)と同じ層構造。
+    // ここはきらめき専用(背景・余白・枠に散る)。放射光はキャラ画像の後で別途描く。
+    // ステータス枠・説明枠もこの後に描くので、きらめきより前面に出る。
     if (trBgEffect === 'gold' || trBgEffect === 'rainbow') {
       ctx.save();
       roundRect(ctx, 5, 5, W - 10, H - 10, 14); ctx.clip();
       var rbcols = ['#FF5D5D', '#FFD24D', '#5BE08A', '#4DB6FF', '#A77BFF'];
-      var ecx = W / 2, ecy = imageY + imageSize / 2;        // 放射の中心=画像中心(キャラの後ろから放射)
-      // 放射状の光
+      // 放射光は「キャラ画像の後」へ移動(中心を透明にして顔に乗せず、外周にインパクトを出すため)。
+      // ここ(背景レイヤー)にはきらめきだけ残す。
       ctx.globalCompositeOperation = 'lighter';
-      var rayN = 20, rayLen = Math.max(W, H) * 1.15;
-      for (var ri = 0; ri < rayN; ri++) {
-        var a0 = (Math.PI * 2 / rayN) * ri + 0.15;
-        ctx.beginPath();
-        ctx.moveTo(ecx, ecy);
-        ctx.lineTo(ecx + Math.cos(a0) * rayLen, ecy + Math.sin(a0) * rayLen);
-        ctx.lineTo(ecx + Math.cos(a0 + 0.085) * rayLen, ecy + Math.sin(a0 + 0.085) * rayLen);
-        ctx.closePath();
-        ctx.fillStyle = (trBgEffect === 'rainbow')
-          ? withAlpha(rbcols[ri % rbcols.length], 0.06)
-          : 'rgba(255,205,80,0.06)';
-        ctx.fill();
-      }
       // きらめき(位置・大きさをカード固有のランダムに / 細く繊細)
       var rnd = seededRand(String(data.cardId || data.name || 'ishimon'));
       var nSp = 24;
@@ -295,6 +281,41 @@
       ctx.textBaseline = 'alphabetic';
     }
     ctx.restore();
+    // ===== 放射光(でんせつ/第三層): キャラの「上」に・中心は透明 =====
+    // 中心(顔)には光を乗せず、中心から約35%外側からフェードインして外周・枠へ放射=インパクト。
+    // 文字/ステータス/★はこの後に描くので必ず前面=可読性は保つ。
+    // 印刷: この放射は最前面カラー層に相当。白引き(キャラ)とホロ背景の層分けは維持され、
+    //       キャラに重なる光は通常インク・背景はホロ、という両立になる。
+    if (trBgEffect === 'gold' || trBgEffect === 'rainbow') {
+      ctx.save();
+      roundRect(ctx, 5, 5, W - 10, H - 10, 14); ctx.clip();
+      ctx.globalCompositeOperation = 'lighter';
+      var recx = W / 2, recy = imageY + imageSize / 2;   // 放射の中心=画像中心
+      var rbc2 = ['#FF5D5D', '#FFD24D', '#5BE08A', '#4DB6FF', '#A77BFF'];
+      var rN = 20, rLen = Math.max(W, H) * 1.15;
+      var innerR = imageSize * 0.18;                      // この半径までは透明(顔を守る)
+      var f0 = innerR / rLen;
+      var rayA = 0.09;                                    // ★放射光の濃さ(微調整はここ)
+      for (var rj = 0; rj < rN; rj++) {
+        var ang = (Math.PI * 2 / rN) * rj + 0.15;
+        var rcol = (trBgEffect === 'rainbow') ? rbc2[rj % rbc2.length] : '#FFCD50';
+        var rgrad = ctx.createRadialGradient(recx, recy, 0, recx, recy, rLen);
+        rgrad.addColorStop(0, withAlpha(rcol, 0));
+        rgrad.addColorStop(f0, withAlpha(rcol, 0));
+        rgrad.addColorStop(Math.min(0.985, f0 + 0.05), withAlpha(rcol, rayA));
+        rgrad.addColorStop(0.7, withAlpha(rcol, rayA * 0.6));
+        rgrad.addColorStop(1, withAlpha(rcol, 0));
+        ctx.beginPath();
+        ctx.moveTo(recx, recy);
+        ctx.lineTo(recx + Math.cos(ang) * rLen, recy + Math.sin(ang) * rLen);
+        ctx.lineTo(recx + Math.cos(ang + 0.085) * rLen, recy + Math.sin(ang + 0.085) * rLen);
+        ctx.closePath();
+        ctx.fillStyle = rgrad;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     // 画像枠(層で色が変わる: 通常=シルバー / 第二層=金 / 第三層=レインボー)
     roundRect(ctx, CX, imageY, imageSize, imageSize, 10);
     ctx.save();
@@ -317,7 +338,7 @@
     // --- タイプ/段階バッジ(画像左上・縁取り文字・丸枠なし) ---
     var bx = CX + 14, byType = imageY + 28, byStage = byType + 18;
     outlinedText(ctx, (t.emoji || '') + ' ' + (t.name || ''), bx, byType,
-      { size: 13, fill: '#ffffff', stroke: t.dark || 'rgba(0,0,0,0.9)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
+      { size: 13, fill: '#ffffff', stroke: 'rgba(0,0,0,0.92)', strokeW: 4, glow: 'rgba(0,0,0,0.9)', shadowBlur: 6 });
     outlinedText(ctx, (stage.emoji || '') + ' ' + (stage.label || ''), bx, byStage,
       { size: 13, fill: '#FFE08A', stroke: 'rgba(0,0,0,0.92)', strokeW: 3.5, glow: 'rgba(0,0,0,0.85)', shadowBlur: 5 });
 
@@ -335,7 +356,7 @@
     ctx.fillStyle = '#fff'; ctx.fillText(name, ncx, ny);
     ctx.restore();
     ctx.lineJoin = 'round';
-    ctx.lineWidth = 2.5; ctx.strokeStyle = t.dark || '#000';
+    ctx.lineWidth = 4.5; ctx.strokeStyle = 'rgba(0,0,0,0.95)';
     ctx.strokeText(name, ncx, ny);
     ctx.fillStyle = '#fff'; ctx.fillText(name, ncx, ny);
 
