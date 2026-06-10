@@ -417,7 +417,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.27.0';
+const APP_VERSION = '2.27.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -553,10 +553,10 @@ const getCurrentLocation = async () => {
 // AI画像をfetchしてbase64で返す（エンジン切り替え対応）
 const generateAiImageRaw = async (prompt, seed) => {
   // 現在のエンジン設定を取得（settingsはReact外なのでlocalStorageから読む）
-  let engine = 'turbo';
+  let engine = 'ishimon';
   try {
     const s = localStorage.getItem('ishimon-settings-v1');
-    if (s) engine = JSON.parse(s).imageEngine || 'turbo';
+    if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
   } catch (_) {}
 
   if (engine === 'huggingface') {
