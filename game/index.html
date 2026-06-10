@@ -567,7 +567,7 @@ const generateAiImageRaw = async (prompt, seed) => {
   const url = buildImageUrl(prompt, seed);
   const controller = new AbortController();
   // LoRA(Replicate)はコールドスタートで時間がかかるので長め
-  const abortMs = engine === 'ishimon' ? 60000 : 30000;
+  const abortMs = engine === 'ishimon' ? 90000 : 30000;
   const timeout = setTimeout(() => controller.abort(), abortMs);
   try {
     const res = await fetch(url, { signal: controller.signal });
