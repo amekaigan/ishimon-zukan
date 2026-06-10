@@ -278,6 +278,10 @@ const _getLocalSavedAt = (key) => {
 window.storage = {
   async get(key) {
     try {
+      // v2.27.1: 画像キャッシュはまずセッション中のメモリから
+      if (key.startsWith('aiimg:') && window._imgMemCache && window._imgMemCache[key]) {
+        return { key, value: window._imgMemCache[key], shared: false };
+      }
       // ★ 認証確定まで待機（レースコンディション防止）
       if (window._authReadyPromise) {
         await Promise.race([
@@ -289,7 +293,12 @@ window.storage = {
       if (window._currentUid && window._firebase) {
         const v = await _fsGet(key);
         if (v !== null) {
-          try { localStorage.setItem(key, v); } catch (_) {}
+          if (key.startsWith('aiimg:')) {
+            window._imgMemCache = window._imgMemCache || {};
+            window._imgMemCache[key] = v;
+          } else {
+            try { localStorage.setItem(key, v); } catch (_) {}
+          }
           console.log('[storage.get] Firestoreから取得:', key);
           return { key, value: v, shared: false };
         } else {
@@ -312,7 +321,15 @@ window.storage = {
   async set(key, value, shared) {
     try {
       // 常にlocalStorageにも保存（オフライン対応）
-      try { localStorage.setItem(key, value); } catch (_) {}
+      // v2.27.2: 画像キャッシュ(aiimg:)はlocalStorageに置かない。base64画像が数十枚
+      //   たまるとiOSの容量上限(約5MB)を超え、localStorageごと丸ごと捨てられて
+      //   図鑑データまで巻き添えで消える事故の原因。画像はFirestore＋メモリにだけ持つ。
+      if (key.startsWith('aiimg:')) {
+        window._imgMemCache = window._imgMemCache || {};
+        window._imgMemCache[key] = value;
+      } else {
+        try { localStorage.setItem(key, value); } catch (_) {}
+      }
       // v2.7.4 STEP1.5: localStorage側にも保存時刻を記録（新旧比較用）
       _markLocalSaved(key, Date.now());
       // Firestoreにも保存（ログイン中のみ）
