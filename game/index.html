@@ -2703,7 +2703,7 @@ function IshimonZukan() {
       setPendingMon(entry); // v2.18.0: すぐ出さず「会いに行く」待ち
       const updated = [entry, ...collection];
       setCollection(updated);
-      await saveCollection(updated);
+      saveCollection(updated); // 保存は裏で実行（UIを待たせない）。Replicate完了後の待ち対策。
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
       // v2.18.1: 自動再生成は「会いに行く」後に回す(メモ入力中の割り込み&メモ消失を防ぐ)
