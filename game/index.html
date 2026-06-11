@@ -511,6 +511,30 @@ const buildImageUrl = (prompt, seed) => {
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
 
+// AIエンジンのウォームアップ（コールドスタート対策）
+// Replicate(ishimon)は眠っていると起動に40〜60秒。撮影ボタンを押した瞬間にダミー生成を1発投げ、
+// カメラ起動→撮影→Claude解析の間にコンテナを起こす → 本番の生成が温かい状態で当たる。
+// キュー(_aiQueue)は通さず直接fetch。結果もエラーも捨てる(fire-and-forget)。2分throttle。
+let _lastWarmAt = 0;
+const warmUpIshimon = () => {
+  try {
+    let engine = 'ishimon';
+    try {
+      const s = localStorage.getItem('ishimon-settings-v1');
+      if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
+    } catch (e) {}
+    if (engine !== 'ishimon') return;              // ishimonの時だけ意味がある
+    if (Date.now() - _lastWarmAt < 120000) return; // 2分以内に温めていればスキップ
+    _lastWarmAt = Date.now();
+    const url = 'https://ishimon-img.ishimonzukan.workers.dev/?' + new URLSearchParams({
+      prompt: 'TOK', width: '1024', height: '1024', seed: '1',
+      engine: 'ishimon', model: 'ishimon',
+      warm: '1', // Worker側で1ステップに軽量化する合図。未対応でも通常生成として温まる
+    }).toString();
+    fetch(url).catch(() => {});
+  } catch (e) {}
+};
+
 // Hugging Face画像生成
 const generateImageHuggingFace = async (prompt, seed) => {
   const payload = {
@@ -2396,6 +2420,8 @@ function IshimonZukan() {
   // ===== カメラ直接アクセス（getUserMedia）=====
   const openCamera = async () => {
     setCameraError('');
+    // AIエンジンを先に温める（撮影→解析の間にコンテナを起こす・コールドスタート対策）
+    warmUpIshimon();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
