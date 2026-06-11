@@ -514,6 +514,8 @@ const buildImageUrl = (prompt, seed) => {
     const s = localStorage.getItem('ishimon-settings-v1');
     if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
   } catch (e) {}
+  // 全員LoRA: エンジン切替はオーナー専用。非オーナーは保存値に関わらず常にishimonに固定。
+  try { if (localStorage.getItem('ishimon_owner') !== '1') engine = 'ishimon'; } catch (_) {}
   const params = new URLSearchParams({
     prompt: prompt,
     width: '1024',
@@ -615,6 +617,8 @@ const generateAiImageRaw = async (prompt, seed) => {
     const s = localStorage.getItem('ishimon-settings-v1');
     if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
   } catch (_) {}
+  // 全員LoRA: エンジン切替はオーナー専用。非オーナーは保存値に関わらず常にishimonに固定。
+  try { if (localStorage.getItem('ishimon_owner') !== '1') engine = 'ishimon'; } catch (_) {}
 
   if (engine === 'huggingface') {
     return await generateImageHuggingFace(prompt, seed);
