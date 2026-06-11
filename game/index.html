@@ -533,10 +533,12 @@ let _lastWarmAt = 0;
 const warmUpIshimon = () => {
   try {
     let engine = 'ishimon';
-    try {
-      const s = localStorage.getItem('ishimon-settings-v1');
-      if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
-    } catch (e) {}
+  try {
+    const s = localStorage.getItem('ishimon-settings-v1');
+    if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
+  } catch (e) {}
+  // 全員LoRA: エンジン切替はオーナー専用。非オーナーは保存値に関わらず常にishimonに固定。
+  try { if (localStorage.getItem('ishimon_owner') !== '1') engine = 'ishimon'; } catch (_) {}
     if (engine !== 'ishimon') return;              // ishimonの時だけ意味がある
     if (Date.now() - _lastWarmAt < 120000) return; // 2分以内に温めていればスキップ
     _lastWarmAt = Date.now();
