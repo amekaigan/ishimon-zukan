@@ -184,13 +184,6 @@ const _fsSet = async (key, value) => {
   const { setDoc, deleteDoc, doc, db } = window._firebase;
   const uid = window._currentUid;
   const safeKey = key.replace(/[/.]/g, '_');
-  // Stage2: コレクションは巨大なAI画像(imageDataUrl)を外して保存。画像はaiimgキャッシュが正本。
-  if (key === 'ishimon-collection-v3') {
-    try {
-      const _arr = JSON.parse(value);
-      if (Array.isArray(_arr)) value = JSON.stringify(_arr.map(({ imageDataUrl, ..._rest }) => _rest));
-    } catch (_) {}
-  }
   if (value.length <= CHUNK_SIZE) {
     // 通常サイズ：1ドキュメントに保存
     const ref = doc(db, 'users', uid, 'data', safeKey);
@@ -327,14 +320,7 @@ window.storage = {
   },
   async set(key, value, shared) {
     try {
-      // Stage2: コレクションは巨大なAI画像(imageDataUrl)を外して保存。画像はaiimgキャッシュが正本。
-      if (key === 'ishimon-collection-v3') {
-        try {
-          const _arr = JSON.parse(value);
-          if (Array.isArray(_arr)) value = JSON.stringify(_arr.map(({ imageDataUrl, ..._rest }) => _rest));
-        } catch (_) {}
-      }
-      // 常にlocalStorageにも保存（オフライン対応）
+      // 常にlocalStorータにも保存（オフライン対応）
       // v2.27.2: 画像キャッシュ(aiimg:)はlocalStorageに置かない。base64画像が数十枚
       //   たまるとiOSの容量上限(約5MB)を超え、localStorageごと丸ごと捨てられて
       //   図鑑データまで巻き添えで消える事故の原因。画像はFirestore＋メモリにだけ持つ。
