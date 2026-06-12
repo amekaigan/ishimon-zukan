@@ -1583,6 +1583,7 @@ function IshimonZukan() {
   // v2.17.4: 実データが入るまでホームを出さない(「トレーナー Lv.1 / きらめき石0」のチラ見え対策)
   const [dataReady, setDataReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [loadErrorMsg, setLoadErrorMsg] = useState(''); // 起動失敗の真因を画面表示（診断用）
   // 機能追加(v2.10.0): 長押しメニューと削除確認モーダル
   const [longPressMon, setLongPressMon] = useState(null);  // 長押しメニュー表示中の石モン
   const [deleteConfirmMon, setDeleteConfirmMon] = useState(null);  // 削除確認モーダル中の石モン
@@ -2027,6 +2028,7 @@ function IshimonZukan() {
         console.error(e);
         setCollection([]); // v2.22.0: 新規は0体スタート(読込失敗時も空)
         setLoadError(true); // v2.17.4: 失敗時はホームを出さず再読み込みを促す
+        setLoadErrorMsg((e && e.name ? e.name + ': ' : '') + (e && e.message ? e.message : String(e))); // 診断用
       } finally {
         // 機能追加(v2.9.0): 初期ロード完了。成功・失敗どちらでも必ずローディング解除。
         setInitialLoading(false);
@@ -6187,11 +6189,16 @@ function IshimonZukan() {
 
           {/* ステータステキスト */}
           {loadError ? (
+            <>
             <button onClick={() => location.reload()}
               className="mt-5 px-5 py-2 rounded-full font-black text-sm active:scale-95 transition-transform"
               style={{ background: '#FFD700', color: '#5A1A78', boxShadow: '0 4px 0 rgba(0,0,0,0.25)' }}>
               うまく よみこめませんでした · タップして再読み込み
             </button>
+            {loadErrorMsg ? (
+              <div className="text-white/70 text-[10px] font-bold mt-2 px-4 break-all">{loadErrorMsg}</div>
+            ) : null}
+            </>
           ) : (
             <div className="text-white/60 text-[11px] font-bold mt-5">
               データを よみこんでいます...
