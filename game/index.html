@@ -434,7 +434,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.29.1';
+const APP_VERSION = '2.29.3';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1895,10 +1895,10 @@ function IshimonZukan() {
         });
         // ★ 認証確定まで待機（レースコンディション解消）タイムアウト30秒
         // ※ Babelコンパイル(500KB超)が遅い環境でも対応できるよう余裕を持たせる
-        const authResult = await Promise.race([
+        const authResult = (await Promise.race([
           window._authReadyPromise,
           new Promise(resolve => setTimeout(() => resolve({ uid: null }), 30000)),
-        ]);
+        ])) || { uid: null }; // v2.29.2: 認証がnullで解決しても.uidで落ちないように
         console.log('[初期ロード] 認証確定:', authResult);
 
         const colR = await window.storage.get('ishimon-collection-v3');
@@ -2123,7 +2123,7 @@ function IshimonZukan() {
       { key: 'ishimon-collection-v3', data: JSON.stringify(collectionData) },
       { key: 'ishimon-settings-v1', data: localStorage.getItem('ishimon-settings-v1') || '{}' },
     ].map(({ key, data }) => {
-      return withTimeout(_fsSet(key, data), 15000);
+      return withTimeout(_fsSet(key, data), 60000); // v2.29.3: 4Gで巨大コレクションを送り切れずタイムアウトする対策で延長
     });
     await Promise.all(saves);
   };
