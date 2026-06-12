@@ -568,7 +568,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.30.0';
+const APP_VERSION = '2.30.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -4450,7 +4450,7 @@ function IshimonZukan() {
               style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)' }}>
               <div className="text-purple-200 mb-1 font-black">はいしゅつ かくりつ</div>
               <div className="flex justify-center gap-3 flex-wrap">
-                {[['でんせつ','3%','#FFD700'],['スーパーレア','12%','#C77DFF'],['レア','25%','#3DA5F5'],['アンコモン','40%','#52B788'],['ノーマル','20%','#ADB5BD']].map(([l,p,c]) => (
+                {[['でんせつ','1.2%','#FFD700'],['スーパーレア','4.8%','#C77DFF'],['レア','14%','#3DA5F5'],['アンコモン','32%','#52B788'],['ノーマル','48%','#ADB5BD']].map(([l,p,c]) => (
                   <span key={l} className="font-black" style={{ color: c }}>{l} {p}</span>
                 ))}
               </div>
