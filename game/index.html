@@ -568,7 +568,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.29.4';
+const APP_VERSION = '2.30.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2237,29 +2237,46 @@ function IshimonZukan() {
     catch (e) { console.error(e); }
   };
 
-  // 強制Firestore保存（タイムアウト付き・並列実行）
-  const forceSaveToFirestore = async (playerData, collectionData) => {
+  // 強制Firestore保存（v2.30.0: 差分化対応）
+  // 初回（monindexなし）＝検証付き移行、2回目以降＝変更分だけ差分保存。
+  // 移行が照合不一致なら旧の丸ごと保存にフォールバック（必ずクラウドに残す）。
+  const forceSaveToFirestore = async (playerData, collectionData, onProgress) => {
     if (!firebaseUser || !window._firebase) throw new Error('未ログイン');
-    const { setDoc, doc, db } = window._firebase;
-    const uid = firebaseUser.uid;
+    const playerJson = JSON.stringify(playerData);
+    const collectionJson = JSON.stringify(collectionData);
     // まずlocalStorageに確実に保存
     try {
-      localStorage.setItem('ishimon-player-v3', JSON.stringify(playerData));
-      localStorage.setItem('ishimon-collection-v3', JSON.stringify(collectionData));
+      localStorage.setItem('ishimon-player-v3', playerJson);
+      localStorage.setItem('ishimon-collection-v3', collectionJson);
     } catch (_) {}
-    // Firestoreに並列保存（10秒タイムアウト）
     const withTimeout = (promise, ms) => Promise.race([
       promise,
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
     ]);
-    const saves = [
-      { key: 'ishimon-player-v3', data: JSON.stringify(playerData) },
-      { key: 'ishimon-collection-v3', data: JSON.stringify(collectionData) },
-      { key: 'ishimon-settings-v1', data: localStorage.getItem('ishimon-settings-v1') || '{}' },
-    ].map(({ key, data }) => {
-      return withTimeout(_fsSet(key, data), 60000); // v2.29.3: 4Gで巨大コレクションを送り切れずタイムアウトする対策で延長
-    });
-    await Promise.all(saves);
+    // プレイヤー・設定は軽いので従来通り
+    await withTimeout(_fsSet('ishimon-player-v3', playerJson), 60000);
+    await withTimeout(_fsSet('ishimon-settings-v1', localStorage.getItem('ishimon-settings-v1') || '{}'), 60000);
+    // コレクション：差分モード未確立なら検証付き移行、確立済みなら差分保存
+    if (!window._fsDiffMode) {
+      if (onProgress) onProgress('移行を開始…');
+      const res = await _fsMigrateAndVerify(collectionJson, (phase, cur, total) => {
+        if (onProgress) onProgress(phase === 'write' ? `保存中… ${cur}/${total}体` : `照合中… ${cur}/${total}体`);
+      });
+      if (!res.ok) {
+        // 照合NG → 旧方式（丸ごと）で確実に保存。差分への切替は次回に持ち越し（無害）
+        console.warn('[保存] 移行を見送り、旧方式で保存:', res.reason);
+        if (onProgress) onProgress('従来方式で保存中…');
+        await withTimeout(_fsSet('ishimon-collection-v3', collectionJson), 60000);
+        return { migrated: false };
+      }
+      return { migrated: true, count: res.count };
+    } else {
+      if (onProgress) onProgress('変更分を保存中…');
+      await withTimeout(_fsSaveCollectionDiff(collectionJson, (cur, total) => {
+        if (onProgress) onProgress(`保存中… ${cur}/${total}体`);
+      }), 60000);
+      return { migrated: true };
+    }
   };
 
   // アプリを閉じる・バックグラウンド時に強制保存（iOS対応）
@@ -7929,15 +7946,23 @@ function IshimonZukan() {
             setSaving(true);
             setSaveStatus('');
             try {
-              await forceSaveToFirestore(player, collection);
+              const r = await forceSaveToFirestore(player, collection, (msg) => setSaveStatus('⏳ ' + msg));
               const now = new Date();
               const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-              setSaveStatus(`✅ 保存しました（${timeStr}）`);
+              if (r && r.migrated === false) {
+                setSaveStatus(`⚠️ 従来方式で保存（${timeStr}）`);
+              } else if (r && r.count) {
+                setSaveStatus(`✅ 移行完了 ${r.count}体（${timeStr}）`);
+              } else {
+                setSaveStatus(`✅ 保存しました（${timeStr}）`);
+              }
             } catch (e) {
               const msg = e.message === 'timeout' ? '❌ タイムアウト（ローカル保存済み）' : '❌ 通信エラー（ローカル保存済み）';
               setSaveStatus(msg);
             } finally {
               setSaving(false);
+            }
+          };
             }
           };
           return (
