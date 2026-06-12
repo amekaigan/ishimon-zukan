@@ -434,7 +434,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.29.0';
+const APP_VERSION = '2.29.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1904,8 +1904,23 @@ function IshimonZukan() {
         const colR = await window.storage.get('ishimon-collection-v3');
         const playerR = await window.storage.get('ishimon-player-v3');
         const settingsR = await window.storage.get('ishimon-settings-v1').catch(() => null);
-        const loadedCollection = colR?.value ? JSON.parse(colR.value) : []; // v2.22.0: 新規は0体スタート
-        const loadedPlayer = playerR?.value ? JSON.parse(playerR.value) : null;
+        // v2.29.1: 壊れたJSON（Firestoreチャンク途切れ等）で起動ごと落ちる事故対策。
+        //   Firestore値の解析に失敗したら localStorage の正本から復旧を試みる（両方ダメなら空）。
+        const _safeParse = (raw, key, fallback) => {
+          if (!raw) return fallback;
+          try { return JSON.parse(raw); }
+          catch (_e) {
+            console.warn('[初期ロード] JSON破損→ローカル復旧を試行:', key);
+            try {
+              const _local = localStorage.getItem(key);
+              if (_local && _local !== raw) return JSON.parse(_local);
+            } catch (_e2) {}
+            console.error('[初期ロード] 復旧失敗（両方破損）:', key);
+            return fallback;
+          }
+        };
+        const loadedCollection = _safeParse(colR?.value, 'ishimon-collection-v3', []); // v2.22.0: 新規は0体スタート
+        const loadedPlayer = _safeParse(playerR?.value, 'ishimon-player-v3', null);
 
         // ★ STEP2移行: 旧⭐(isTaste)を新👍(taste:'up')へ一度だけ変換
         const migratedCollection = loadedCollection.map(m => {
