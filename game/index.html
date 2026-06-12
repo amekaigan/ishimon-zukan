@@ -434,7 +434,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.29.3';
+const APP_VERSION = '2.29.4';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -7781,6 +7781,15 @@ function IshimonZukan() {
         {(() => {
           const [saveStatus, setSaveStatus] = React.useState('');
           const [saving, setSaving] = React.useState(false);
+          // v2.29.4: クラウド保存の重さを見える化（コレクションのMB数とチャンク数）
+          const dataSizeInfo = React.useMemo(() => {
+            try {
+              const c = JSON.stringify(collection || []);
+              const mb = (c.length / 1024 / 1024).toFixed(1);
+              const chunks = Math.ceil(c.length / 700000);
+              return `データ量: ${mb} MB（${chunks}分割で送信）`;
+            } catch (_e) { return ''; }
+          }, [collection]);
           const handleManualSave = async () => {
             if (!firebaseUser || saving) return;
             setSaving(true);
@@ -7843,6 +7852,11 @@ function IshimonZukan() {
                       <div className="text-center text-[11px] font-bold mt-1.5"
                         style={{ color: saveStatus.startsWith('✅') ? '#74C69D' : '#FF6B6B' }}>
                         {saveStatus}
+                      </div>
+                    )}
+                    {dataSizeInfo && (
+                      <div className="text-center text-[10px] font-bold mt-1 text-white/40">
+                        {dataSizeInfo}
                       </div>
                     )}
                   </div>
