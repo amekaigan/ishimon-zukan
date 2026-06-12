@@ -181,6 +181,10 @@ const _fsDocRef = (key) => {
 // Firestoreへの保存（1MB超えの場合は分割）
 const CHUNK_SIZE = 700000; // 700KB per chunk（余裕を持たせる）
 const _fsSet = async (key, value) => {
+  // v2.30.0: 差分モード中はコレクションを1体ずつ保存（全体再送しない）
+  if (key === 'ishimon-collection-v3' && window._fsDiffMode) {
+    return await _fsSaveCollectionDiff(value);
+  }
   const { setDoc, deleteDoc, doc, db } = window._firebase;
   const uid = window._currentUid;
   const safeKey = key.replace(/[/.]/g, '_');
@@ -212,6 +216,11 @@ const _fsSet = async (key, value) => {
 
 // Firestoreからの読み込み（分割対応）
 const _fsGet = async (key) => {
+  // v2.30.0: 差分形式（monindex）があればそちらから組み立て
+  if (key === 'ishimon-collection-v3') {
+    const diff = await _fsLoadCollectionDiffWithMeta();
+    if (diff) return diff.value;
+  }
   const { getDoc, doc, db } = window._firebase;
   const uid = window._currentUid;
   const safeKey = key.replace(/[/.]/g, '_');
@@ -238,6 +247,11 @@ const _fsGet = async (key) => {
 // v2.7.4 STEP1.5: 新旧比較のため、中身だけでなく保存時刻も返す。
 // 戻り値: { value, updatedAt } または null
 const _fsGetWithMeta = async (key) => {
+  // v2.30.0: 差分形式（monindex）があればそちらから組み立て
+  if (key === 'ishimon-collection-v3') {
+    const diff = await _fsLoadCollectionDiffWithMeta();
+    if (diff) return { value: diff.value, updatedAt: diff.updatedAt };
+  }
   const { getDoc, doc, db } = window._firebase;
   const uid = window._currentUid;
   const safeKey = key.replace(/[/.]/g, '_');
@@ -256,6 +270,126 @@ const _fsGetWithMeta = async (key) => {
     if (chunkSnap.exists()) combined += chunkSnap.data().value;
   }
   return { value: combined, updatedAt };
+};
+
+// ===== v2.30.0: クラウド保存の差分化（1体＝1ドキュメント） =====
+// 全体再送（限界13MB）を廃止し、変更された石モンだけ送る。
+// monindex ドキュメントの存在＝差分モード。書き込みは index を最後に書くので
+// 途中で切れても旧方式のまま＝壊れない。旧形式データはフォールバックとして残す。
+window._fsDiffMode = false;
+window._monIndex = null; // { ids: [...], hashes: {id: hash} }
+
+const _monHash = (s) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return String(h);
+};
+const _monDocKey = (id) => 'mon_' + String(id).replace(/[/.]/g, '_');
+
+// インデックスを読み込み（あれば差分モードON）
+const _fsLoadMonIndex = async () => {
+  try {
+    const meta = await _fsGetWithMeta('monindex');
+    if (!meta || !meta.value) return null;
+    const idx = JSON.parse(meta.value);
+    if (!idx || !Array.isArray(idx.ids)) return null;
+    window._monIndex = idx;
+    window._fsDiffMode = true;
+    return { idx, updatedAt: meta.updatedAt || 0 };
+  } catch (_) { return null; }
+};
+
+// コレクションを1体ずつ読んで組み立て（8体ずつ並列）
+const _fsLoadCollectionDiffWithMeta = async () => {
+  const loaded = await _fsLoadMonIndex();
+  if (!loaded) return null;
+  const { idx, updatedAt } = loaded;
+  const mons = [];
+  const BATCH = 8;
+  for (let i = 0; i < idx.ids.length; i += BATCH) {
+    const part = idx.ids.slice(i, i + BATCH);
+    const results = await Promise.all(part.map(id => _fsGet(_monDocKey(id)).catch(() => null)));
+    for (const r of results) {
+      if (!r) continue;
+      try { mons.push(JSON.parse(r)); } catch (_) {}
+    }
+  }
+  console.log(`[Firestore差分] ${mons.length}/${idx.ids.length}体を組み立て`);
+  return { value: JSON.stringify(mons), updatedAt };
+};
+
+// 差分保存：変更された石モンだけ書く → 最後にインデックス更新
+const _fsSaveCollectionDiff = async (collectionJson, onProgress) => {
+  const { deleteDoc, doc, db } = window._firebase;
+  const uid = window._currentUid;
+  let arr;
+  try { arr = JSON.parse(collectionJson); } catch (_) { return; }
+  if (!Array.isArray(arr)) return;
+  const prev = (window._monIndex && window._monIndex.hashes) || {};
+  const newIdx = { ids: [], hashes: {} };
+  const toWrite = [];
+  for (const m of arr) {
+    if (!m || m.id == null) continue;
+    const s = JSON.stringify(m);
+    const h = _monHash(s);
+    newIdx.ids.push(m.id);
+    newIdx.hashes[m.id] = h;
+    if (prev[m.id] !== h) toWrite.push({ id: m.id, s });
+  }
+  let done = 0;
+  for (const w of toWrite) {
+    await _fsSet(_monDocKey(w.id), w.s);
+    done++;
+    if (onProgress) onProgress(done, toWrite.length);
+  }
+  // 削除された石モンのドキュメントを掃除
+  for (const oldId of Object.keys(prev)) {
+    if (!(oldId in newIdx.hashes)) {
+      const k = _monDocKey(oldId);
+      try { await deleteDoc(doc(db, 'users', uid, 'data', k)); } catch (_) {}
+      for (let i = 0; i < 10; i++) {
+        try { await deleteDoc(doc(db, 'users', uid, 'data', `${k}_chunk_${i}`)); } catch (_) {}
+      }
+    }
+  }
+  await _fsSet('monindex', JSON.stringify(newIdx));
+  window._monIndex = newIdx;
+  window._fsDiffMode = true;
+  console.log(`[Firestore差分] 書き込み${toWrite.length}体 / 全${arr.length}体`);
+};
+
+// 検証付き移行：全体を1体ずつ書く → 読み戻して照合 → 全一致なら index を書いて切替
+const _fsMigrateAndVerify = async (collectionJson, onProgress) => {
+  let arr;
+  try { arr = JSON.parse(collectionJson); } catch (_) { return { ok: false, reason: 'parse' }; }
+  if (!Array.isArray(arr) || arr.length === 0) return { ok: false, reason: 'empty' };
+  const newIdx = { ids: [], hashes: {} };
+  let n = 0;
+  for (const m of arr) {
+    if (!m || m.id == null) continue;
+    const s = JSON.stringify(m);
+    await _fsSet(_monDocKey(m.id), s);
+    newIdx.ids.push(m.id);
+    newIdx.hashes[m.id] = _monHash(s);
+    n++;
+    if (onProgress) onProgress('write', n, arr.length);
+  }
+  let v = 0; const bad = [];
+  for (const m of arr) {
+    if (!m || m.id == null) continue;
+    const back = await _fsGet(_monDocKey(m.id)).catch(() => null);
+    if (back !== JSON.stringify(m)) bad.push(m.id);
+    v++;
+    if (onProgress) onProgress('verify', v, arr.length);
+  }
+  if (bad.length > 0) {
+    console.error('[Firestore差分] 照合不一致:', bad);
+    return { ok: false, reason: 'mismatch', bad };
+  }
+  await _fsSet('monindex', JSON.stringify(newIdx));
+  window._monIndex = newIdx;
+  window._fsDiffMode = true;
+  return { ok: true, count: newIdx.ids.length };
 };
 
 // ===== v2.7.4 STEP1.5: データ新旧比較の仕組み =====
