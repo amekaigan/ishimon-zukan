@@ -376,6 +376,7 @@ const _fsMigrateAndVerify = async (collectionJson, onProgress) => {
     newIdx.hashes[m.id] = _monHash(s);
     n++;
     if (onProgress) onProgress('write', n, arr.length);
+    await new Promise(r => setTimeout(r, 150));
   }
   let v = 0; const bad = [];
   for (const m of arr) {
@@ -571,7 +572,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.36.0';
+const APP_VERSION = '2.36.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
