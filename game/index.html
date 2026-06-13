@@ -568,7 +568,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.31.0';
+const APP_VERSION = '2.32.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1020,10 +1020,10 @@ const collectDevSample = async (entry) => {
     // 同意とログインの両方が必要
     if (!window._devCoopMode) return;
     if (!window._currentUid || !window._firebase) return;
-    const { addDoc, collection, db } = window._firebase;
-    // 生成画像は縮小（元写真は撮影時に512px圧縮済みなのでそのまま）
-    const genImg = await _shrinkDataUrl(entry.imageDataUrl, 1024, 0.85);
-    const sample = {
+    const { addDoc, setDoc, doc, collection, db } = window._firebase;
+    // v2.32.0: 親=メタ（軽い）/ 子=画像（重い）に分離。一覧は親だけ読む＝高速。
+    // 親メタ（画像を含めない＝数KB）
+    const meta = {
       uid: window._currentUid,
       ts: Date.now(),
       type: entry.type || null,
@@ -1032,16 +1032,28 @@ const collectDevSample = async (entry) => {
       stage: entry.stage || 1,
       imagePrompt: entry.imagePrompt || null,
       imageSeed: entry.imageSeed != null ? entry.imageSeed : null,
-      genImage: genImg,                       // 生成された石モン（LoRA v2素材）
-      originalPhoto: entry.originalPhoto || null, // 元の石写真（既に512px圧縮済み）
       location: entry.location || null,        // { lat, lng, name } または null
       colorHint: entry.colorHint || null,      // 元写真のRGB平均（あれば）
+      hasGen: !!entry.imageDataUrl,            // 子に画像があるかのフラグ
+      hasOrig: !!entry.originalPhoto,
       appVersion: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : null),
     };
-    // fire-and-forget（awaitしない＝ゲームを待たせない）
-    addDoc(collection(db, 'dev_samples'), sample).catch((e) => console.warn('[devSample] skip:', e?.message));
+    // fire-and-forget：親を作ってから、子（画像）を裏で書く。ゲームは待たせない。
+    (async () => {
+      try {
+        const parentRef = await addDoc(collection(db, 'dev_samples'), meta);
+        const genImg = await _shrinkDataUrl(entry.imageDataUrl, 1024, 0.85);
+        // 子ドキュメント：dev_samples/{id}/img/gen と /orig
+        if (genImg) {
+          await setDoc(doc(db, 'dev_samples', parentRef.id, 'img', 'gen'), { data: genImg });
+        }
+        if (entry.originalPhoto) {
+          await setDoc(doc(db, 'dev_samples', parentRef.id, 'img', 'orig'), { data: entry.originalPhoto });
+        }
+      } catch (e) { console.warn('[devSample] write skip:', e && e.message); }
+    })();
   } catch (e) {
-    console.warn('[devSample] error:', e?.message);
+    console.warn('[devSample] error:', e && e.message);
   }
 };
 
