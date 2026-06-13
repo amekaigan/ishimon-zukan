@@ -62,7 +62,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc }
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, addDoc, collection }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -81,7 +81,7 @@
 
   // グローバルに公開（Reactコードから使用）
   window._firebase = { auth, db, provider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut,
-    onAuthStateChanged, doc, getDoc, setDoc, deleteDoc };
+    onAuthStateChanged, doc, getDoc, setDoc, deleteDoc, addDoc, collection };
 
   // リダイレクト結果を処理（ログイン後のリダイレクト戻り時）
   getRedirectResult(auth).then(result => {
@@ -993,6 +993,58 @@ const buildMonPrompt = (mon, options = {}) => {
 };
 
 // 画像解析失敗時のフォールバック（色からランダム生成）
+// ===== v2.31.0: 開発協力サンプル収集（dev_samples） =====
+// devCoopMode=ON かつログイン時のみ、生成された石モンのサンプルを共有コレクションに保存。
+// LoRA v2 学習素材＋タイプ判定/レア度の統計用。OFFなら一切書かない。失敗してもゲームに影響させない。
+// 画像を縮小して1ドキュメント1MB以内に収める（元写真は既に撮影時512px圧縮済み）。
+const _shrinkDataUrl = (dataUrl, max = 1024, quality = 0.85) => new Promise((resolve) => {
+  try {
+    if (!dataUrl || !dataUrl.startsWith('data:')) { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > max) { height *= max / width; width = max; }
+      else if (height > max) { width *= max / height; height = max; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  } catch (_) { resolve(null); }
+});
+
+const collectDevSample = async (entry) => {
+  try {
+    // 同意とログインの両方が必要
+    if (!window._devCoopMode) return;
+    if (!window._currentUid || !window._firebase) return;
+    const { addDoc, collection, db } = window._firebase;
+    // 生成画像は縮小（元写真は撮影時に512px圧縮済みなのでそのまま）
+    const genImg = await _shrinkDataUrl(entry.imageDataUrl, 1024, 0.85);
+    const sample = {
+      uid: window._currentUid,
+      ts: Date.now(),
+      type: entry.type || null,
+      rarity: entry.rarity || null,
+      name: entry.name || null,
+      stage: entry.stage || 1,
+      imagePrompt: entry.imagePrompt || null,
+      imageSeed: entry.imageSeed != null ? entry.imageSeed : null,
+      genImage: genImg,                       // 生成された石モン（LoRA v2素材）
+      originalPhoto: entry.originalPhoto || null, // 元の石写真（既に512px圧縮済み）
+      location: entry.location || null,        // { lat, lng, name } または null
+      colorHint: entry.colorHint || null,      // 元写真のRGB平均（あれば）
+      appVersion: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : null),
+    };
+    // fire-and-forget（awaitしない＝ゲームを待たせない）
+    addDoc(collection(db, 'dev_samples'), sample).catch((e) => console.warn('[devSample] skip:', e?.message));
+  } catch (e) {
+    console.warn('[devSample] error:', e?.message);
+  }
+};
+
 const analyzeImageColor = async (imageDataUrl) => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -2893,6 +2945,7 @@ function IshimonZukan() {
       const updated = [entry, ...collection];
       setCollection(updated);
       saveCollection(updated); // 保存は裏で実行（UIを待たせない）。Replicate完了後の待ち対策。
+      collectDevSample(entry); // v2.31.0: 開発協力サンプル収集（ON時のみ・fire-and-forget）
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
       // v2.18.1: 自動再生成は「会いに行く」後に回す(メモ入力中の割り込み&メモ消失を防ぐ)
