@@ -568,7 +568,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.30.1';
+const APP_VERSION = '2.31.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2034,7 +2034,7 @@ function IshimonZukan() {
     confirmGacha: true,        // ガチャ確認ダイアログ
     shadowEnabled: true,        // シャドウエフェクト（古いiPhoneはOFFで軽量化）
     imageEngine: 'ishimon', // 'ishimon'(本命LoRA) | 'turbo' | 'pollinations' | 'huggingface'
-    devCoopMode: false,        // 開発協力モード（石の写真・位置情報を改善に活用）
+    devCoopMode: false,        // 開発協力モード（石の写真・位置情報を改善に活用）。window._devCoopMode に同期(v2.31.0)
   });
   // オーナーモード: localStorageに保存し、再読み込み後も維持（この端末のみ）
   const [isOwner, setIsOwner] = useState(() => {
@@ -2479,6 +2479,11 @@ function IshimonZukan() {
 
   // ===== ガチャ実行 =====
   // count: 引く枚数 (1 or 10), useGems: trueならきらめき石消費
+  // v2.31.0: 開発協力モードの現在値を収集関数(collectDevSample)へ橋渡し
+  React.useEffect(() => {
+    window._devCoopMode = !!settings.devCoopMode;
+  }, [settings.devCoopMode]);
+
   const doGacha = async (count, useGems = false) => {
     window.ga4.event('gacha', { count, useGems, gachaCards: player.gachaCards });
     const cost = count === 10 ? 500 : 50;
@@ -2978,6 +2983,7 @@ function IshimonZukan() {
         const updated = [entry, ...collection];
         setCollection(updated);
         await saveCollection(updated);
+        collectDevSample(entry); // v2.31.0: 開発協力サンプル収集（ON時のみ・fire-and-forget）
         updateMission('capture');
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
       } catch (fallbackErr) {
