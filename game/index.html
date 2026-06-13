@@ -170,7 +170,6 @@ window._currentUid = null;
 // v2.36.0: オーナー判定はuidで行う（パスワード廃止＝成りすまし不可。ソースを読まれても破れない）
 const OWNER_UID = 'A44cCf969SgqHopUgcXht9rBA9O2';
 window.OWNER_UID = OWNER_UID;
-const isOwnerUid = () => window._currentUid === OWNER_UID;
 window._authReadyPromise = new Promise(function(resolve) {
   window._authReadyResolve = resolve;
 });
