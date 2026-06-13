@@ -568,7 +568,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.34.0';
+const APP_VERSION = '2.35.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2088,6 +2088,17 @@ function IshimonZukan() {
     catch (e) { return false; }
   });
   const [tasteTab, setTasteTab] = useState('up'); // テイスト分析のタブ 'up' | 'down'
+  // v2.35.0: オーナー解除フォームの隠し表示（バージョン7回タップで出現）
+  const [ownerUnlockVisible, setOwnerUnlockVisible] = useState(false);
+  const ownerTapRef = React.useRef({ count: 0, last: 0 });
+  const handleVersionTap = () => {
+    const now = Date.now();
+    const st = ownerTapRef.current;
+    // 1.5秒以内の連続タップだけカウント（誤タップで出ないように）
+    st.count = (now - st.last < 1500) ? st.count + 1 : 1;
+    st.last = now;
+    if (st.count >= 7) { setOwnerUnlockVisible(true); st.count = 0; }
+  };
   const [tasteOpen, setTasteOpen] = useState(false); // テイスト分析の開閉（カーテン）
   const [tastePage, setTastePage] = useState(0); // テイスト分析のページ番号（0始まり）
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -8771,7 +8782,8 @@ function IshimonZukan() {
           </button>
         </div>
 
-        {/* 🔑 オーナーモード（画像生成エンジン・テイスト記録を統合） */}
+        {/* 🔑 オーナーモード（認証済み or 隠し解放時のみ表示。一般ユーザーには見えない） */}
+        {(isOwner || ownerUnlockVisible) && (
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔑 オーナーモード</div>
           <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -9217,9 +9229,10 @@ function IshimonZukan() {
             )}
           </div>
         </div>
+        )}
 
-        {/* バージョン情報 */}
-        <div className="text-center text-white/50 text-[10px] font-bold mt-6">
+        {/* バージョン情報（7回タップで隠しオーナーフォーム出現） */}
+        <div className="text-center text-white/50 text-[10px] font-bold mt-6" onClick={handleVersionTap}>
           石モン図鑑 v{APP_VERSION}
           {IS_BETA && (
   <div style={{
