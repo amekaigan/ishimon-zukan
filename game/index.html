@@ -167,6 +167,10 @@ window.ga4 = {
 
 // ユーザーのUID（ログイン後に設定される）
 window._currentUid = null;
+// v2.36.0: オーナー判定はuidで行う（パスワード廃止＝成りすまし不可。ソースを読まれても破れない）
+const OWNER_UID = 'A44cCf969SgqHopUgcXht9rBA9O2';
+window.OWNER_UID = OWNER_UID;
+const isOwnerUid = () => window._currentUid === OWNER_UID;
 window._authReadyPromise = new Promise(function(resolve) {
   window._authReadyResolve = resolve;
 });
@@ -568,7 +572,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.35.0';
+const APP_VERSION = '2.36.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -635,7 +639,7 @@ const buildImageUrl = (prompt, seed) => {
     if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
   } catch (e) {}
   // 全員LoRA: エンジン切替はオーナー専用。非オーナーは保存値に関わらず常にishimonに固定。
-  try { if (localStorage.getItem('ishimon_owner') !== '1') engine = 'ishimon'; } catch (_) {}
+  if (window._currentUid !== window.OWNER_UID) engine = 'ishimon'; // v2.36.0: 非オーナーはishimon固定（uid判定）
   const params = new URLSearchParams({
     prompt: prompt,
     width: '1024',
@@ -660,7 +664,7 @@ const warmUpIshimon = () => {
     if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
   } catch (e) {}
   // 全員LoRA: エンジン切替はオーナー専用。非オーナーは保存値に関わらず常にishimonに固定。
-  try { if (localStorage.getItem('ishimon_owner') !== '1') engine = 'ishimon'; } catch (_) {}
+  if (window._currentUid !== window.OWNER_UID) engine = 'ishimon'; // v2.36.0: 非オーナーはishimon固定（uid判定）
     if (engine !== 'ishimon') return;              // ishimonの時だけ意味がある
     if (Date.now() - _lastWarmAt < 120000) return; // 2分以内に温めていればスキップ
     _lastWarmAt = Date.now();
@@ -738,7 +742,7 @@ const generateAiImageRaw = async (prompt, seed) => {
     if (s) engine = JSON.parse(s).imageEngine || 'ishimon';
   } catch (_) {}
   // 全員LoRA: エンジン切替はオーナー専用。非オーナーは保存値に関わらず常にishimonに固定。
-  try { if (localStorage.getItem('ishimon_owner') !== '1') engine = 'ishimon'; } catch (_) {}
+  if (window._currentUid !== window.OWNER_UID) engine = 'ishimon'; // v2.36.0: 非オーナーはishimon固定（uid判定）
 
   if (engine === 'huggingface') {
     return await generateImageHuggingFace(prompt, seed);
@@ -1867,6 +1871,10 @@ function IshimonZukan() {
 
   // Firebase認証状態
   const [firebaseUser, setFirebaseUser] = useState(null); // { uid, displayName, email, photoURL }
+  // v2.36.0: オーナー判定をログインuidに同期（パスワード不要・成りすまし不可）
+  React.useEffect(() => {
+    setIsOwner((firebaseUser && firebaseUser.uid === window.OWNER_UID) || false);
+  }, [firebaseUser]);
   const [firebaseReady, setFirebaseReady] = useState(false); // SDK読み込み待ち
   const [authLoading, setAuthLoading] = useState(false);
 
@@ -2083,22 +2091,10 @@ function IshimonZukan() {
     devCoopMode: false,        // 開発協力モード（石の写真・位置情報を改善に活用）。window._devCoopMode に同期(v2.31.0)
   });
   // オーナーモード: localStorageに保存し、再読み込み後も維持（この端末のみ）
-  const [isOwner, setIsOwner] = useState(() => {
-    try { return localStorage.getItem('ishimon_owner') === '1'; }
-    catch (e) { return false; }
+  // v2.35.0: オーナー判定はログインuidのみ（パスワード廃止）。初期は未確定→uid確定後にeffectで設定。
+  const [isOwner, setIsOwner] = useState(() => window._currentUid === window.OWNER_UID);
   });
   const [tasteTab, setTasteTab] = useState('up'); // テイスト分析のタブ 'up' | 'down'
-  // v2.35.0: オーナー解除フォームの隠し表示（バージョン7回タップで出現）
-  const [ownerUnlockVisible, setOwnerUnlockVisible] = useState(false);
-  const ownerTapRef = React.useRef({ count: 0, last: 0 });
-  const handleVersionTap = () => {
-    const now = Date.now();
-    const st = ownerTapRef.current;
-    // 1.5秒以内の連続タップだけカウント（誤タップで出ないように）
-    st.count = (now - st.last < 1500) ? st.count + 1 : 1;
-    st.last = now;
-    if (st.count >= 7) { setOwnerUnlockVisible(true); st.count = 0; }
-  };
   const [tasteOpen, setTasteOpen] = useState(false); // テイスト分析の開閉（カーテン）
   const [tastePage, setTastePage] = useState(0); // テイスト分析のページ番号（0始まり）
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -8791,14 +8787,9 @@ function IshimonZukan() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <div className="text-white font-black text-sm">✅ オーナーとして認証済み</div>
-                    <div className="text-white/50 text-[11px] mt-0.5">以下の機能が有効です</div>
+                    <div className="text-white font-black text-sm">✅ オーナー（{(firebaseUser && firebaseUser.email) || 'ログイン中'}）</div>
+                    <div className="text-white/50 text-[11px] mt-0.5">オーナーuidでログイン中。以下の機能が有効です</div>
                   </div>
-                  <button onClick={() => { try { localStorage.removeItem('ishimon_owner'); } catch (e) {} setIsOwner(false); }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-black active:scale-95"
-                    style={{ background: 'rgba(255,100,100,0.2)', border: '1px solid rgba(255,100,100,0.4)', color: '#fca5a5' }}>
-                    解除
-                  </button>
                 </div>
 
                 {/* 🎨 画像生成エンジン */}
@@ -9188,50 +9179,14 @@ function IshimonZukan() {
                 </div>
               </div>
             ) : (
-              <div>
-                <div className="text-white/60 text-[11px] mb-2">パスワードを入力してオーナーモードを解除</div>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    placeholder="パスワード"
-                    className="flex-1 px-3 py-2 rounded-xl text-sm text-white"
-                    style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.2)' }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        if (e.target.value === 'ishimon2026') {
-                          try { localStorage.setItem('ishimon_owner', '1'); } catch (err) {}
-                          setIsOwner(true);
-                          e.target.value = '';
-                        } else {
-                          e.target.style.borderColor = '#ff6b6b';
-                          setTimeout(() => { e.target.style.borderColor = 'rgba(255,255,255,0.2)'; }, 1000);
-                        }
-                      }
-                    }}
-                  />
-                  <button
-                    className="px-3 py-2 rounded-xl text-xs font-black active:scale-95"
-                    style={{ background: 'rgba(255,224,102,0.2)', border: '1px solid rgba(255,224,102,0.4)', color: '#fde68a' }}
-                    onClick={(e) => {
-                      const input = e.target.previousSibling;
-                      if (input.value === 'ishimon2026') {
-                        try { localStorage.setItem('ishimon_owner', '1'); } catch (err) {}
-                        setIsOwner(true);
-                        input.value = '';
-                      } else {
-                        input.style.borderColor = '#ff6b6b';
-                        setTimeout(() => { input.style.borderColor = 'rgba(255,255,255,0.2)'; }, 1000);
-                      }
-                    }}
-                  >解除</button>
-                </div>
+              <div />
               </div>
             )}
           </div>
         </div>
         )}
 
-        {/* バージョン情報（7回タップで隠しオーナーフォーム出現） */}
+        {/* バージョン情報 */}
         <div className="text-center text-white/50 text-[10px] font-bold mt-6" onClick={handleVersionTap}>
           石モン図鑑 v{APP_VERSION}
           {IS_BETA && (
