@@ -8779,11 +8779,11 @@ function IshimonZukan() {
         </div>
 
         {/* 🔑 オーナーモード（認証済み or 隠し解放時のみ表示。一般ユーザーには見えない） */}
-        {(isOwner || ownerUnlockVisible) && (
+        {isOwner && (
         <div className="mb-4">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">🔑 オーナーモード</div>
           <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            {isOwner ? (
+            {true ? (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -9187,7 +9187,7 @@ function IshimonZukan() {
         )}
 
         {/* バージョン情報 */}
-        <div className="text-center text-white/50 text-[10px] font-bold mt-6" onClick={handleVersionTap}>
+        <div className="text-center text-white/50 text-[10px] font-bold mt-6">
           石モン図鑑 v{APP_VERSION}
           {IS_BETA && (
   <div style={{
