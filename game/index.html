@@ -2093,7 +2093,6 @@ function IshimonZukan() {
   // オーナーモード: localStorageに保存し、再読み込み後も維持（この端末のみ）
   // v2.35.0: オーナー判定はログインuidのみ（パスワード廃止）。初期は未確定→uid確定後にeffectで設定。
   const [isOwner, setIsOwner] = useState(() => window._currentUid === window.OWNER_UID);
-  });
   const [tasteTab, setTasteTab] = useState('up'); // テイスト分析のタブ 'up' | 'down'
   const [tasteOpen, setTasteOpen] = useState(false); // テイスト分析の開閉（カーテン）
   const [tastePage, setTastePage] = useState(0); // テイスト分析のページ番号（0始まり）
