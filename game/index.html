@@ -62,7 +62,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc, addDoc, collection }
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, orderBy, limit, startAfter }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -81,7 +81,7 @@
 
   // グローバルに公開（Reactコードから使用）
   window._firebase = { auth, db, provider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut,
-    onAuthStateChanged, doc, getDoc, setDoc, deleteDoc, addDoc, collection };
+    onAuthStateChanged, doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, orderBy, limit, startAfter };
 
   // リダイレクト結果を処理（ログイン後のリダイレクト戻り時）
   getRedirectResult(auth).then(result => {
@@ -568,7 +568,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.32.0';
+const APP_VERSION = '2.33.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1055,6 +1055,40 @@ const collectDevSample = async (entry) => {
   } catch (e) {
     console.warn('[devSample] error:', e && e.message);
   }
+};
+
+// ===== v2.33.0: dev_samples 読み込み（オーナー分析用・メタのみページング） =====
+const PAGE_SIZE = 50;
+// メタだけ取得（画像は含まない＝軽い）。before＝前ページ最後のtsより古いものを次に取る。
+const fetchDevSamplesPage = async (beforeTs = null) => {
+  if (!window._firebase) return { rows: [], lastTs: null, done: true };
+  const { db, collection, query, orderBy, limit, startAfter, getDocs } = window._firebase;
+  let q;
+  if (beforeTs == null) {
+    q = query(collection(db, 'dev_samples'), orderBy('ts', 'desc'), limit(PAGE_SIZE));
+  } else {
+    q = query(collection(db, 'dev_samples'), orderBy('ts', 'desc'), startAfter(beforeTs), limit(PAGE_SIZE));
+  }
+  const snap = await getDocs(q);
+  const rows = [];
+  snap.forEach((d) => { rows.push({ _id: d.id, ...d.data() }); });
+  const lastTs = rows.length ? rows[rows.length - 1].ts : null;
+  return { rows, lastTs, done: rows.length < PAGE_SIZE };
+};
+// 1サンプルの画像（gen/orig）をオンデマンド取得
+const fetchDevSampleImages = async (sampleId) => {
+  if (!window._firebase) return { gen: null, orig: null };
+  const { db, doc, getDoc } = window._firebase;
+  const out = { gen: null, orig: null };
+  try {
+    const g = await getDoc(doc(db, 'dev_samples', sampleId, 'img', 'gen'));
+    if (g.exists()) out.gen = g.data().data || null;
+  } catch (_) {}
+  try {
+    const o = await getDoc(doc(db, 'dev_samples', sampleId, 'img', 'orig'));
+    if (o.exists()) out.orig = o.data().data || null;
+  } catch (_) {}
+  return out;
 };
 
 const analyzeImageColor = async (imageDataUrl) => {
@@ -6141,30 +6175,60 @@ function IshimonZukan() {
   //   一覧表示する。テイスト改善サイクルとデータ分析の基盤。
   //   第1段階: 画面で見ることに特化。コピー/CSVは次回。
   const MonDataExplorer = ({ onClose }) => {
-    // 新しい順
-    const sorted = [...collection].sort((a, b) =>
-      (b.capturedAt || '').localeCompare(a.capturedAt || '')
-    );
-    const stats = {
-      total: collection.length,
-      withAI: collection.filter(m => m.imageDataUrl && !m.needsImageRegen).length,
-      withOrigPhoto: collection.filter(m => m.originalPhoto).length,
-      withLocation: collection.filter(m => m.location).length,
-      withPrompt: collection.filter(m => m.imagePrompt).length,
-      thumbUp: collection.filter(m => m.taste === 'up').length,
-      thumbDown: collection.filter(m => m.taste === 'down').length,
-    };
-    const formatDate = (iso) => {
-      if (!iso) return '日時不明';
+    // v2.33.0: 全ユーザーの dev_samples を読む（メタのみ→画像はタップで取得）
+    const [rows, setRows] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [lastTs, setLastTs] = React.useState(null);
+    const [done, setDone] = React.useState(false);
+    const [imgCache, setImgCache] = React.useState({}); // { sampleId: {gen, orig} }
+    const [openId, setOpenId] = React.useState(null);    // 画像を開いてるサンプル
+
+    const loadMore = React.useCallback(async () => {
+      setLoading(true);
       try {
-        const d = new Date(iso);
-        return d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-      } catch (_) { return iso; }
+        const { rows: page, lastTs: lt, done: dn } = await fetchDevSamplesPage(lastTs);
+        setRows(prev => [...prev, ...page]);
+        setLastTs(lt);
+        setDone(dn);
+      } catch (e) {
+        console.warn('[devData] load error:', e && e.message);
+        setDone(true);
+      } finally { setLoading(false); }
+    }, [lastTs]);
+
+    React.useEffect(() => { loadMore(); /* 初回 */ }, []); // eslint-disable-line
+
+    // uid→通し番号（同じuidは同じ番号。出現順）
+    const userNoMap = React.useMemo(() => {
+      const m = {}; let n = 0;
+      for (const r of rows) { if (r.uid && !(r.uid in m)) { n++; m[r.uid] = n; } }
+      return m;
+    }, [rows]);
+
+    const stats = {
+      total: rows.length,
+      users: Object.keys(userNoMap).length,
+      withLocation: rows.filter(m => m.location).length,
+      withPrompt: rows.filter(m => m.imagePrompt).length,
     };
-    const formatLocation = (loc) => {
-      if (!loc) return null;
-      return loc.name || null;
+
+    const toggleImages = async (sampleId) => {
+      if (openId === sampleId) { setOpenId(null); return; }
+      setOpenId(sampleId);
+      if (!imgCache[sampleId]) {
+        const imgs = await fetchDevSampleImages(sampleId);
+        setImgCache(prev => ({ ...prev, [sampleId]: imgs }));
+      }
     };
+
+    const formatDate = (ts) => {
+      if (!ts) return '日時不明';
+      try {
+        return new Date(ts).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      } catch (_) { return String(ts); }
+    };
+    const formatLocation = (loc) => (loc && loc.name) || null;
+    const sorted = rows; // 既にts降順
 
     return (
       <div className="fixed inset-0 z-[95] flex flex-col"
@@ -6184,93 +6248,88 @@ function IshimonZukan() {
         </div>
 
         {/* 統計サマリ */}
-        <div className="px-4 py-3 grid grid-cols-3 gap-2"
+        <div className="px-4 py-3 grid grid-cols-4 gap-2"
           style={{ background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="text-center">
             <div className="text-yellow-300 font-black text-base">{stats.total}</div>
-            <div className="text-white/60 text-[9px] font-bold">合計</div>
+            <div className="text-white/60 text-[9px] font-bold">読込済み</div>
           </div>
           <div className="text-center">
-            <div className="text-green-400 font-black text-base">{stats.withAI}</div>
-            <div className="text-white/60 text-[9px] font-bold">AI画像あり</div>
+            <div className="text-pink-400 font-black text-base">{stats.users}</div>
+            <div className="text-white/60 text-[9px] font-bold">ユーザー数</div>
           </div>
           <div className="text-center">
             <div className="text-blue-400 font-black text-base">{stats.withLocation}</div>
-            <div className="text-white/60 text-[9px] font-bold">位置情報あり</div>
+            <div className="text-white/60 text-[9px] font-bold">位置あり</div>
           </div>
           <div className="text-center">
             <div className="text-purple-400 font-black text-base">{stats.withPrompt}</div>
-            <div className="text-white/60 text-[9px] font-bold">プロンプトあり</div>
-          </div>
-          <div className="text-center">
-            <div className="text-green-300 font-black text-base">👍 {stats.thumbUp}</div>
-            <div className="text-white/60 text-[9px] font-bold">高評価</div>
-          </div>
-          <div className="text-center">
-            <div className="text-red-300 font-black text-base">👎 {stats.thumbDown}</div>
-            <div className="text-white/60 text-[9px] font-bold">低評価</div>
+            <div className="text-white/60 text-[9px] font-bold">プロンプト</div>
           </div>
         </div>
 
         {/* リスト */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-          {sorted.length === 0 ? (
-            <div className="text-white/60 text-center py-12 font-bold">石モンがいません</div>
+          {sorted.length === 0 && !loading ? (
+            <div className="text-white/60 text-center py-12 font-bold">サンプルがありません</div>
           ) : sorted.map((mon, idx) => {
             const t = TYPES[mon.type] || TYPES['土'];
             const r = getRarityLabel(mon.rarity);
-            const tasteIcon = mon.taste === 'up' ? '👍' : mon.taste === 'down' ? '👎' : null;
-            const tasteColor = mon.taste === 'up' ? '#52B788' : mon.taste === 'down' ? '#FF6B6B' : null;
+            const userNo = mon.uid ? userNoMap[mon.uid] : null;
+            const isOpen = openId === mon._id;
+            const imgs = imgCache[mon._id];
             return (
-              <div key={mon.id} className="rounded-2xl p-3"
+              <div key={mon._id} className="rounded-2xl p-3"
                 style={{
                   background: 'rgba(0,0,0,0.5)',
                   border: `2px solid ${r.color}40`,
                 }}>
-                {/* インデックス番号と評価バッジ */}
+                {/* インデックス番号とユーザー番号 */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white/40 text-[10px] font-black">#{idx + 1}</span>
-                  {tasteIcon && (
+                  {userNo && (
                     <span className="px-2 py-0.5 rounded-full text-[11px] font-black"
-                      style={{
-                        background: `${tasteColor}30`,
-                        color: tasteColor,
-                        border: `1px solid ${tasteColor}80`,
-                      }}>
-                      {tasteIcon} {mon.taste === 'up' ? '高評価' : '低評価'}
+                      style={{ background: '#C77DFF30', color: '#C77DFF', border: '1px solid #C77DFF80' }}>
+                      👤 ユーザー#{userNo}
                     </span>
                   )}
                 </div>
 
-                {/* 画像セクション: 元写真 + AI画像 横並び */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div>
-                    <div className="text-white/50 text-[9px] font-black mb-1">📷 元写真</div>
-                    {mon.originalPhoto ? (
-                      <img src={mon.originalPhoto}
-                        className="w-full aspect-square object-cover rounded-lg"
-                        style={{ border: '1px solid rgba(255,255,255,0.2)' }} />
-                    ) : (
-                      <div className="w-full aspect-square rounded-lg flex items-center justify-center"
-                        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <span className="text-white/30 text-xs">なし</span>
-                      </div>
-                    )}
+                {/* 画像セクション: タップで取得 */}
+                {isOpen ? (
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div>
+                      <div className="text-white/50 text-[9px] font-black mb-1">📷 元写真</div>
+                      {imgs && imgs.orig ? (
+                        <img src={imgs.orig} className="w-full aspect-square object-cover rounded-lg"
+                          style={{ border: '1px solid rgba(255,255,255,0.2)' }} />
+                      ) : (
+                        <div className="w-full aspect-square rounded-lg flex items-center justify-center"
+                          style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <span className="text-white/30 text-xs">{imgs ? 'なし' : '読込中…'}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-white/50 text-[9px] font-black mb-1">✨ AI画像</div>
+                      {imgs && imgs.gen ? (
+                        <img src={imgs.gen} className="w-full aspect-square object-cover rounded-lg"
+                          style={{ border: `1px solid ${r.color}80` }} />
+                      ) : (
+                        <div className="w-full aspect-square rounded-lg flex items-center justify-center"
+                          style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <span className="text-white/30 text-xs">{imgs ? 'なし' : '読込中…'}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-white/50 text-[9px] font-black mb-1">✨ AI画像</div>
-                    {mon.imageDataUrl ? (
-                      <img src={mon.imageDataUrl}
-                        className="w-full aspect-square object-cover rounded-lg"
-                        style={{ border: `1px solid ${r.color}80` }} />
-                    ) : (
-                      <div className="w-full aspect-square rounded-lg flex items-center justify-center"
-                        style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <span className="text-white/30 text-xs">なし</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                ) : (
+                  <button onClick={() => toggleImages(mon._id)}
+                    className="w-full mb-3 py-2 rounded-lg text-white/80 font-black text-xs active:scale-95"
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px dashed rgba(255,255,255,0.25)' }}>
+                    🖼️ 画像を表示（元写真・AI画像）
+                  </button>
+                )}
 
                 {/* メタ情報 */}
                 <div className="space-y-1 text-[11px]">
