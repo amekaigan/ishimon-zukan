@@ -568,7 +568,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.33.0';
+const APP_VERSION = '2.34.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2996,7 +2996,7 @@ function IshimonZukan() {
       const updated = [entry, ...collection];
       setCollection(updated);
       saveCollection(updated); // 保存は裏で実行（UIを待たせない）。Replicate完了後の待ち対策。
-      collectDevSample(entry); // v2.31.0: 開発協力サンプル収集（ON時のみ・fire-and-forget）
+      if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
       // v2.18.1: 自動再生成は「会いに行く」後に回す(メモ入力中の割り込み&メモ消失を防ぐ)
@@ -3029,7 +3029,7 @@ function IshimonZukan() {
         const updated = [entry, ...collection];
         setCollection(updated);
         await saveCollection(updated);
-        collectDevSample(entry); // v2.31.0: 開発協力サンプル収集（ON時のみ・fire-and-forget）
+        if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
         updateMission('capture');
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
       } catch (fallbackErr) {
@@ -3103,6 +3103,8 @@ function IshimonZukan() {
         if (saved) await saveCollection(saved);
         setSelected(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
         setNewMon(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
+        // v2.34.0: コールドで遅れて本物が出た石モンを収集（捕獲時はダミーで送らなかった分）
+        if (mon.needsImageRegen) collectDevSample({ ...mon, imageDataUrl: aiImage, needsImageRegen: false });
       } else {
         setError('AI生成に失敗しました。15秒後に再度お試しください');
       }
