@@ -281,6 +281,7 @@ const _fsGetWithMeta = async (key) => {
 // 途中で切れても旧方式のまま＝壊れない。旧形式データはフォールバックとして残す。
 window._fsDiffMode = false;
 window._monIndex = null; // { ids: [...], hashes: {id: hash} }
+// 起動時にmonindexをロードして差分モードを確立（ページリロード後も維持）
 
 const _monHash = (s) => {
   let h = 0;
@@ -344,6 +345,7 @@ const _fsSaveCollectionDiff = async (collectionJson, onProgress) => {
     await _fsSet(_monDocKey(w.id), w.s);
     done++;
     if (onProgress) onProgress(done, toWrite.length);
+    await new Promise(r => setTimeout(r, 150));
   }
   // 削除された石モンのドキュメントを掃除
   for (const oldId of Object.keys(prev)) {
