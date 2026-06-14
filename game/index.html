@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.36.4';
+const APP_VERSION = '2.36.5';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6249,7 +6249,7 @@ function IshimonZukan() {
         }
         if (imgs && imgs.gen) {
           const base64 = imgs.gen.split(',')[1];
-          const fname = `${String(count + 1).padStart(3,'0')}_${r.type}_${r.name}_r${r.rarity}.jpg`;
+          const fname = `${String(count + 1).padStart(3,'0')}_type${r.type}_r${r.rarity}_${r._id.slice(0,6)}.jpg`;
           zip.file(fname, base64, { base64: true });
           count++;
         }
