@@ -43,6 +43,8 @@
 <meta property="og:locale" content="ja_JP">
 <!-- html-to-image (シェアカード生成用) -->
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+<!-- JSZip (v2候補一括ダウンロード用) -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <!-- シェアカード描画 (Canvas API版) -->
 <script src="share-card.js?v=6"></script>
 <!-- Twitter Card -->
@@ -574,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.36.3';
+const APP_VERSION = '2.36.4';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6234,6 +6236,34 @@ function IshimonZukan() {
       withPrompt: rows.filter(m => m.imagePrompt).length,
     };
 
+    const downloadV2Picks = async () => {
+      const picked = rows.filter(r => picks[r._id] ?? r.v2pick);
+      if (picked.length === 0) { alert('⭐候補がありません'); return; }
+      const zip = new window.JSZip();
+      let count = 0;
+      for (const r of picked) {
+        let imgs = imgCache[r._id];
+        if (!imgs) {
+          imgs = await fetchDevSampleImages(r._id);
+          setImgCache(prev => ({ ...prev, [r._id]: imgs }));
+        }
+        if (imgs && imgs.gen) {
+          const base64 = imgs.gen.split(',')[1];
+          const fname = `${String(count + 1).padStart(3,'0')}_${r.type}_${r.name}_r${r.rarity}.jpg`;
+          zip.file(fname, base64, { base64: true });
+          count++;
+        }
+      }
+      if (count === 0) { alert('画像が取得できませんでした'); return; }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ishimon_v2picks_${count}体.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
     const toggleImages = async (sampleId) => {
       if (openId === sampleId) { setOpenId(null); return; }
       setOpenId(sampleId);
@@ -6267,6 +6297,11 @@ function IshimonZukan() {
               className="px-3 py-1.5 rounded-lg font-black text-xs active:scale-95"
               style={{ background: v2Only ? '#f59e0b' : 'rgba(255,255,255,0.15)', color: v2Only ? '#000' : '#fff', border: '1px solid rgba(255,255,255,0.3)' }}>
               ⭐ 候補のみ
+            </button>
+            <button onClick={downloadV2Picks}
+              className="px-3 py-1.5 rounded-lg font-black text-xs active:scale-95"
+              style={{ background: 'rgba(99,102,241,0.8)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}>
+              📦 DL
             </button>
             <button onClick={onClose}
               className="px-3 py-1.5 rounded-lg text-white font-black text-xs active:scale-95"
