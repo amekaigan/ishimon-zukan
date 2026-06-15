@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.37.3';
+const APP_VERSION = '2.37.4';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1765,7 +1765,7 @@ const giftRandomMon = (rarityBoost = 0) => {
 // ===== 日付ヘルパー (日本時間ベース) =====
 // ===== ユーザー番号発行（最初の石モンと出会った瞬間に確定）=====
 const assignUserNumber = async (uid) => {
-  if (!uid) return null;
+  if (!uid) { window._assignError = 'uid未設定'; return null; }
   try {
     const { doc, getDoc, setDoc, db } = window._firebase;
     const profileRef = doc(db, 'users', uid, 'data', 'profile');
@@ -1781,7 +1781,7 @@ const assignUserNumber = async (uid) => {
     console.log(`[ISHIMON] ユーザー番号 #${next} 発行`);
     return next;
   } catch (e) {
-    console.warn('userNumber発行失敗:', e);
+    window._assignError = e?.code || e?.message || String(e);
     return null;
   }
 };
@@ -3200,7 +3200,7 @@ function IshimonZukan() {
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
         if (window._currentUid && updated.length === 1) {
           assignUserNumber(window._currentUid).then(n => {
-          setError(n ? `🎉 ユーザー番号 #${n} 発行！` : '⚠️ ユーザー番号発行失敗');
+          setError(n ? `🎉 ユーザー番号 #${n} 発行！` : `⚠️ 失敗: ${window._assignError || '不明'}`);
         });
         }
         checkAndGrantTitles(player, updated, window._currentUid).then(p => {
