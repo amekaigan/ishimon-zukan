@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.37.6';
+const APP_VERSION = '2.37.7';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1459,6 +1459,33 @@ const TITLES = [
     check: ({ player }) => (player.stats?.totalGacha || 0) >= 100 },
   { id: 'login_30', emoji: '📅', name: 'ログイン番長', desc: '連続ログイン30日達成', rarity: 'epic',
     check: ({ player }) => (player.streak || 0) >= 30 },
+
+  // ===== 創世記限定・時間で閉じる =====
+  { id: 'genesis_witness', emoji: '🌋', name: '創世記の目撃者', desc: '2026年中に石モン図鑑の世界に来た証', rarity: 'legendary',
+    check: ({ player }) => player.registeredAt && new Date(player.registeredAt) < new Date('2027-01-01') },
+  { id: 'dawn_explorer', emoji: '🌅', name: '夜明け前の探検家', desc: '2026年6月、夜明け前から遊んでいた冒険者', rarity: 'legendary',
+    check: ({ player }) => player.registeredAt && new Date(player.registeredAt) < new Date('2026-07-01') },
+
+  // ===== 人数限定 =====
+  { id: 'ishimon_ten', emoji: '💎', name: 'ISHIMON TEN', desc: '最初の10人。永遠に10人しか存在しない', rarity: 'legendary',
+    check: ({ player, collection }) => player.userNumber && player.userNumber <= 10 && collection.length >= 1 },
+  { id: 'ishimon_100', emoji: '🥇', name: 'ISHIMON 100', desc: '最初の100人の冒険者', rarity: 'epic',
+    check: ({ player, collection }) => player.userNumber && player.userNumber <= 100 && collection.length >= 1 },
+  { id: 'ishimon_1000', emoji: '🪨', name: 'はじまりの石', desc: '最初の1000人に刻まれた名前', rarity: 'rare',
+    check: ({ player, collection }) => player.userNumber && player.userNumber <= 1000 && collection.length >= 1 },
+
+  // ===== 行動実績・2026年限定 =====
+  { id: 'doctor_first', emoji: '🔬', name: '石モン博士 初代', desc: '2026年中に10体以上と出会った博士', rarity: 'epic',
+    check: ({ player, collection }) => collection.length >= 10 && player.registeredAt && new Date(player.registeredAt) < new Date('2027-01-01') },
+  { id: 'pioneer_hunter', emoji: '🌍', name: '石ハンター先駆者', desc: '2026年中に3か所以上で出会った探検家', rarity: 'epic',
+    check: ({ player, collection }) => {
+      if (!player.registeredAt || new Date(player.registeredAt) >= new Date('2027-01-01')) return false;
+      const places = new Set(collection.filter(m => m.location?.name).map(m => m.location.name));
+      return places.size >= 3;
+    }},
+  { id: 'dragon_tamer_first', emoji: '🐉', name: 'ドラゴン使い 初代', desc: '2026年中にドラゴンタイプと出会った者', rarity: 'legendary',
+    check: ({ player, collection }) => player.registeredAt && new Date(player.registeredAt) < new Date('2027-01-01') && collection.some(m => m.type === 'ドラゴン') },
+];
 ];
 
 // 新規獲得した称号IDの配列を返す（未獲得 & 条件達成）
@@ -3150,17 +3177,20 @@ function IshimonZukan() {
       if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
-      // ユーザー番号発行（未発行なら発行。発行済みなら中で即return）
-      if (window._currentUid) assignUserNumber(window._currentUid);
-      // 称号チェック（捕獲のたびに）
-      checkAndGrantTitles(player, updated, window._currentUid).then(p => {
-        if (p.titles?.length > (player.titles?.length || 0)) {
-          setPlayer(p); savePlayer(p);
-          const newOnes = p.titles.filter(t => !(player.titles||[]).includes(t));
-          const labels = newOnes.map(id => TITLE_MASTER[id]?.emoji + TITLE_MASTER[id]?.label).join('、');
-          setError(`🏆 称号獲得：${labels}`);
-        }
-      });
+      // ユーザー番号発行＋playerへ反映＋創世記称号チェック
+      if (window._currentUid) {
+        assignUserNumber(window._currentUid).then(n => {
+          if (!n) return;
+          setPlayer(prev => {
+            if (prev.userNumber === n) return prev;
+            const np = { ...prev, userNumber: n, registeredAt: prev.registeredAt || new Date().toISOString() };
+            savePlayer(np);
+            grantTitlesIfAny('photo', {}, np, updated);
+            return np;
+          });
+        });
+      }
+      
       // v2.18.1: 自動再生成は「会いに行く」後に回す
       //   → revealPendingMon 内でトリガーする
     } catch (err) {
@@ -3195,11 +3225,6 @@ function IshimonZukan() {
         updateMission('capture');
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
         if (window._currentUid) assignUserNumber(window._currentUid);
-        checkAndGrantTitles(player, updated, window._currentUid).then(p => {
-          if (p.titles?.length > (player.titles?.length || 0)) {
-            setPlayer(p); savePlayer(p);
-          }
-        });
       } catch (fallbackErr) {
         console.error('fallback error:', fallbackErr);
         setError('失敗しました。もう一度お試しください');
