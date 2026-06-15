@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.40.0';
+const APP_VERSION = '2.40.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -7095,36 +7095,27 @@ function IshimonZukan() {
         <div className="flex items-center gap-1.5">
           <button onClick={() => onNav(-1)} aria-label="前の石モン"
             className={`${sz} rounded-full flex items-center justify-center text-white font-black active:scale-90 transition-transform`}
-            style={{ background: 'rgba(0,0,0,0.35)', border: '1.5px solid rgba(255,255,255,0.35)' }}>◀</button>
+            style={{ background: 'rgba(0,0,0,0.4)', border: '1.5px solid rgba(255,255,255,0.35)' }}>◀</button>
           <button onClick={() => onNav(1)} aria-label="次の石モン"
             className={`${sz} rounded-full flex items-center justify-center text-white font-black active:scale-90 transition-transform`}
-            style={{ background: 'rgba(0,0,0,0.35)', border: '1.5px solid rgba(255,255,255,0.35)' }}>▶</button>
+            style={{ background: 'rgba(0,0,0,0.4)', border: '1.5px solid rgba(255,255,255,0.35)' }}>▶</button>
         </div>
       ) : null);
+      const pillCls = "inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black text-white leading-none";
 
       return (
-        <div className="fixed inset-0 z-50 flex flex-col"
-          style={{ background: `linear-gradient(180deg, ${t.light} 0%, ${t.bg} 45%, ${t.dark} 100%)`, height: '100dvh' }}>
-          {/* 固定ヘッダー（半透明） */}
-          <div className="flex-none flex items-center gap-2 px-3 pb-2"
-            style={{ paddingTop: 'calc(0.5rem + env(safe-area-inset-top))', background: 'rgba(0,0,0,0.18)', borderBottom: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(6px)' }}>
-            <button onClick={onClose}
-              className="flex-none flex items-center gap-1 pl-2 pr-3 py-1.5 rounded-full text-white font-black text-sm active:scale-95 transition-transform"
-              style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.35)' }}>
-              <span className="text-base leading-none">←</span><span>もどる</span>
-            </button>
-            <div className="flex-1" />
-            {navBtns('w-8 h-8 text-sm')}
-          </div>
-
-          {/* スクロール本文 */}
-          <div className="flex-1 overflow-y-auto px-3 pt-3"
-            style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'calc(1rem + 72px + env(safe-area-inset-bottom))' }}
+        <div className="fixed inset-0 z-50 overflow-hidden"
+          style={{ background: `linear-gradient(180deg, ${t.dark}40 0%, #16131f 48%, #100e17 100%)` }}>
+          {/* スクロール本文（ヘッダーの下を流れる） */}
+          <div className="absolute inset-0 overflow-y-auto px-3"
+            style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
+                     paddingTop: 'calc(env(safe-area-inset-top) + 52px)',
+                     paddingBottom: 'calc(1rem + 72px + env(safe-area-inset-bottom))' }}
             ref={el => { if (el) el.scrollTop = monScrollRef.current; }}
             onScroll={e => { monScrollRef.current = e.currentTarget.scrollTop; }}>
-            <div className="w-full max-w-sm mx-auto">
+            <div className="w-full max-w-sm mx-auto pt-1">
 
-              {/* ヒーロー：画像・名前・レア度・タイプ/だんかい */}
+              {/* ヒーロー：画像・名前・統一ピル */}
           {mon.imageDataUrl ? (
             <div className="relative mb-3">
               <div className="absolute inset-0 rounded-2xl blur-xl" style={{ background: r.glow, opacity: 0.5 }} />
@@ -7144,23 +7135,22 @@ function IshimonZukan() {
             </div>
           )}
               <div className="text-center mb-2">
-                <h2 className="text-4xl font-black text-white tracking-wider" style={{ textShadow: `0 4px 0 ${t.dark}, 0 0 20px white` }}>{mon.name}</h2>
-                <div className="inline-flex items-center gap-1 mt-1 px-3 py-0.5 rounded-full text-xs font-black text-white"
-                  style={{ background: r.color, boxShadow: `0 0 16px ${r.glow}80`, border: '2px solid white' }}>
-                  {'★'.repeat(mon.rarity)} {r.label}
-                </div>
+                <h2 className="text-4xl font-black text-white tracking-wider" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.6)' }}>{mon.name}</h2>
               </div>
-              <div className="flex justify-center items-center gap-2 mb-3 flex-wrap">
-                <span className="flex items-center gap-1 bg-white/40 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-black text-white" style={{ border: '2px solid white' }}>
-                  <span className="text-base">{t.emoji}</span><span>{t.name}</span>
+              <div className="flex flex-wrap justify-center items-center gap-1.5 mb-4">
+                <span className={pillCls} style={{ background: r.color, border: '2px solid white', boxShadow: `0 0 12px ${r.glow}66` }}>
+                  <span className="text-sm">{'★'.repeat(mon.rarity)}</span>{r.label}
                 </span>
-                <span className="flex items-center gap-1 bg-black/40 rounded-full px-3 py-1 text-xs font-bold text-white" style={{ border: '2px solid white' }}>
-                  <span>{stage.emoji}</span><span>{stage.label}</span>
+                <span className={pillCls} style={{ background: 'rgba(255,255,255,0.22)', border: '2px solid white' }}>
+                  <span className="text-sm">{t.emoji}</span>{t.name}
+                </span>
+                <span className={pillCls} style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid white' }}>
+                  <span className="text-sm">{stage.emoji}</span>{stage.label}
                 </span>
               </div>
 
               {/* タブ */}
-              <div className="flex gap-1 p-1 rounded-2xl mb-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)' }}>
+              <div className="flex gap-1 p-1 rounded-2xl mb-3" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.12)' }}>
                 {[['status','ステータス'],['memory','おもいで'],['gear','そうび']].map(([k, label]) => (
                   <button key={k} onClick={() => setDetailTab(k)}
                     className="flex-1 py-2 rounded-xl text-xs font-black transition-all active:scale-95"
@@ -7199,32 +7189,29 @@ function IshimonZukan() {
             <div className="text-white/90 text-[11px] font-bold mt-1 leading-relaxed">{mon.skillDesc}</div>
           </div>
 
-                <div className="mb-3">
-            {canEvolve ? (
-              <button onClick={() => {
-                  if (window.confirm(`「${mon.name}」を進化させますか？\n\n石のかけら ${evolveCost}個を消費します。\n進化すると見た目と能力が変化します。`)) {
-                    evolveMon(mon);
-                  }
-                }}
-                className="py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform flex flex-col items-center justify-center gap-0.5"
-                style={{
-                  background: hasFragsForEvolve
-                    ? 'linear-gradient(135deg, #FFD700, #FF6B35)'
-                    : 'linear-gradient(135deg, #555, #333)',
-                  boxShadow: hasFragsForEvolve ? '0 4px 0 #5A1A4A' : '0 2px 0 #111',
-                  border: hasFragsForEvolve ? '3px solid white' : '3px solid #666',
-                }}>
-                <span>✨ 進化</span>
-                <span className={`text-[9px] font-bold leading-none ${hasFragsForEvolve ? 'text-yellow-100' : 'text-red-300'}`}>
-                  🪨 {evolveCost}個 {hasFragsForEvolve ? '' : `(あと${evolveCost - (player.stoneFragments || 0)})`}
-                </span>
-              </button>
-            ) : (
-              <div className="py-3 rounded-2xl text-yellow-200 font-black text-center text-xs flex items-center justify-center gap-1" style={{ background: 'rgba(0,0,0,0.3)', border: '3px solid #FFD700' }}>
-                <Award className="w-4 h-4 inline" /> {mon.stage >= 3 ? '最強！' : '進化なし'}
-              </div>
-            )}
-                </div>
+                {canEvolve ? (
+                  <button onClick={() => {
+                      if (window.confirm(`「${mon.name}」を進化させますか？\n\n石のかけら ${evolveCost}個を消費します。\n進化すると見た目と能力が変化します。`)) {
+                        evolveMon(mon);
+                      }
+                    }}
+                    className="w-full py-3.5 rounded-2xl text-white font-black active:scale-95 transition-transform flex items-center justify-center gap-2 mb-3"
+                    style={{
+                      background: hasFragsForEvolve ? 'linear-gradient(135deg, #FFD700, #FF6B35)' : 'linear-gradient(135deg, #555, #333)',
+                      boxShadow: hasFragsForEvolve ? '0 4px 0 #5A1A4A' : '0 2px 0 #111',
+                      border: hasFragsForEvolve ? '3px solid white' : '3px solid #666',
+                    }}>
+                    <span className="text-base">✨ 進化</span>
+                    <span className={`text-[11px] font-bold ${hasFragsForEvolve ? 'text-yellow-100' : 'text-red-300'}`}>
+                      🪨 {evolveCost} {hasFragsForEvolve ? '' : `(あと${evolveCost - (player.stoneFragments || 0)})`}
+                    </span>
+                  </button>
+                ) : (
+                  <div className="w-full py-3.5 rounded-2xl text-yellow-200 font-black text-center text-sm flex items-center justify-center gap-1 mb-3" style={{ background: 'rgba(0,0,0,0.3)', border: '3px solid #FFD700' }}>
+                    <Award className="w-4 h-4 inline" /> {mon.stage >= 3 ? '最強！' : '進化なし'}
+                  </div>
+                )}
+
               </>)}
 
               {/* ===== おもいで ===== */}
@@ -7403,7 +7390,7 @@ function IshimonZukan() {
               {/* ===== そうび ===== */}
               {detailTab === 'gear' && (<>
                 <button onClick={() => { setShowEquip(mon); document.body.style.overflow='hidden'; }}
-                  className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform mb-3"
+                  className="w-full py-3.5 rounded-2xl text-white font-black active:scale-95 transition-transform mb-3"
                   style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 4px 0 #4A0E78', border: '3px solid white' }}>
                   ⚔️ 装備する
                 </button>
@@ -7505,17 +7492,29 @@ function IshimonZukan() {
           </button>
               </>)}
 
-              {/* 最下部ナビ（直置き・固定ではない） */}
+              {/* 最下部ナビ（直置き） */}
               <div className="mt-5 mb-2 flex items-center justify-center gap-3">
                 <button onClick={onClose}
                   className="flex items-center gap-1 pl-3 pr-4 py-2 rounded-full text-white font-black text-sm active:scale-95 transition-transform"
-                  style={{ background: 'rgba(0,0,0,0.35)', border: '2px solid rgba(255,255,255,0.4)' }}>
+                  style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(255,255,255,0.4)' }}>
                   <span className="text-base leading-none">←</span><span>もどる</span>
                 </button>
                 {navBtns('w-10 h-10 text-base')}
               </div>
 
             </div>
+          </div>
+
+          {/* 固定ヘッダー（半透明・本文がこの下を流れる） */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 px-3 pb-2"
+            style={{ paddingTop: 'calc(0.4rem + env(safe-area-inset-top))', background: 'rgba(18,15,24,0.5)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <button onClick={onClose}
+              className="flex-none flex items-center gap-1 pl-2 pr-3 py-1.5 rounded-full text-white font-black text-sm active:scale-95 transition-transform"
+              style={{ background: 'rgba(0,0,0,0.35)', border: '1.5px solid rgba(255,255,255,0.35)' }}>
+              <span className="text-base leading-none">←</span><span>もどる</span>
+            </button>
+            <div className="flex-1" />
+            {navBtns('w-8 h-8 text-sm')}
           </div>
         </div>
       );
