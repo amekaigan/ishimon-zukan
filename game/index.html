@@ -1486,7 +1486,6 @@ const TITLES = [
   { id: 'dragon_tamer_first', emoji: '🐉', name: 'ドラゴン使い 初代', desc: '2026年中にドラゴンタイプと出会った者', rarity: 'legendary',
     check: ({ player, collection }) => player.registeredAt && new Date(player.registeredAt) < new Date('2027-01-01') && collection.some(m => m.type === 'ドラゴン') },
 ];
-];
 
 // 新規獲得した称号IDの配列を返す（未獲得 & 条件達成）
 const evaluateTitles = (ctx) => {
