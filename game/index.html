@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.39.0';
+const APP_VERSION = '2.39.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -7054,7 +7054,7 @@ function IshimonZukan() {
     setEditingMemoId(null);
   };
 
-    const MonCard = ({ mon, onClose }) => {
+    const MonCard = ({ mon, onClose, onNav }) => {
     const t = TYPES[mon.type] || TYPES['土'];
     const r = getRarityLabel(mon.rarity);
     const stage = STAGES[mon.stage] || STAGES[1];
@@ -7096,13 +7096,17 @@ function IshimonZukan() {
             style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(255,255,255,0.4)' }}>
             <span className="text-base leading-none">←</span><span>もどる</span>
           </button>
-          <div className="flex-1 min-w-0 text-center px-1">
-            <div className="text-white font-black text-base truncate" style={{ textShadow: `0 2px 0 ${t.dark}` }}>{mon.name}</div>
-          </div>
-          <div className="flex-none px-2.5 py-1 rounded-full text-[11px] font-black text-white"
-            style={{ background: r.color, border: '2px solid white', boxShadow: `0 0 12px ${r.glow}80` }}>
-            {'★'.repeat(mon.rarity)}
-          </div>
+          <div className="flex-1" />
+          {onNav && (
+            <div className="flex-none flex items-center gap-2">
+              <button onClick={() => onNav(-1)} aria-label="前の石モン"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg font-black active:scale-90 transition-transform"
+                style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(255,255,255,0.4)' }}>◀</button>
+              <button onClick={() => onNav(1)} aria-label="次の石モン"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg font-black active:scale-90 transition-transform"
+                style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid rgba(255,255,255,0.4)' }}>▶</button>
+            </div>
+          )}
         </div>
 
         {/* スクロール本文 */}
@@ -7439,7 +7443,7 @@ function IshimonZukan() {
 
         {/* 固定フッター（装備する・進化） */}
         <div className="flex-none px-3 pt-2"
-          style={{ paddingBottom: 'calc(0.7rem + env(safe-area-inset-bottom))', background: 'rgba(0,0,0,0.32)', borderTop: '2px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)' }}>
+          style={{ paddingBottom: 'calc(0.7rem + 64px + env(safe-area-inset-bottom))', background: 'rgba(0,0,0,0.32)', borderTop: '2px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(6px)' }}>
           <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
             <button onClick={() => { setShowEquip(mon); document.body.style.overflow='hidden'; }}
               className="py-3 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform"
@@ -9593,7 +9597,14 @@ function IshimonZukan() {
         <BottomTabBar />
       )}
 
-      {selected && <MonCard mon={selected} onClose={() => { setSelected(null); monScrollRef.current = 0; }} />}
+      {selected && <MonCard mon={selected} onClose={() => { setSelected(null); monScrollRef.current = 0; }}
+        onNav={(collection.length > 1 && collection.some(m => m.id === selected.id)) ? (dir => {
+          const i = collection.findIndex(m => m.id === selected.id);
+          if (i < 0) return;
+          const j = (i + dir + collection.length) % collection.length;
+          monScrollRef.current = 0;
+          setSelected(collection[j]);
+        }) : null} />}
       {showShareCard && <ShareCardModal mon={showShareCard} onClose={() => setShowShareCard(null)} />}
       {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); monScrollRef.current = 0; }} />}
       {/* v2.18.0: リビール時の白フラッシュ(石モン誕生の演出) */}
