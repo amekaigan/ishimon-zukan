@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.37.0';
+const APP_VERSION = '2.37.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3153,12 +3153,17 @@ function IshimonZukan() {
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
       // ユーザー番号発行（初回捕獲時のみ・fire-and-forget）
       if (window._currentUid && updated.length === 1) {
-        assignUserNumber(window._currentUid);
+        assignUserNumber(window._currentUid).then(n => {
+          if (n) setError(`🎉 ユーザー番号 #${n} 発行！`);
+        });
       }
       // 称号チェック（捕獲のたびに）
       checkAndGrantTitles(player, updated, window._currentUid).then(p => {
         if (p.titles?.length > (player.titles?.length || 0)) {
           setPlayer(p); savePlayer(p);
+          const newOnes = p.titles.filter(t => !(player.titles||[]).includes(t));
+          const labels = newOnes.map(id => TITLE_MASTER[id]?.emoji + TITLE_MASTER[id]?.label).join('、');
+          setError(`🏆 称号獲得：${labels}`);
         }
       });
       // v2.18.1: 自動再生成は「会いに行く」後に回す
