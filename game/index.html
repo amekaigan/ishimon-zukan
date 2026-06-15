@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.37.4';
+const APP_VERSION = '2.37.5';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3150,10 +3150,10 @@ function IshimonZukan() {
       if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
-      // ユーザー番号発行（初回捕獲時のみ・fire-and-forget）
-      if (window._currentUid && updated.length === 1) {
+      // ユーザー番号発行（未発行なら発行。発行済みなら中で即return）
+      if (window._currentUid) {
         assignUserNumber(window._currentUid).then(n => {
-          if (n) setError(`🎉 ユーザー番号 #${n} 発行！`);
+          setError(n ? `🎉 ユーザー番号 #${n} 発行！` : `⚠️ 失敗: ${window._assignError || '不明'}`);
         });
       }
       // 称号チェック（捕獲のたびに）
