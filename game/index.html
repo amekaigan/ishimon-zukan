@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.36.6';
+const APP_VERSION = '2.37.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1763,6 +1763,148 @@ const giftRandomMon = (rarityBoost = 0) => {
 };
 
 // ===== 日付ヘルパー (日本時間ベース) =====
+// ===== ユーザー番号発行（最初の石モンと出会った瞬間に確定）=====
+const assignUserNumber = async (uid) => {
+  if (!uid) return null;
+  try {
+    const { doc, getDoc, setDoc } = window._firebase;
+    const { db } = window._firebase;
+    const profileRef = doc(db, 'users', uid, 'data', 'profile');
+    const profileSnap = await getDoc(profileRef);
+    if (profileSnap.exists() && profileSnap.data().userNumber) {
+      return profileSnap.data().userNumber; // 既に発行済み
+    }
+    const counterRef = doc(db, 'meta', 'userCounter');
+    const counterSnap = await getDoc(counterRef);
+    const next = (counterSnap.exists() ? (counterSnap.data().count || 0) : 0) + 1;
+    await setDoc(counterRef, { count: next }, { merge: true });
+    await setDoc(profileRef, { userNumber: next, registeredAt: new Date().toISOString(), uid }, { merge: true });
+    console.log(`[ISHIMON] ユーザー番号 #${next} 発行`);
+    return next;
+  } catch (e) {
+    console.warn('userNumber発行失敗:', e);
+    return null;
+  }
+};
+
+// ===== 称号マスターデータ =====
+const TITLE_MASTER = {
+  // 【創世記限定・時間で閉じる】
+  genesis_witness: {
+    id: 'genesis_witness', label: '創世記の目撃者', emoji: '🌋',
+    desc: '2026年中に石モン図鑑の世界に足を踏み入れた証',
+    rarity: 'legendary', color: '#FF6B35',
+    condition: (p, col, meta) => meta.registeredAt && new Date(meta.registeredAt) < new Date('2027-01-01'),
+  },
+  beta_survivor: {
+    id: 'beta_survivor', label: 'β版の生き残り', emoji: '⚡',
+    desc: '開発初期、まだ誰も知らない頃から遊んでいた先駆者',
+    rarity: 'legendary', color: '#C77DFF',
+    condition: (p, col, meta) => meta.registeredAt && new Date(meta.registeredAt) < new Date('2026-07-01'),
+  },
+  dawn_explorer: {
+    id: 'dawn_explorer', label: '夜明け前の探検家', emoji: '🌅',
+    desc: '2026年6月、石モン図鑑がまだ夜明け前だった頃の冒険者',
+    rarity: 'legendary', color: '#FFD700',
+    condition: (p, col, meta) => meta.registeredAt && new Date(meta.registeredAt) < new Date('2026-07-01'),
+  },
+  // 【人数限定】
+  ishimon_ten: {
+    id: 'ishimon_ten', label: 'ISHIMON TEN', emoji: '💎',
+    desc: '最初の10人。この称号は永遠に10人しか存在しない',
+    rarity: 'mythic', color: '#00F5FF',
+    condition: (p, col, meta) => meta.userNumber && meta.userNumber <= 10 && col.length >= 1,
+  },
+  ishimon_100: {
+    id: 'ishimon_100', label: 'ISHIMON 100', emoji: '🥇',
+    desc: '最初の100人の冒険者。石モン図鑑の礎を築いた者',
+    rarity: 'epic', color: '#FFD700',
+    condition: (p, col, meta) => meta.userNumber && meta.userNumber <= 100 && col.length >= 1,
+  },
+  ishimon_1000: {
+    id: 'ishimon_1000', label: 'はじまりの石', emoji: '🪨',
+    desc: '最初の1000人の中に刻まれた名前',
+    rarity: 'rare', color: '#52B788',
+    condition: (p, col, meta) => meta.userNumber && meta.userNumber <= 1000 && col.length >= 1,
+  },
+  // 【行動実績・2026年限定】
+  doctor_first: {
+    id: 'doctor_first', label: '石モン博士 初代', emoji: '🔬',
+    desc: '2026年中に10体以上の石モンと出会った博士',
+    rarity: 'epic', color: '#3DA5F5',
+    condition: (p, col, meta) => col.length >= 10 && meta.registeredAt && new Date(meta.registeredAt) < new Date('2027-01-01'),
+  },
+  pioneer_hunter: {
+    id: 'pioneer_hunter', label: '石ハンター先駆者', emoji: '🌍',
+    desc: '2026年中に3か所以上で石モンと出会った探検家',
+    rarity: 'epic', color: '#52B788',
+    condition: (p, col, meta) => {
+      if (!meta.registeredAt || new Date(meta.registeredAt) >= new Date('2027-01-01')) return false;
+      const places = new Set(col.filter(m => m.location?.name).map(m => m.location.name));
+      return places.size >= 3;
+    },
+  },
+  legend_witness: {
+    id: 'legend_witness', label: '伝説の目撃者', emoji: '⭐',
+    desc: '2026年中に伝説の石モン（★5）と出会った幸運の持ち主',
+    rarity: 'legendary', color: '#FFD700',
+    condition: (p, col, meta) => meta.registeredAt && new Date(meta.registeredAt) < new Date('2027-01-01') && col.some(m => m.rarity >= 5),
+  },
+  dragon_tamer_first: {
+    id: 'dragon_tamer_first', label: 'ドラゴン使い 初代', emoji: '🐉',
+    desc: '2026年中にドラゴンタイプの石モンと出会った者',
+    rarity: 'legendary', color: '#C77DFF',
+    condition: (p, col, meta) => meta.registeredAt && new Date(meta.registeredAt) < new Date('2027-01-01') && col.some(m => m.type === 'ドラゴン'),
+  },
+  // 【永続実績】
+  mon_king: {
+    id: 'mon_king', label: '石モン王', emoji: '👑',
+    desc: '50体以上の石モンと出会った偉大な王',
+    rarity: 'epic', color: '#FFD700',
+    condition: (p, col) => col.length >= 50,
+  },
+  all_types: {
+    id: 'all_types', label: '全タイプ制覇', emoji: '🌈',
+    desc: '9種類すべてのタイプと出会った伝説の冒険者',
+    rarity: 'legendary', color: '#FF3B8E',
+    condition: (p, col) => {
+      const types = new Set(col.map(m => m.type));
+      return ['火','水','土','電気','空','ドラゴン','精霊','氷','光','闇','古'].filter(t => types.has(t)).length >= 9;
+    },
+  },
+  daily_collector: {
+    id: 'daily_collector', label: '毎日の石拾い', emoji: '💫',
+    desc: '30日連続でログインし続けた根気強い冒険者',
+    rarity: 'rare', color: '#3DA5F5',
+    condition: (p) => (p.streak || 0) >= 30,
+  },
+};
+
+// 称号チェック＆付与（捕獲時・ログイン時に呼ぶ）
+const checkAndGrantTitles = async (player, collection, uid) => {
+  if (!uid) return player;
+  try {
+    const { doc, getDoc } = window._firebase;
+    const { db } = window._firebase;
+    const profileSnap = await getDoc(doc(db, 'users', uid, 'data', 'profile'));
+    const meta = profileSnap.exists() ? profileSnap.data() : {};
+    const current = new Set(player.titles || []);
+    const newTitles = [];
+    for (const t of Object.values(TITLE_MASTER)) {
+      if (!current.has(t.id) && t.condition(player, collection, meta)) {
+        newTitles.push(t.id);
+      }
+    }
+    if (newTitles.length === 0) return player;
+    const updated = { ...player, titles: [...(player.titles || []), ...newTitles] };
+    console.log('[ISHIMON] 新称号獲得:', newTitles);
+    return updated;
+  } catch (e) {
+    console.warn('称号チェック失敗:', e);
+    return player;
+  }
+};
+
 const todayKey = () => {
   const d = new Date();
   // 日本時間で考えるためUTC+9
@@ -3009,7 +3151,17 @@ function IshimonZukan() {
       if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
-      // v2.18.1: 自動再生成は「会いに行く」後に回す(メモ入力中の割り込み&メモ消失を防ぐ)
+      // ユーザー番号発行（初回捕獲時のみ・fire-and-forget）
+      if (window._currentUid && updated.length === 1) {
+        assignUserNumber(window._currentUid);
+      }
+      // 称号チェック（捕獲のたびに）
+      checkAndGrantTitles(player, updated, window._currentUid).then(p => {
+        if (p.titles?.length > (player.titles?.length || 0)) {
+          setPlayer(p); savePlayer(p);
+        }
+      });
+      // v2.18.1: 自動再生成は「会いに行く」後に回す
       //   → revealPendingMon 内でトリガーする
     } catch (err) {
       console.error('generateMon error:', err);
@@ -3042,6 +3194,14 @@ function IshimonZukan() {
         if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
         updateMission('capture');
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
+        if (window._currentUid && updated.length === 1) {
+          assignUserNumber(window._currentUid);
+        }
+        checkAndGrantTitles(player, updated, window._currentUid).then(p => {
+          if (p.titles?.length > (player.titles?.length || 0)) {
+            setPlayer(p); savePlayer(p);
+          }
+        });
       } catch (fallbackErr) {
         console.error('fallback error:', fallbackErr);
         setError('失敗しました。もう一度お試しください');
