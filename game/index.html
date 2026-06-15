@@ -3199,7 +3199,9 @@ function IshimonZukan() {
         updateMission('capture');
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
         if (window._currentUid && updated.length === 1) {
-          assignUserNumber(window._currentUid);
+          assignUserNumber(window._currentUid).then(n => {
+          setError(n ? `🎉 ユーザー番号 #${n} 発行！` : '⚠️ ユーザー番号発行失敗');
+        });
         }
         checkAndGrantTitles(player, updated, window._currentUid).then(p => {
           if (p.titles?.length > (player.titles?.length || 0)) {
