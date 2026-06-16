@@ -576,7 +576,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.40.1';
+const APP_VERSION = '2.40.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -7105,7 +7105,9 @@ function IshimonZukan() {
 
       return (
         <div className="fixed inset-0 z-50 overflow-hidden"
-          style={{ background: `linear-gradient(180deg, ${t.dark}40 0%, #16131f 48%, #100e17 100%)` }}>
+          style={{ background: '#14121c' }}>
+          {/* タイプ色のうっすらした上部ティント（不透明ベースの上・裏は透けない） */}
+          <div className="absolute inset-x-0 top-0 pointer-events-none" style={{ height: '40%', background: `linear-gradient(180deg, ${t.dark}33 0%, transparent 100%)` }} />
           {/* スクロール本文（ヘッダーの下を流れる） */}
           <div className="absolute inset-0 overflow-y-auto px-3"
             style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
