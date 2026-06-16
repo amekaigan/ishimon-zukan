@@ -11,6 +11,38 @@
   gtag('js', new Date());
   gtag('config', 'G-J4CZ7ZZST3');
 </script>
+<!-- 起動エラーを画面に出す診断（コンソール不可のため） -->
+<script>
+(function(){
+  function showErr(msg){
+    try{
+      var d=document.getElementById('__bootErr');
+      if(!d){
+        d=document.createElement('div'); d.id='__bootErr';
+        d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;max-height:50%;overflow:auto;background:rgba(120,0,0,0.94);color:#fff;font:12px/1.5 monospace;padding:10px;white-space:pre-wrap;word-break:break-all;';
+        var t=document.createElement('div'); t.textContent='⚠ 起動エラー（スクショして共有してね）'; t.style.cssText='font-weight:bold;margin-bottom:6px;';
+        d.appendChild(t);
+        var b=document.createElement('button'); b.textContent='🔄 再読み込み';
+        b.style.cssText='display:block;margin:8px 0;padding:10px 14px;font-weight:bold;border-radius:10px;border:0;background:#fff;color:#900;font-size:14px;';
+        b.onclick=function(){ try{location.reload(true);}catch(e){location.reload();} };
+        d.appendChild(b);
+        (document.body||document.documentElement).appendChild(d);
+      }
+      var p=document.createElement('div'); p.textContent='• '+msg; d.appendChild(p);
+    }catch(e){}
+  }
+  window.addEventListener('error', function(ev){
+    if(ev && ev.target && ev.target.tagName && (ev.target.tagName==='SCRIPT'||ev.target.tagName==='LINK')){
+      showErr('読込失敗: '+(ev.target.src||ev.target.href||'?'));
+    } else if(ev && ev.message){
+      showErr(ev.message+(ev.filename?(' @ '+(ev.filename.split('/').pop())+':'+ev.lineno):''));
+    }
+  }, true);
+  window.addEventListener('unhandledrejection', function(ev){
+    var r=ev&&ev.reason; showErr('Promise: '+((r&&(r.message||r))||'unknown'));
+  });
+})();
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
