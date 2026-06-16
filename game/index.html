@@ -31,16 +31,26 @@
       var p=document.createElement('div'); p.textContent='• '+msg; d.appendChild(p);
     }catch(e){}
   }
+  var IGNORE=/googletagmanager|google-analytics|gtag\/js|doubleclick|analytics\.google/;
   window.addEventListener('error', function(ev){
     if(ev && ev.target && ev.target.tagName && (ev.target.tagName==='SCRIPT'||ev.target.tagName==='LINK')){
-      showErr('読込失敗: '+(ev.target.src||ev.target.href||'?'));
+      var u=(ev.target.src||ev.target.href||'?');
+      if(IGNORE.test(u)) return;
+      showErr('読込失敗: '+u);
     } else if(ev && ev.message){
       showErr(ev.message+(ev.filename?(' @ '+(ev.filename.split('/').pop())+':'+ev.lineno):''));
     }
   }, true);
   window.addEventListener('unhandledrejection', function(ev){
-    var r=ev&&ev.reason; showErr('Promise: '+((r&&(r.message||r))||'unknown'));
+    var r=ev&&ev.reason; var m=(r&&(r.message||r))||'unknown';
+    if(IGNORE.test(String(m))) return;
+    showErr('Promise: '+m);
   });
+  setTimeout(function(){
+    if(!window.__appReady){
+      showErr('データ読み込みが20秒たっても完了しません（電波 or Firebase の可能性）。電波の良い所で再読み込みを試してね');
+    }
+  }, 20000);
 })();
 </script>
 <meta name="mobile-web-app-capable" content="yes">
@@ -608,7 +618,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.42.0';
+const APP_VERSION = '2.42.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1571,7 +1581,7 @@ const EQUIP_SLOTS = ['sword', 'shield', 'charm'];
 const EQUIP_LABELS = { sword: '剣', shield: '盾', charm: 'お守り' };
 
 // ===== 持ち物ヘルパー（重複OKの文字列配列モデル）=====
-const SELL_RATE = 0.5;                                   // 売却の払い戻し率（購入価格の50%）
+const SELL_RATE = 0.1;                                   // 売却の払い戻し率（購入価格の10%）
 const invCount = (inv, id) => (inv || []).filter(x => x === id).length;   // その装備の所持数
 const sellValue = (eq) => Math.max(1, Math.floor((eq.price || 0) * SELL_RATE));
 
@@ -2495,6 +2505,7 @@ function IshimonZukan() {
       } finally {
         // 機能追加(v2.9.0): 初期ロード完了。成功・失敗どちらでも必ずローディング解除。
         setInitialLoading(false);
+        window.__appReady = true;  // 起動完了フラグ（診断ウォッチドッグ用）
         console.log('[初期ロード] 完了');
       }
     })();
@@ -4502,9 +4513,8 @@ function IshimonZukan() {
     }, [collection]);
 
     // 所持装備一覧（タブでフィルタ）
-    const ownedItems = (player.inventory || [])
-      .map(id => EQUIPMENT[id])
-      .filter(Boolean)
+    const ownedItems = Object.values(EQUIPMENT)
+      .filter(eq => invCount(player.inventory, eq.id) > 0)
       .filter(eq => tab === 'all' || eq.type === tab);
 
     // タブ別の「新着のみ」数（バッジ用）
@@ -4608,6 +4618,10 @@ function IshimonZukan() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-white font-black text-sm">{eq.name}</span>
+                            {invCount(player.inventory, eq.id) > 1 && (
+                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full text-yellow-300"
+                                style={{ background: 'rgba(0,0,0,0.4)' }}>×{invCount(player.inventory, eq.id)}</span>
+                            )}
                             <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full text-white"
                               style={{ background: 'rgba(0,0,0,0.4)' }}>{slotLabel}</span>
                           </div>
