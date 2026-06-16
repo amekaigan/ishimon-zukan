@@ -1,40 +1,43 @@
-// 石モン図鑑 Service Worker v2.0
-const CACHE_NAME = 'ishimon-v2';
+// 石モン図鑑 Service Worker v3.0
+// 変更点(v3): 壊れた index.html がキャッシュに居座る問題の対策。
+//   - CACHE_NAME を上げて古い（壊れている可能性のある）キャッシュを破棄。
+//   - HTML（ナビゲーション）は実行時にキャッシュへ保存しない＝壊れた応答が居座らない。
+//     常にネットから取得し、失敗時のみ install 時の正規キャッシュにフォールバック。
+//   - 静的アセット（share-card.js 等）は従来どおりネット優先＋200ならキャッシュ。
+const CACHE_NAME = 'ishimon-v3';
 
-// キャッシュするファイル（ゲーム本体）
+// インストール時にキャッシュする「正規コピー」
 const CACHE_URLS = [
   '/game/',
   '/game/index.html',
 ];
 
-// インストール時にキャッシュ
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('[SW] キャッシュ作成');
+      console.log('[SW] キャッシュ作成 v3');
       return cache.addAll(CACHE_URLS);
     })
   );
   self.skipWaiting();
 });
 
-// 古いキャッシュを削除
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.filter(key => key !== CACHE_NAME)
-            .map(key => caches.delete(key))
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
-// ネットワーク優先・失敗時はキャッシュから返す
 self.addEventListener('fetch', event => {
+  const req = event.request;
+  const url = req.url;
+
   // Firebase・API・外部リソース・画像生成WorkerはSWを通さない
-  const url = event.request.url;
   if (
     url.includes('firebase') ||
     url.includes('pollinations') ||
@@ -42,26 +45,44 @@ self.addEventListener('fetch', event => {
     url.includes('gstatic') ||
     url.includes('unpkg') ||
     url.includes('tailwindcss') ||
+    url.includes('googletagmanager') ||
+    url.includes('google-analytics') ||
     url.includes('huggingface') ||
     url.includes('openai') ||
-    url.includes('workers.dev') ||   // ★追加: 画像Worker(ishimon-img)・Vision Worker(ishimon-api)
-    url.includes('deepinfra') ||     // ★追加: 画像エンジン
-    url.includes('replicate')        // ★追加: LoRA推論
+    url.includes('workers.dev') ||
+    url.includes('deepinfra') ||
+    url.includes('replicate')
   ) {
-    return; // ブラウザに直接やらせる（SWを挟まない）
+    return; // ブラウザに直接やらせる
   }
 
+  // HTML（ページ遷移＝index.html）: 常にネット優先・実行時キャッシュ保存はしない。
+  //   壊れた/途中で切れた応答がキャッシュに居座るのを防ぐ。失敗時のみ正規キャッシュへ。
+  const isNavigation =
+    req.mode === 'navigate' ||
+    (req.destination === 'document') ||
+    url.endsWith('/game/') ||
+    url.endsWith('/game/index.html');
+
+  if (isNavigation) {
+    event.respondWith(
+      fetch(req)
+        .then(response => response)
+        .catch(() => caches.match('/game/index.html').then(r => r || caches.match('/game/')))
+    );
+    return;
+  }
+
+  // 静的アセット: ネット優先＋200ならキャッシュ、失敗時はキャッシュから。
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then(response => {
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
-          });
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(req))
   );
 });
