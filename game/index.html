@@ -7277,7 +7277,7 @@ function IshimonZukan() {
             style={{ background: 'rgba(0,0,0,0.4)', border: '1.5px solid rgba(255,255,255,0.35)' }}>▶</button>
         </div>
       ) : null);
-      const pillCls = "inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black text-white leading-none";
+      const pillCls = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold text-white/90 leading-none";
 
       return (
         <div className="fixed inset-0 z-50 overflow-hidden"
@@ -7315,15 +7315,15 @@ function IshimonZukan() {
               <div className="text-center mb-2">
                 <h2 className="text-4xl font-black text-white tracking-wider" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.6)' }}>{mon.name}</h2>
               </div>
-              <div className="flex flex-wrap justify-center items-center gap-1.5 mb-4">
-                <span className={pillCls} style={{ background: r.color, border: '2px solid white', boxShadow: `0 0 12px ${r.glow}66` }}>
-                  <span className="text-sm">{'★'.repeat(mon.rarity)}</span>{r.label}
+              <div className="flex flex-wrap justify-center items-center gap-1.5 mb-3 opacity-90">
+                <span className={pillCls} style={{ background: r.color }}>
+                  <span className="text-[10px]">{'★'.repeat(mon.rarity)}</span>{r.label}
                 </span>
-                <span className={pillCls} style={{ background: 'rgba(255,255,255,0.22)', border: '2px solid white' }}>
-                  <span className="text-sm">{t.emoji}</span>{t.name}
+                <span className={pillCls} style={{ background: 'rgba(255,255,255,0.14)' }}>
+                  <span className="text-[10px]">{t.emoji}</span>{t.name}
                 </span>
-                <span className={pillCls} style={{ background: 'rgba(0,0,0,0.4)', border: '2px solid white' }}>
-                  <span className="text-sm">{stage.emoji}</span>{stage.label}
+                <span className={pillCls} style={{ background: 'rgba(0,0,0,0.35)' }}>
+                  <span className="text-[10px]">{stage.emoji}</span>{stage.label}
                 </span>
               </div>
 
@@ -7331,7 +7331,7 @@ function IshimonZukan() {
               <div className="flex gap-1 p-1 rounded-2xl mb-3" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.12)' }}>
                 {[['status','ステータス'],['memory','おもいで'],['gear','そうび']].map(([k, label]) => (
                   <button key={k} onClick={() => setDetailTab(k)}
-                    className="flex-1 py-2 rounded-xl text-xs font-black transition-all active:scale-95"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-black transition-all active:scale-95"
                     style={detailTab === k
                       ? { background: 'linear-gradient(135deg, #FFE066, #FFD700)', color: '#5A3A1A', boxShadow: '0 2px 0 rgba(0,0,0,0.25)' }
                       : { background: 'transparent', color: 'rgba(255,255,255,0.7)' }}>
