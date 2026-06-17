@@ -618,7 +618,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.43.1';
+const APP_VERSION = '2.43.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -5093,7 +5093,7 @@ function IshimonZukan() {
         style={{ background: `linear-gradient(180deg, ${t.dark} 0%, #15121d 70%, #100e17 100%)` }}>
         {/* 固定ヘッダー */}
         <div className="flex-none flex items-center gap-2 px-3 pb-2"
-          style={{ paddingTop: 'calc(0.5rem + env(safe-area-inset-top))', background: 'rgba(0,0,0,0.25)', borderBottom: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(6px)' }}>
+          style={{ paddingTop: 'calc(0.5rem + env(safe-area-inset-top))', background: 'rgba(20,16,28,0.92)', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
           <button onClick={close}
             className="flex-none flex items-center gap-1 pl-2 pr-3 py-1.5 rounded-full text-white font-black text-sm active:scale-95 transition-transform"
             style={{ background: 'rgba(0,0,0,0.35)', border: '1.5px solid rgba(255,255,255,0.35)' }}>
@@ -5132,12 +5132,12 @@ function IshimonZukan() {
               })}
             </div>
 
-            {/* 現在のステータス */}
-            <div className="bg-white/90 rounded-2xl p-3 mb-3 space-y-1">
-              <div className="flex justify-between text-xs font-bold"><span>HP</span><span>{cur.hp}{eq.hp > 0 && <span className="text-green-600"> (+{eq.hp})</span>}</span></div>
-              <div className="flex justify-between text-xs font-bold"><span>こうげき</span><span>{cur.kogeki}{eq.kogeki > 0 && <span className="text-green-600"> (+{eq.kogeki})</span>}</span></div>
-              <div className="flex justify-between text-xs font-bold"><span>ぼうぎょ</span><span>{cur.bougyo}{eq.bougyo > 0 && <span className="text-green-600"> (+{eq.bougyo})</span>}</span></div>
-              <div className="flex justify-between text-xs font-bold"><span>すばやさ</span><span>{cur.speed}{eq.speed > 0 && <span className="text-green-600"> (+{eq.speed})</span>}</span></div>
+            {/* 現在のステータス（ステータスタブと同じ棒グラフ） */}
+            <div className="bg-white/95 rounded-2xl p-3 mb-3 space-y-2">
+              <StatBar label="HP" cur={cur.hp} base={mon.baseStats?.hp} eqBoost={eq.hp} max={180} color="#52B788" />
+              <StatBar label="攻撃" cur={cur.kogeki} base={mon.baseStats?.kogeki} eqBoost={eq.kogeki} max={140} color="#FF6B35" />
+              <StatBar label="防御" cur={cur.bougyo} base={mon.baseStats?.bougyo} eqBoost={eq.bougyo} max={140} color="#3DA5F5" />
+              <StatBar label="素早さ" cur={cur.speed} base={mon.baseStats?.speed} eqBoost={eq.speed} max={140} color="#FFC42B" />
             </div>
 
             {/* 選択中スロットのアイテムだけ表示（増えても重くならない） */}
@@ -5149,30 +5149,34 @@ function IshimonZukan() {
                 )}
                 {ownedActive.map(e => {
                   const isEq = e.id === eqIdActive;
-                  const count = invCount(player.inventory, e.id);
-                  const equippedCnt = equippedCounts[e.id] || 0;
-                  const sellable = count - equippedCnt > 0;
+                  const total = invCount(player.inventory, e.id);
+                  const free = total - (equippedCounts[e.id] || 0);   // 誰も装備していない予備の数
+                  const canEquip = !isEq && free > 0;
+                  const lockedByOthers = !isEq && free <= 0;          // 予備ゼロ＝他の石モンが全部装備中
+                  const sellable = free > 0;
                   return (
                     <div key={e.id} className="flex items-center gap-2 p-2 rounded-xl"
-                      style={{ background: isEq ? 'rgba(255,215,0,0.25)' : 'rgba(255,255,255,0.08)', border: isEq ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.15)' }}>
+                      style={{ opacity: lockedByOthers ? 0.5 : 1, background: isEq ? 'rgba(255,215,0,0.25)' : (lockedByOthers ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)'), border: isEq ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.15)' }}>
                       <span className="text-xl">{e.emoji}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-bold text-sm truncate flex items-center gap-1">
                           {e.name}
-                          {count > 1 && <span className="text-[9px] font-black text-yellow-300 bg-black/40 rounded-full px-1">×{count}</span>}
+                          {free >= 2 && <span className="text-[9px] font-black text-yellow-300 bg-black/40 rounded-full px-1">×{free}</span>}
                         </div>
-                        <div className="text-[11px] font-black text-green-300 leading-tight">{boostText(e.boost)}</div>
+                        <div className="text-[11px] font-black leading-tight" style={{ color: lockedByOthers ? '#9aa3b2' : '#86efac' }}>
+                          {lockedByOthers ? 'ほかのコが そうび中' : boostText(e.boost)}
+                        </div>
                       </div>
                       {isEq ? (
                         <button onClick={() => equipItem(mon.id, activeSlot, null)}
                           className="bg-red-500 text-white text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95">はずす</button>
                       ) : (
-                        <button onClick={() => equipItem(mon.id, activeSlot, e.id)}
-                          className="text-purple-900 text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95"
-                          style={{ background: 'linear-gradient(135deg, #FFE066, #FFD700)' }}>装備</button>
+                        <button onClick={() => canEquip && equipItem(mon.id, activeSlot, e.id)} disabled={!canEquip}
+                          className="text-purple-900 text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95 disabled:opacity-40"
+                          style={{ background: canEquip ? 'linear-gradient(135deg, #FFE066, #FFD700)' : 'rgba(255,255,255,0.15)' }}>装備</button>
                       )}
                       <button onClick={() => sellEquip(e)} disabled={!sellable}
-                        className="text-white text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95 disabled:opacity-30"
+                        className="text-white text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95 disabled:opacity-40"
                         style={{ background: 'linear-gradient(135deg, #FFB84D, #FF8C00)' }}>売る</button>
                     </div>
                   );
