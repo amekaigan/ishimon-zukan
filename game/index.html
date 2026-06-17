@@ -1584,6 +1584,8 @@ const EQUIP_LABELS = { sword: '剣', shield: '盾', charm: 'お守り' };
 const SELL_RATE = 0.1;                                   // 売却の払い戻し率（購入価格の10%）
 const invCount = (inv, id) => (inv || []).filter(x => x === id).length;   // その装備の所持数
 const sellValue = (eq) => Math.max(1, Math.floor((eq.price || 0) * SELL_RATE));
+const STAT_LABELS = { hp: 'HP', kogeki: 'こうげき', bougyo: 'ぼうぎょ', speed: 'すばやさ' };
+const boostText = (boost) => Object.entries(boost || {}).map(([k, v]) => `${STAT_LABELS[k] || k} +${v}`).join(' / ');
 
 // ===== ガチャ排出テーブル =====
 // gachaRoll() → { kind: 'mon'|'equip', rarity, data }
@@ -5081,6 +5083,11 @@ function IshimonZukan() {
       return () => { document.body.style.overflow = _prev; };
     }, []);
     const close = () => setShowEquip(null);
+    const [activeSlot, setActiveSlot] = useState('sword');
+    const equippedCounts = {};
+    for (const m of collection) { if (m.equipped) for (const sl of EQUIP_SLOTS) { const id = m.equipped[sl]; if (id) equippedCounts[id] = (equippedCounts[id] || 0) + 1; } }
+    const eqIdActive = mon.equipped?.[activeSlot];
+    const ownedActive = Object.values(EQUIPMENT).filter(e => e.type === activeSlot && invCount(player.inventory, e.id) > 0);
     return (
       <div className="fixed inset-0 z-[70] flex flex-col"
         style={{ background: `linear-gradient(180deg, ${t.dark} 0%, #15121d 70%, #100e17 100%)` }}>
@@ -5107,17 +5114,20 @@ function IshimonZukan() {
           style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'calc(1rem + 72px + env(safe-area-inset-bottom))' }}>
           <div className="w-full max-w-sm mx-auto">
 
-            {/* 現在の装備（3スロット要約） */}
+            {/* 3スロット＝タブ（タップで切替・大きめ表示） */}
             <div className="grid grid-cols-3 gap-2 mb-3">
               {EQUIP_SLOTS.map(slot => {
                 const e = mon.equipped?.[slot] ? EQUIPMENT[mon.equipped[slot]] : null;
+                const isActive = slot === activeSlot;
                 return (
-                  <div key={slot} className="rounded-2xl p-2 text-center"
-                    style={{ background: e ? 'rgba(255,215,0,0.18)' : 'rgba(0,0,0,0.3)', border: e ? '2px solid #FFD700' : '2px dashed rgba(255,255,255,0.25)' }}>
-                    <div className="text-[9px] font-black text-yellow-200 mb-0.5">{EQUIP_LABELS[slot]}</div>
-                    <div className="text-2xl leading-none">{e ? e.emoji : '➖'}</div>
-                    <div className="text-[9px] font-bold text-white/80 truncate mt-0.5">{e ? e.name : '空き'}</div>
-                  </div>
+                  <button key={slot} onClick={() => setActiveSlot(slot)}
+                    className="rounded-2xl p-2.5 text-center active:scale-95 transition-transform"
+                    style={{ background: isActive ? 'rgba(255,215,0,0.25)' : (e ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.3)'), border: isActive ? '2.5px solid #FFD700' : (e ? '2px solid rgba(255,255,255,0.3)' : '2px dashed rgba(255,255,255,0.22)') }}>
+                    <div className="text-[11px] font-black text-yellow-200 mb-0.5">{EQUIP_LABELS[slot]}</div>
+                    <div className="text-3xl leading-none">{e ? e.emoji : '➖'}</div>
+                    <div className="text-[11px] font-bold text-white truncate mt-1">{e ? e.name : '空き'}</div>
+                    {e && <div className="text-[10px] font-black text-green-300 leading-tight mt-0.5">{boostText(e.boost)}</div>}
+                  </button>
                 );
               })}
             </div>
@@ -5130,50 +5140,45 @@ function IshimonZukan() {
               <div className="flex justify-between text-xs font-bold"><span>すばやさ</span><span>{cur.speed}{eq.speed > 0 && <span className="text-green-600"> (+{eq.speed})</span>}</span></div>
             </div>
 
-            {/* スロットごと：持っている物だけ＋装備/売却 */}
-            {EQUIP_SLOTS.map(slot => {
-              const eqId = mon.equipped?.[slot];
-              const ownedList = Object.values(EQUIPMENT).filter(e => e.type === slot && invCount(player.inventory, e.id) > 0);
-              return (
-                <div key={slot} className="mb-3">
-                  <div className="text-yellow-300 text-xs font-black tracking-widest mb-1">{EQUIP_LABELS[slot]}</div>
-                  <div className="bg-black/40 rounded-2xl p-2 space-y-1.5" style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
-                    {ownedList.length === 0 && (
-                      <div className="text-white/40 text-xs font-bold text-center py-2">ショップで かおう！</div>
-                    )}
-                    {ownedList.map(e => {
-                      const isEq = e.id === eqId;
-                      const count = invCount(player.inventory, e.id);
-                      const equippedCnt = collection.filter(m => m.equipped && EQUIP_SLOTS.some(sl => m.equipped[sl] === e.id)).length;
-                      const sellable = count - equippedCnt > 0;
-                      return (
-                        <div key={e.id} className="flex items-center gap-2 p-2 rounded-xl"
-                          style={{ background: isEq ? 'rgba(255,215,0,0.25)' : 'rgba(255,255,255,0.08)', border: isEq ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.15)' }}>
-                          <span className="text-xl">{e.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-white font-bold text-sm truncate flex items-center gap-1">
-                              {e.name}
-                              {count > 1 && <span className="text-[9px] font-black text-yellow-300 bg-black/40 rounded-full px-1">×{count}</span>}
-                            </div>
-                          </div>
-                          {isEq ? (
-                            <button onClick={() => equipItem(mon.id, slot, null)}
-                              className="bg-red-500 text-white text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95">はずす</button>
-                          ) : (
-                            <button onClick={() => equipItem(mon.id, slot, e.id)}
-                              className="text-purple-900 text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95"
-                              style={{ background: 'linear-gradient(135deg, #FFE066, #FFD700)' }}>装備</button>
-                          )}
-                          <button onClick={() => sellEquip(e)} disabled={!sellable}
-                            className="text-white text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95 disabled:opacity-30"
-                            style={{ background: 'linear-gradient(135deg, #FFB84D, #FF8C00)' }}>売る</button>
+            {/* 選択中スロットのアイテムだけ表示（増えても重くならない） */}
+            <div className="mb-3">
+              <div className="text-yellow-300 text-xs font-black tracking-widest mb-1">{EQUIP_LABELS[activeSlot]}（もちもの）</div>
+              <div className="bg-black/40 rounded-2xl p-2 space-y-1.5" style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
+                {ownedActive.length === 0 && (
+                  <div className="text-white/40 text-xs font-bold text-center py-2">ショップで かおう！</div>
+                )}
+                {ownedActive.map(e => {
+                  const isEq = e.id === eqIdActive;
+                  const count = invCount(player.inventory, e.id);
+                  const equippedCnt = equippedCounts[e.id] || 0;
+                  const sellable = count - equippedCnt > 0;
+                  return (
+                    <div key={e.id} className="flex items-center gap-2 p-2 rounded-xl"
+                      style={{ background: isEq ? 'rgba(255,215,0,0.25)' : 'rgba(255,255,255,0.08)', border: isEq ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.15)' }}>
+                      <span className="text-xl">{e.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-bold text-sm truncate flex items-center gap-1">
+                          {e.name}
+                          {count > 1 && <span className="text-[9px] font-black text-yellow-300 bg-black/40 rounded-full px-1">×{count}</span>}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+                        <div className="text-[11px] font-black text-green-300 leading-tight">{boostText(e.boost)}</div>
+                      </div>
+                      {isEq ? (
+                        <button onClick={() => equipItem(mon.id, activeSlot, null)}
+                          className="bg-red-500 text-white text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95">はずす</button>
+                      ) : (
+                        <button onClick={() => equipItem(mon.id, activeSlot, e.id)}
+                          className="text-purple-900 text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95"
+                          style={{ background: 'linear-gradient(135deg, #FFE066, #FFD700)' }}>装備</button>
+                      )}
+                      <button onClick={() => sellEquip(e)} disabled={!sellable}
+                        className="text-white text-xs font-black px-2.5 py-1.5 rounded-lg active:scale-95 disabled:opacity-30"
+                        style={{ background: 'linear-gradient(135deg, #FFB84D, #FF8C00)' }}>売る</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
           </div>
         </div>
