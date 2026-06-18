@@ -2284,6 +2284,7 @@ function IshimonZukan() {
   const [showProfile, setShowProfile] = useState(false);
   const [showEquip, setShowEquip] = useState(null);
   const [equipTab, setEquipTab] = useState('sword'); // 装備画面のタブ（App側に保持＝再描画で戻らない）
+  const [showQuotaOver, setShowQuotaOver] = useState(false); // 1日の枠オーバー時のやさしい画面
   const [showShareCard, setShowShareCard] = useState(null); // v2.16.0: シェアカード表示用
   const [showGacha, setShowGacha] = useState(false);
   const [gachaResults, setGachaResults] = useState([]);
@@ -3076,7 +3077,7 @@ function IshimonZukan() {
     // 1日の無料生成枠チェック（オーナーは無制限。超過なら生成もVisionも呼ばずに終了＝コスト0）
     if (window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) {
       setPreviewImage(null);
-      setError(`きょうは たくさんの石モンに 会えたね！🌙\nまた あした きてね（1日 ${DAILY_FREE_GEN}回まで）`);
+      setShowQuotaOver(true);
       return;
     }
     // 石のかけら コストチェック
@@ -10037,6 +10038,26 @@ function IshimonZukan() {
       <InventoryModal />
       <ProfileModal />
       <EquipModal />
+      {showQuotaOver && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-6"
+          style={{ background: 'rgba(18,14,28,0.8)' }}
+          onClick={() => setShowQuotaOver(false)}>
+          <div className="w-full max-w-xs rounded-3xl p-6 text-center relative overflow-hidden"
+            style={{ background: 'linear-gradient(160deg, #3b2f6b 0%, #5b3a8c 100%)', border: '3px solid #FFD700', boxShadow: '0 14px 44px rgba(0,0,0,0.55)' }}
+            onClick={e => e.stopPropagation()}>
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at 30% 18%, rgba(255,255,255,0.18), transparent 45%)' }} />
+            <div className="relative">
+              <div className="text-6xl mb-3" style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.4))' }}>🌙</div>
+              <div className="text-white font-black text-xl mb-2 leading-relaxed" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.4)' }}>きょうは たくさんの<br/>石モンに 会えたね！</div>
+              <div className="text-yellow-100 font-bold text-sm mb-1">また あした あそびに きてね</div>
+              <div className="text-white/60 text-xs font-bold mb-5">（1日 {DAILY_FREE_GEN}回まで あそべるよ）</div>
+              <button onClick={() => setShowQuotaOver(false)}
+                className="w-full text-purple-900 font-black text-base py-3 rounded-full active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #FFE066, #FFD700)' }}>おやすみ 🌟</button>
+            </div>
+          </div>
+        </div>
+      )}
       <ConsentModal />
       <OnboardingModal />
       <NewTitleAlert />
