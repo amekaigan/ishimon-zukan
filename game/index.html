@@ -618,7 +618,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.45.1';
+const APP_VERSION = '2.46.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -7741,6 +7741,8 @@ function IshimonZukan() {
   // ===========================================
   const [collectionSort, setCollectionSort] = useState('newest');
   const [collectionFilter, setCollectionFilter] = useState('all'); // 'all'|'fav'|groupId
+  const [collectionVisible, setCollectionVisible] = useState(30); // v2.46.0: 図鑑ページング（メモリ対策）
+  useEffect(() => { setCollectionVisible(30); }, [view, collectionFilter, collectionSort]);
 
   // グループカラー（最大4色）
   const GROUP_COLORS = ['#FF6B35','#52B788','#C77DFF','#3DA5F5'];
@@ -8059,7 +8061,7 @@ function IshimonZukan() {
         ) : (
           <div className="grid gap-2"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', maxWidth: '1200px', margin: '0 auto' }}>
-            {sorted.map((m) => {
+            {sorted.slice(0, collectionVisible).map((m) => {
               const t = TYPES[m.type] || TYPES['土'];
               const r = getRarityLabel(m.rarity);
               const monGroup = groups.find(g => g.id === m.groupId);
@@ -8105,6 +8107,13 @@ function IshimonZukan() {
                 </button>
               );
             })}
+            {sorted.length > collectionVisible && (
+              <button onClick={() => setCollectionVisible(v => v + 30)}
+                style={{ gridColumn: '1 / -1', background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 #B8860B', border: '2px solid white' }}
+                className="py-3 rounded-2xl text-white font-black active:scale-95 transition-transform">
+                もっと見る（のこり {sorted.length - collectionVisible} 体）
+              </button>
+            )}
           </div>
         )}
       </div>
