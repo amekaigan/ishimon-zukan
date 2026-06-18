@@ -48,9 +48,9 @@
   });
   setTimeout(function(){
     if(!window.__appReady){
-      showErr('データ読み込みが20秒たっても完了しません（電波 or Firebase の可能性）。電波の良い所で再読み込みを試してね');
+      showErr('データ読み込みに時間がかかっています（電波の良い所で もう一度ためしてね）');
     }
-  }, 20000);
+  }, 45000);
 })();
 </script>
 <meta name="mobile-web-app-capable" content="yes">
@@ -618,7 +618,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.45.0';
+const APP_VERSION = '2.45.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2540,6 +2540,7 @@ function IshimonZukan() {
         // 機能追加(v2.9.0): 初期ロード完了。成功・失敗どちらでも必ずローディング解除。
         setInitialLoading(false);
         window.__appReady = true;  // 起動完了フラグ（診断ウォッチドッグ用）
+        try { var __be = document.getElementById('__bootErr'); if (__be) __be.remove(); } catch(_) {}
         console.log('[初期ロード] 完了');
       }
     })();
