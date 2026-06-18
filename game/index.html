@@ -654,7 +654,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.48.0';
+const APP_VERSION = '2.49.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2398,6 +2398,7 @@ function IshimonZukan() {
     (async () => {
       try {
         // ★ ローカル先行ペイント：localにデータがあれば即ホーム表示（裏でFirestore同期）
+        let _idbCol = null; // v2.49.0: idb先行描画できた時は後続のFirestore全件再取得を省きOOM回避
         try {
           let _lc = null;
           try { if (window._idb) _lc = await window._idb.get('ishimon-collection-v3'); } catch (_) {} // v2.48.0: 大容量はIndexedDB優先
@@ -2409,6 +2410,7 @@ function IshimonZukan() {
             if (Array.isArray(_pc) && _pc.length > 0 && _pp && typeof _pp === 'object') {
               setCollection(_pc);
               setPlayer(_pp);
+              _idbCol = _pc; // 後続のFirestore全件再取得をスキップする目印
               try { const _ls = localStorage.getItem('ishimon-settings-v1'); if (_ls) setSettings(prev => ({ ...prev, ...JSON.parse(_ls) })); } catch (_) {}
               setDataReady(true);
               setInitialLoading(false);
@@ -2430,7 +2432,7 @@ function IshimonZukan() {
         ])) || { uid: null }; // v2.29.2: 認証がnullで解決しても.uidで落ちないように
         console.log('[初期ロード] 認証確定:', authResult);
 
-        const colR = await window.storage.get('ishimon-collection-v3');
+        const colR = _idbCol ? null : await window.storage.get('ishimon-collection-v3');
         const playerR = await window.storage.get('ishimon-player-v3');
         const settingsR = await window.storage.get('ishimon-settings-v1').catch(() => null);
         // v2.29.1: 壊れたJSON（Firestoreチャンク途切れ等）で起動ごと落ちる事故対策。
@@ -2448,11 +2450,11 @@ function IshimonZukan() {
             return fallback;
           }
         };
-        const loadedCollection = _safeParse(colR?.value, 'ishimon-collection-v3', []); // v2.22.0: 新規は0体スタート
+        const loadedCollection = _idbCol ? _idbCol : _safeParse(colR?.value, 'ishimon-collection-v3', []); // v2.22.0: 新規は0体スタート
         const loadedPlayer = _safeParse(playerR?.value, 'ishimon-player-v3', null);
 
         // ★ STEP2移行: 旧⭐(isTaste)を新👍(taste:'up')へ一度だけ変換
-        const migratedCollection = loadedCollection.map(m => {
+        const migratedCollection = _idbCol ? loadedCollection : loadedCollection.map(m => {
           if (m.isTaste && !m.taste) {
             const { isTaste, ...rest } = m;
             return { ...rest, taste: 'up' };
@@ -2471,10 +2473,12 @@ function IshimonZukan() {
             else if (_cached) { _m.imageDataUrl = _cached; }
           } catch (_) {}
         };
-        for (let _i = 0; _i < migratedCollection.length; _i += 10) {
-          await Promise.all(migratedCollection.slice(_i, _i + 10).map(_rehydrate));
+        if (!_idbCol) {
+          for (let _i = 0; _i < migratedCollection.length; _i += 10) {
+            await Promise.all(migratedCollection.slice(_i, _i + 10).map(_rehydrate));
+          }
+          setCollection(migratedCollection);
         }
-        setCollection(migratedCollection);
         if (settingsR?.value) {
           try { setSettings(prev => ({ ...prev, ...JSON.parse(settingsR.value) })); }
           catch (e) { /* デフォルト維持 */ }
