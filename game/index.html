@@ -654,7 +654,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.47.0';
+const APP_VERSION = '2.48.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2399,7 +2399,9 @@ function IshimonZukan() {
       try {
         // ★ ローカル先行ペイント：localにデータがあれば即ホーム表示（裏でFirestore同期）
         try {
-          const _lc = localStorage.getItem('ishimon-collection-v3');
+          let _lc = null;
+          try { if (window._idb) _lc = await window._idb.get('ishimon-collection-v3'); } catch (_) {} // v2.48.0: 大容量はIndexedDB優先
+          if (!_lc) _lc = localStorage.getItem('ishimon-collection-v3');
           const _lp = localStorage.getItem('ishimon-player-v3');
           if (_lc && _lp) {
             const _pc = JSON.parse(_lc);
