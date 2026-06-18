@@ -4130,7 +4130,7 @@ function IshimonZukan() {
                     }}>
                     <div className="relative">
                       {m.imageDataUrl ? (
-                        <img src={m.imageDataUrl} className="w-full h-24 object-cover" />
+                        <img src={m.imageDataUrl} loading="lazy" decoding="async" className="w-full h-24 object-cover" />
                       ) : (
                         <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}>
                           <span className="text-4xl">{t.emoji}</span>
@@ -8070,7 +8070,7 @@ function IshimonZukan() {
                   style={{ background: `linear-gradient(180deg, ${t.light}, ${t.bg})`, border: `2px solid ${r.color}`, boxShadow: `0 3px 0 ${t.dark}`, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}>
                   <div className="relative">
                     {m.imageDataUrl ? (
-                      <img src={m.imageDataUrl} className="w-full h-24 object-cover" />
+                      <img src={m.imageDataUrl} loading="lazy" decoding="async" className="w-full h-24 object-cover" />
                     ) : (
                       <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}><span className="text-4xl">{t.emoji}</span></div>
                     )}
@@ -9823,7 +9823,7 @@ function IshimonZukan() {
       <style>{`@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }`}</style>
 
       {view === 'home' && <HomeView />}
-      {view === 'collection' && <CollectionView />}
+      {view === 'collection' && !selected && !newMon && !showEquip && <CollectionView />}
       {view === 'ranking' && <RankingView />}
       {view === 'stages' && <StageSelectView />}
       {view === 'battle' && <BattleView />}
