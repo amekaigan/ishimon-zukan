@@ -618,7 +618,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.43.2';
+const APP_VERSION = '2.45.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3264,6 +3264,7 @@ function IshimonZukan() {
       const updated = [entry, ...collection];
       setCollection(updated);
       saveCollection(updated); // 保存は裏で実行（UIを待たせない）。Replicate完了後の待ち対策。
+      addPlayerExp(15 + (entry.rarity || 1) * 5); // v2.45.0: 石モン作成でプレイヤーEXP（★で増量）
       if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
@@ -3315,6 +3316,7 @@ function IshimonZukan() {
         updateMission('capture');
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
         if (window._currentUid) assignUserNumber(window._currentUid);
+        addPlayerExp(15 + (entry.rarity || 1) * 5); // v2.45.0: 石モン作成でプレイヤーEXP（★で増量）
       } catch (fallbackErr) {
         console.error('fallback error:', fallbackErr);
         setError('失敗しました。もう一度お試しください');
