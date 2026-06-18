@@ -697,6 +697,18 @@ const buildImageUrl = (prompt, seed) => {
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
 
+// ===== 1日の無料生成枠（uid単位・端末ローカル。Step2でWorker厳格化予定） =====
+const DAILY_FREE_GEN = 5; // 1日に無料で生成できる回数
+const _genQuotaKey = () => {
+  const uid = window._currentUid || 'guest';
+  const d = new Date();
+  const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  return `ishimon-gen-${uid}-${day}`;
+};
+const getGenCountToday = () => { try { return parseInt(localStorage.getItem(_genQuotaKey()) || '0', 10) || 0; } catch (_) { return 0; } };
+const bumpGenCountToday = () => { try { localStorage.setItem(_genQuotaKey(), String(getGenCountToday() + 1)); } catch (_) {} };
+const genRemainingToday = () => Math.max(0, DAILY_FREE_GEN - getGenCountToday());
+
 // AIエンジンのウォームアップ（コールドスタート対策）
 // Replicate(ishimon)は眠っていると起動に40〜60秒。撮影ボタンを押した瞬間にダミー生成を1発投げ、
 // カメラ起動→撮影→Claude解析の間にコンテナを起こす → 本番の生成が温かい状態で当たる。
@@ -3061,6 +3073,12 @@ function IshimonZukan() {
       });
       return;
     }
+    // 1日の無料生成枠チェック（オーナーは無制限。超過なら生成もVisionも呼ばずに終了＝コスト0）
+    if (window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) {
+      setPreviewImage(null);
+      setError(`きょうは たくさんの石モンに 会えたね！🌙\nまた あした きてね（1日 ${DAILY_FREE_GEN}回まで）`);
+      return;
+    }
     // 石のかけら コストチェック
     if ((player.stoneFragments || 0) < CAPTURE_COST) {
       setError(`石のかけらが 足りません！（${CAPTURE_COST}個 必要 / 現在 ${player.stoneFragments || 0}個）`);
@@ -3070,6 +3088,7 @@ function IshimonZukan() {
     const updatedPlayer = { ...player, stoneFragments: (player.stoneFragments || 0) - CAPTURE_COST };
     setPlayer(updatedPlayer);
     savePlayer(updatedPlayer);
+    if (window._currentUid !== window.OWNER_UID) bumpGenCountToday(); // 1日の生成枠を1消費（撮影＝1回）
 
     setIsLoading(true);
     setError('');
@@ -9980,6 +9999,11 @@ function IshimonZukan() {
               </span>
               <style>{`.ishi-note rt { font-size: 0.62em; font-weight: 700; opacity: 0.95; }`}</style>
             </div>
+            {window._currentUid !== window.OWNER_UID && (
+              <div className="text-white/90 text-[12px] font-black mb-1 bg-black/30 rounded-full px-3 py-1" style={{ border: '1px solid rgba(255,255,255,0.25)' }}>
+                ✨ きょうの のこり {genRemainingToday()} / {DAILY_FREE_GEN} かい
+              </div>
+            )}
             <div className="flex items-center gap-8">
               <button onClick={stopCamera}
                 className="bg-white/20 rounded-full p-4 active:bg-white/40 backdrop-blur-sm"
