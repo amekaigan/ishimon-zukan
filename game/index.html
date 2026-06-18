@@ -606,6 +606,42 @@ window.storage = {
 };
 </script>
 
+<script>
+// ===== IndexedDB ローカルキャッシュ（v2.47.0: 大容量・起動高速化用）=====
+// localStorageは約5MB上限で大きいコレクションが保存できない。IndexedDBは数百MB入る。
+// 正本はFirestore。ここは起動を速くするための読み取りキャッシュ＝追加のみ・正本に触らない。
+window._idb = (function () {
+  const DB = 'ishimon-cache', STORE = 'kv';
+  function open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB, 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore(STORE); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function set(key, value) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(value, key);
+      tx.oncomplete = () => { db.close(); resolve(true); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+    });
+  }
+  async function get(key) {
+    const db = await open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const r = tx.objectStore(STORE).get(key);
+      r.onsuccess = () => { db.close(); resolve(r.result == null ? null : r.result); };
+      r.onerror = () => { db.close(); reject(r.error); };
+    });
+  }
+  return { set, get };
+})();
+</script>
+
 <script type="text/babel" data-presets="react">
 
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
@@ -618,7 +654,7 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.46.0';
+const APP_VERSION = '2.47.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2593,8 +2629,10 @@ function IshimonZukan() {
     catch (e) { console.error(e); }
   };
   const saveCollection = async (c) => {
-    try { await window.storage.set('ishimon-collection-v3', JSON.stringify(c)); }
+    const _json = JSON.stringify(c);
+    try { await window.storage.set('ishimon-collection-v3', _json); }
     catch (e) { console.error(e); }
+    try { if (window._idb) window._idb.set('ishimon-collection-v3', _json); } catch (_) {} // v2.47.0: IndexedDBミラー
   };
 
   // 強制Firestore保存（v2.30.0: 差分化対応）
@@ -2608,6 +2646,7 @@ function IshimonZukan() {
     try {
       localStorage.setItem('ishimon-player-v3', playerJson);
       localStorage.setItem('ishimon-collection-v3', collectionJson);
+      try { if (window._idb) window._idb.set('ishimon-collection-v3', collectionJson); } catch (_) {}
     } catch (_) {}
     const withTimeout = (promise, ms) => Promise.race([
       promise,
@@ -9311,6 +9350,23 @@ function IshimonZukan() {
                     <div className="text-white font-black text-sm">✅ オーナー（{(firebaseUser && firebaseUser.email) || 'ログイン中'}）</div>
                     <div className="text-white/50 text-[11px] mt-0.5">オーナーuidでログイン中。以下の機能が有効です</div>
                   </div>
+                </div>
+
+                {/* 🔧 IndexedDBキャッシュ確認（v2.47.0 Step1検証） */}
+                <div className="mb-3">
+                  <button onClick={async () => {
+                    try {
+                      const v = window._idb ? await window._idb.get('ishimon-collection-v3') : null;
+                      if (!v) { setError('IndexedDBキャッシュ: まだ無し（石モンを作るか「今すぐ保存」で保存されます）'); return; }
+                      const mb = (v.length / 1024 / 1024).toFixed(1);
+                      let n = 0; try { n = JSON.parse(v).length; } catch (_) {}
+                      setError('IndexedDBキャッシュ: ' + mb + 'MB / ' + n + '体 保存済み');
+                    } catch (e) { setError('IndexedDB確認エラー: ' + (e && e.message)); }
+                  }}
+                    className="w-full py-2 rounded-xl text-white font-black text-xs active:scale-95 transition-transform"
+                    style={{ background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(255,255,255,0.2)' }}>
+                    🔧 ローカルキャッシュを確認（IndexedDB）
+                  </button>
                 </div>
 
                 {/* 🎨 画像生成エンジン */}
