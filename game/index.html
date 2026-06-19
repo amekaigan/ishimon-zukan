@@ -684,6 +684,7 @@ const ISHIMON_REGIONS = {
 };
 const ISHIMON_ALL_PREFS = Object.values(ISHIMON_REGIONS).reduce((a, b) => a.concat(b), []);
 const ISHIMON_PREF_CENTER = {'京都府':[35.243,135.478], '佐賀県':[33.246,130.088], '熊本県':[32.721,130.906], '香川県':[34.197,134.012], '愛知県':[34.991,137.246], '栃木県':[36.663,139.79], '山梨県':[35.604,138.683], '滋賀県':[35.24,136.131], '群馬県':[36.519,138.927], '宮城県':[38.406,140.926], '静岡県':[35.123,138.218], '茨城県':[36.337,140.261], '沖縄県':[26.477,127.903], '山形県':[38.445,140.15], '和歌山県':[33.947,135.357], '長崎県':[32.995,129.723], '秋田県':[39.671,140.424], '岡山県':[34.899,133.797], '福岡県':[33.458,130.613], '岐阜県':[35.787,136.962], '青森県':[40.915,140.485], '大阪府':[34.668,135.547], '長野県':[36.16,138.1], '大分県':[33.213,131.355], '三重県':[34.491,136.524], '広島県':[34.653,132.765], '北海道':[43.469,143.327], '兵庫県':[35.168,134.823], '千葉県':[35.529,140.253], '富山県':[36.649,137.279], '東京都':[35.709,139.483], '埼玉県':[36.01,139.278], '山口県':[34.302,131.499], '福島県':[37.401,140.131], '石川県':[36.769,136.776], '福井県':[35.828,136.43], '愛媛県':[33.511,132.714], '奈良県':[34.318,135.88], '島根県':[35.001,132.488], '岩手県':[39.584,141.403], '鳥取県':[35.325,134.093], '徳島県':[33.916,134.177], '鹿児島県':[31.606,130.969], '新潟県':[37.638,139.158], '高知県':[33.342,133.085], '宮崎県':[32.111,131.189], '神奈川県':[35.427,139.285]}; // v2.51.1: 県ラベルの中心座標（本土）
+const ISHIMON_PREF_CODE = {'北海道':'01','青森県':'02','岩手県':'03','宮城県':'04','秋田県':'05','山形県':'06','福島県':'07','茨城県':'08','栃木県':'09','群馬県':'10','埼玉県':'11','千葉県':'12','東京都':'13','神奈川県':'14','新潟県':'15','富山県':'16','石川県':'17','福井県':'18','山梨県':'19','長野県':'20','岐阜県':'21','静岡県':'22','愛知県':'23','三重県':'24','滋賀県':'25','京都府':'26','大阪府':'27','兵庫県':'28','奈良県':'29','和歌山県':'30','鳥取県':'31','島根県':'32','岡山県':'33','広島県':'34','山口県':'35','徳島県':'36','香川県':'37','愛媛県':'38','高知県':'39','福岡県':'40','佐賀県':'41','長崎県':'42','熊本県':'43','大分県':'44','宮崎県':'45','鹿児島県':'46','沖縄県':'47'}; // v2.52.0: 県名→JISコード（市区町村geojson遅延ロード用）
 const parsePrefecture = (name) => {
   if (!name || typeof name !== 'string') return null;
   const parts = name.split(/[・,、\s]+/).map(s => s.trim()).filter(Boolean);
@@ -704,7 +705,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.51.2';
+const APP_VERSION = '2.52.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8260,6 +8261,29 @@ function IshimonZukan() {
           if (mapObjRef.current) { try { mapObjRef.current.remove(); } catch (_) {} mapObjRef.current = null; }
           const map = L.map(mapRef.current, { attributionControl: false, zoomControl: true, minZoom: 3, maxZoom: 11, maxBounds: [[20, 118], [50, 155]], maxBoundsViscosity: 1.0 });
           mapObjRef.current = map;
+          const _prefLyr = {};
+          const _loaded = new Set();
+          const loadCity = async (nm) => {
+            const code = ISHIMON_PREF_CODE[nm];
+            if (!code || _loaded.has(code)) return;
+            _loaded.add(code);
+            try {
+              const cg = await fetch('city-geojson/' + code + '.geojson').then(r => r.json());
+              if (cancelled || !mapObjRef.current) return;
+              const visited = prefMunis[nm] || new Set();
+              L.geoJSON(cg, {
+                style: (cf) => {
+                  const cOn = visited.has(cf.properties.name);
+                  return { fillColor: cOn ? '#1E40AF' : '#F2F7FF', fillOpacity: cOn ? 0.95 : 0.55, color: '#7FA8D8', weight: 0.7 };
+                },
+                onEachFeature: (cf, cl) => {
+                  const cOn = visited.has(cf.properties.name);
+                  cl.bindPopup('<div style="font-weight:900;font-size:13px;">' + cf.properties.name + '</div>' + (cOn ? '<div style="color:#1E40AF;font-weight:700;">出会ったよ！</div>' : '<div style="color:#888;">まだ だよ</div>'));
+                }
+              }).addTo(map);
+              if (_prefLyr[nm]) { try { _prefLyr[nm].setStyle({ fillOpacity: 0.12 }); } catch (_) {} }
+            } catch (_) { _loaded.delete(code); }
+          };
           const layer = L.geoJSON(geo, {
             style: (f) => {
               const on = prefSet.has(f.properties.nam_ja);
@@ -8271,8 +8295,9 @@ function IshimonZukan() {
               const c = prefMunis[nm] ? prefMunis[nm].size : 0;
               const _pt = ISHIMON_PREF_CENTER[nm];
               if (_pt) L.marker(_pt, { icon: L.divIcon({ className: 'ishimon-pref-label', html: nm.replace(/[都府県]$/, ''), iconSize: [56, 14], iconAnchor: [28, 7] }), interactive: false, keyboard: false }).addTo(map);
+              _prefLyr[nm] = lyr;
+              lyr.on('click', () => { try { map.fitBounds(lyr.getBounds(), { padding: [20, 20] }); } catch (_) {} loadCity(nm); });
               lyr.bindPopup('<div style="font-weight:900;font-size:13px;">' + nm + '</div>' + (on ? '<div>' + c + 'の市区町村で 出会ったよ！</div>' : '<div style="color:#888;">まだ 行ってないよ</div>'));
-            }
           }).addTo(map);
           map.fitBounds(layer.getBounds(), { padding: [8, 8] });
           const upd = () => { if (mapRef.current) mapRef.current.classList.toggle('ishimon-hide-labels', map.getZoom() < 6); };
@@ -8300,7 +8325,7 @@ function IshimonZukan() {
         <div ref={mapRef} style={{ height: '52vh', borderRadius: '16px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.25)', background: '#DBEEFF' }} />
         {mapStatus === 'loading' && <div className="text-center text-white/60 text-xs mt-2">地図を よみこみ中...</div>}
         {mapStatus === 'error' && <div className="text-center text-white/60 text-xs mt-2">地図の よみこみに しっぱい。電波の良い所で もう一度 ひらいてね</div>}
-        <div className="text-white/45 text-[10px] text-center mt-1 mb-3">指で 広げたり 動かしたり できるよ。県を タップすると 名前が でるよ</div>
+        <div className="text-white/45 text-[10px] text-center mt-1 mb-3">指で 広げたり 動かせるよ。県を タップすると ズームして 市区町村が ぬれるよ</div>
 
         <div className="flex gap-2 mb-3">
           <div className="flex-1 rounded-2xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
