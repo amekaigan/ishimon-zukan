@@ -654,7 +654,32 @@ const SLIDE_IMGS = {
   mon3: "/images/mon3.webp",
   fire: "/images/mon4.webp",
 };
-const APP_VERSION = '2.49.0';
+// ===== 出会いマップ：都道府県→地方（v2.50.0・座標は保存しない＝市区町村どまり）=====
+const ISHIMON_REGIONS = {
+  '北海道': ['北海道'],
+  '東北': ['青森県','岩手県','宮城県','秋田県','山形県','福島県'],
+  '関東': ['茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県'],
+  '中部': ['新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県'],
+  '近畿': ['三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県'],
+  '中国': ['鳥取県','島根県','岡山県','広島県','山口県'],
+  '四国': ['徳島県','香川県','愛媛県','高知県'],
+  '九州・沖縄': ['福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'],
+};
+const ISHIMON_ALL_PREFS = Object.values(ISHIMON_REGIONS).reduce((a, b) => a.concat(b), []);
+const parsePrefecture = (name) => {
+  if (!name || typeof name !== 'string') return null;
+  const parts = name.split(/[・,、\s]+/).map(s => s.trim()).filter(Boolean);
+  for (const p of parts) { if (ISHIMON_ALL_PREFS.indexOf(p) >= 0) return p; }
+  for (const pref of ISHIMON_ALL_PREFS) { if (name.indexOf(pref) >= 0) return pref; }
+  return null;
+};
+const parseMunicipality = (name) => {
+  if (!name || typeof name !== 'string') return null;
+  const parts = name.split(/[・,、\s]+/).map(s => s.trim()).filter(Boolean);
+  for (const p of parts) { if (ISHIMON_ALL_PREFS.indexOf(p) < 0 && p) return p; }
+  return null;
+};
+const APP_VERSION = '2.50.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -7872,6 +7897,11 @@ function IshimonZukan() {
     return (
       <div className="px-3 pt-4 pb-24" style={{ maxWidth: '1280px', margin: '0 auto' }}>
         <h2 className="text-2xl font-black text-white text-center mb-0.5" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>図鑑</h2>
+        <button onClick={() => setView('placemap')}
+          className="w-full mb-2 py-2.5 rounded-2xl text-white font-black active:scale-95 transition-transform"
+          style={{ background: 'linear-gradient(135deg, #4CC9F0, #4361EE)', boxShadow: '0 4px 0 #2A3FAE', border: '2px solid white' }}>
+          🗺️ であいマップを ひらく
+        </button>
 
         {/* 機能追加(v2.11.0/2.11.1): 容量カーテン
             通常時は「N体 収集済み」だけ表示。タップでカーテンが開き、容量バー＋整理/拡張ボタンが見える。
@@ -8159,6 +8189,101 @@ function IshimonZukan() {
                 もっと見る（のこり {sorted.length - collectionVisible} 体）
               </button>
             )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const PlaceMapView = () => {
+    const located = collection.filter(m => m.location && m.location.name);
+    const prefSet = new Set();
+    const muniSet = new Set();
+    const prefMunis = {};
+    const unknownNames = new Set();
+    located.forEach(m => {
+      const pref = parsePrefecture(m.location.name);
+      const muni = parseMunicipality(m.location.name);
+      if (pref) {
+        prefSet.add(pref);
+        if (!prefMunis[pref]) prefMunis[pref] = new Set();
+        if (muni) { prefMunis[pref].add(muni); muniSet.add(pref + '/' + muni); }
+      } else if (m.location.name) {
+        unknownNames.add(m.location.name);
+      }
+    });
+    const completeRegions = Object.keys(ISHIMON_REGIONS).filter(r => ISHIMON_REGIONS[r].every(p => prefSet.has(p)));
+    const isOwner = window._currentUid === window.OWNER_UID;
+    return (
+      <div className="px-3 pt-4 pb-24" style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div className="flex items-center mb-3">
+          <button onClick={() => setView('collection')} className="text-white font-black text-sm px-3 py-1.5 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.2)' }}>← もどる</button>
+          <h2 className="flex-1 text-2xl font-black text-white text-center" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>🗺️ であいマップ</h2>
+          <div style={{ width: '72px' }} />
+        </div>
+
+        <div className="flex gap-2 mb-3">
+          <div className="flex-1 rounded-2xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+            <div className="text-cyan-300 text-2xl font-black">{prefSet.size}/47</div>
+            <div className="text-white/70 text-[11px] font-bold">都道府県</div>
+          </div>
+          <div className="flex-1 rounded-2xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+            <div className="text-cyan-300 text-2xl font-black">{completeRegions.length}/8</div>
+            <div className="text-white/70 text-[11px] font-bold">地方コンプ</div>
+          </div>
+          <div className="flex-1 rounded-2xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
+            <div className="text-cyan-300 text-2xl font-black">{muniSet.size}</div>
+            <div className="text-white/70 text-[11px] font-bold">市区町村</div>
+          </div>
+        </div>
+
+        {completeRegions.length > 0 && (
+          <div className="mb-3 rounded-2xl p-3" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,53,0.15))', border: '1.5px solid #FFD700' }}>
+            <div className="text-yellow-200 font-black text-xs mb-1.5">🏆 地方コンプリート！</div>
+            <div className="flex flex-wrap gap-1.5">
+              {completeRegions.map(r => (
+                <span key={r} className="px-2 py-1 rounded-full text-white font-black text-xs" style={{ background: 'linear-gradient(135deg,#FFD700,#FF6B35)' }}>{r} 制覇</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {Object.keys(ISHIMON_REGIONS).map(region => {
+            const list = ISHIMON_REGIONS[region];
+            const got = list.filter(p => prefSet.has(p));
+            const done = got.length === list.length;
+            return (
+              <div key={region} className="rounded-2xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid ' + (done ? '#FFD700' : 'rgba(255,255,255,0.12)') }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-white font-black text-sm">{done ? '🏆 ' : ''}{region}</span>
+                  <span className="text-cyan-300 font-black text-xs">{got.length}/{list.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {list.map(p => {
+                    const on = prefSet.has(p);
+                    const munis = prefMunis[p] ? Array.from(prefMunis[p]) : [];
+                    return (
+                      <span key={p} className="px-2 py-1 rounded-lg text-[11px] font-bold"
+                        style={{ background: on ? 'linear-gradient(135deg,#4CC9F0,#4361EE)' : 'rgba(255,255,255,0.06)', color: on ? 'white' : 'rgba(255,255,255,0.35)', border: on ? '1px solid white' : '1px solid rgba(255,255,255,0.1)' }}>
+                        {p}{on && munis.length > 0 ? '（' + munis.length + '）' : ''}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {located.length === 0 && (
+          <div className="text-center text-white/60 text-sm mt-6 leading-relaxed">まだ 出会った 場所が ありません。<br/>「設定」で 場所のきろくを ONにして 石モンを 召喚してね。</div>
+        )}
+
+        {isOwner && unknownNames.size > 0 && (
+          <div className="mt-4 rounded-2xl p-3" style={{ background: 'rgba(199,62,29,0.2)', border: '1.5px solid rgba(255,107,53,0.5)' }}>
+            <div className="text-orange-200 font-black text-[11px] mb-1">🔧 解析できなかった地名（オーナーのみ・{unknownNames.size}件）</div>
+            <div className="text-white/70 text-[10px] break-all">{Array.from(unknownNames).join(' / ')}</div>
           </div>
         )}
       </div>
@@ -9899,6 +10024,7 @@ function IshimonZukan() {
       {view === 'home' && <HomeView />}
       {view === 'collection' && !selected && !newMon && !showEquip && <CollectionView />}
       {view === 'ranking' && <RankingView />}
+      {view === 'placemap' && <PlaceMapView />}
       {view === 'stages' && <StageSelectView />}
       {view === 'battle' && <BattleView />}
       {view === 'profile' && <ProfileView />}
