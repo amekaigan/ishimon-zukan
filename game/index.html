@@ -704,7 +704,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.51.1';
+const APP_VERSION = '2.51.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8258,7 +8258,7 @@ function IshimonZukan() {
           const geo = await fetch('japan-pref.geojson').then(r => r.json());
           if (cancelled || !mapRef.current) return;
           if (mapObjRef.current) { try { mapObjRef.current.remove(); } catch (_) {} mapObjRef.current = null; }
-          const map = L.map(mapRef.current, { attributionControl: false, zoomControl: true, minZoom: 3, maxZoom: 10 });
+          const map = L.map(mapRef.current, { attributionControl: false, zoomControl: true, minZoom: 3, maxZoom: 11, maxBounds: [[20, 118], [50, 155]], maxBoundsViscosity: 1.0 });
           mapObjRef.current = map;
           const layer = L.geoJSON(geo, {
             style: (f) => {
@@ -8270,7 +8270,7 @@ function IshimonZukan() {
               const on = prefSet.has(nm);
               const c = prefMunis[nm] ? prefMunis[nm].size : 0;
               const _pt = ISHIMON_PREF_CENTER[nm];
-              if (_pt) L.marker(_pt, { icon: L.divIcon({ className: 'ishimon-pref-label', html: nm.replace(/[都道府県]$/, ''), iconSize: [56, 14], iconAnchor: [28, 7] }), interactive: false, keyboard: false }).addTo(map);
+              if (_pt) L.marker(_pt, { icon: L.divIcon({ className: 'ishimon-pref-label', html: nm.replace(/[都府県]$/, ''), iconSize: [56, 14], iconAnchor: [28, 7] }), interactive: false, keyboard: false }).addTo(map);
               lyr.bindPopup('<div style="font-weight:900;font-size:13px;">' + nm + '</div>' + (on ? '<div>' + c + 'の市区町村で 出会ったよ！</div>' : '<div style="color:#888;">まだ 行ってないよ</div>'));
             }
           }).addTo(map);
