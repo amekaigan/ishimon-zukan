@@ -683,6 +683,7 @@ const ISHIMON_REGIONS = {
   '九州・沖縄': ['福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'],
 };
 const ISHIMON_ALL_PREFS = Object.values(ISHIMON_REGIONS).reduce((a, b) => a.concat(b), []);
+const ISHIMON_PREF_CENTER = {'京都府':[35.243,135.478], '佐賀県':[33.246,130.088], '熊本県':[32.721,130.906], '香川県':[34.197,134.012], '愛知県':[34.991,137.246], '栃木県':[36.663,139.79], '山梨県':[35.604,138.683], '滋賀県':[35.24,136.131], '群馬県':[36.519,138.927], '宮城県':[38.406,140.926], '静岡県':[35.123,138.218], '茨城県':[36.337,140.261], '沖縄県':[26.477,127.903], '山形県':[38.445,140.15], '和歌山県':[33.947,135.357], '長崎県':[32.995,129.723], '秋田県':[39.671,140.424], '岡山県':[34.899,133.797], '福岡県':[33.458,130.613], '岐阜県':[35.787,136.962], '青森県':[40.915,140.485], '大阪府':[34.668,135.547], '長野県':[36.16,138.1], '大分県':[33.213,131.355], '三重県':[34.491,136.524], '広島県':[34.653,132.765], '北海道':[43.469,143.327], '兵庫県':[35.168,134.823], '千葉県':[35.529,140.253], '富山県':[36.649,137.279], '東京都':[35.709,139.483], '埼玉県':[36.01,139.278], '山口県':[34.302,131.499], '福島県':[37.401,140.131], '石川県':[36.769,136.776], '福井県':[35.828,136.43], '愛媛県':[33.511,132.714], '奈良県':[34.318,135.88], '島根県':[35.001,132.488], '岩手県':[39.584,141.403], '鳥取県':[35.325,134.093], '徳島県':[33.916,134.177], '鹿児島県':[31.606,130.969], '新潟県':[37.638,139.158], '高知県':[33.342,133.085], '宮崎県':[32.111,131.189], '神奈川県':[35.427,139.285]}; // v2.51.1: 県ラベルの中心座標（本土）
 const parsePrefecture = (name) => {
   if (!name || typeof name !== 'string') return null;
   const parts = name.split(/[・,、\s]+/).map(s => s.trim()).filter(Boolean);
@@ -703,7 +704,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.51.0';
+const APP_VERSION = '2.51.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8268,7 +8269,8 @@ function IshimonZukan() {
               const nm = f.properties.nam_ja;
               const on = prefSet.has(nm);
               const c = prefMunis[nm] ? prefMunis[nm].size : 0;
-              lyr.bindTooltip(nm.replace(/[都道府県]$/, ''), { permanent: true, direction: 'center', className: 'ishimon-pref-label' });
+              const _pt = ISHIMON_PREF_CENTER[nm];
+              if (_pt) L.marker(_pt, { icon: L.divIcon({ className: 'ishimon-pref-label', html: nm.replace(/[都道府県]$/, ''), iconSize: [56, 14], iconAnchor: [28, 7] }), interactive: false, keyboard: false }).addTo(map);
               lyr.bindPopup('<div style="font-weight:900;font-size:13px;">' + nm + '</div>' + (on ? '<div>' + c + 'の市区町村で 出会ったよ！</div>' : '<div style="color:#888;">まだ 行ってないよ</div>'));
             }
           }).addTo(map);
@@ -8290,7 +8292,7 @@ function IshimonZukan() {
         </div>
 
         <style>{`
-          .ishimon-pref-label { background: transparent !important; border: none !important; box-shadow: none !important; color: #15324F; font-weight: 900; font-size: 9px; padding: 0; white-space: nowrap; }
+          .ishimon-pref-label { background: transparent !important; border: none !important; box-shadow: none !important; color: #15324F; font-weight: 900; font-size: 10px; line-height: 14px; text-align: center; white-space: nowrap; text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 2px rgba(255,255,255,0.9); }
           .ishimon-pref-label::before { display: none !important; }
           .ishimon-hide-labels .ishimon-pref-label { display: none !important; }
           .leaflet-container { background: #DBEEFF; }
