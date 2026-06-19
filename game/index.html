@@ -705,7 +705,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.52.0';
+const APP_VERSION = '2.52.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8281,7 +8281,7 @@ function IshimonZukan() {
                   cl.bindPopup('<div style="font-weight:900;font-size:13px;">' + cf.properties.name + '</div>' + (cOn ? '<div style="color:#1E40AF;font-weight:700;">出会ったよ！</div>' : '<div style="color:#888;">まだ だよ</div>'));
                 }
               }).addTo(map);
-              if (_prefLyr[nm]) { try { _prefLyr[nm].setStyle({ fillOpacity: 0.12 }); } catch (_) {} }
+              if (_prefLyr[nm]) { try { _prefLyr[nm].setStyle({ fillOpacity: 0.12, weight: 0, opacity: 0 }); } catch (_) {} }
             } catch (_) { _loaded.delete(code); }
           };
           const layer = L.geoJSON(geo, {
