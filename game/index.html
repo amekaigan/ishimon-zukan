@@ -8298,6 +8298,7 @@ function IshimonZukan() {
               _prefLyr[nm] = lyr;
               lyr.on('click', () => { try { map.fitBounds(lyr.getBounds(), { padding: [20, 20] }); } catch (_) {} loadCity(nm); });
               lyr.bindPopup('<div style="font-weight:900;font-size:13px;">' + nm + '</div>' + (on ? '<div>' + c + 'の市区町村で 出会ったよ！</div>' : '<div style="color:#888;">まだ 行ってないよ</div>'));
+            }
           }).addTo(map);
           map.fitBounds(layer.getBounds(), { padding: [8, 8] });
           const upd = () => { if (mapRef.current) mapRef.current.classList.toggle('ishimon-hide-labels', map.getZoom() < 6); };
