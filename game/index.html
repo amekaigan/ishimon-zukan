@@ -679,7 +679,14 @@ const parseMunicipality = (name) => {
   for (const p of parts) { if (ISHIMON_ALL_PREFS.indexOf(p) < 0 && p) return p; }
   return null;
 };
-const APP_VERSION = '2.50.1';
+// v2.50.2: 表示用に「県 市」順へ整形（古いデータも揃える）
+const formatPlace = (name) => {
+  const pref = parsePrefecture(name);
+  const muni = parseMunicipality(name);
+  if (pref && muni) return pref + ' ' + muni;
+  return pref || name || '';
+};
+const APP_VERSION = '2.50.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -846,8 +853,8 @@ const getCurrentLocation = async () => {
               const dn = data.display_name.split(',').map(s => s.trim());
               pref = dn.find(s => ISHIMON_ALL_PREFS.indexOf(s) >= 0) || null;
             }
-            const parts = [muni, pref].filter(Boolean);
-            result.name = parts.join('・') || (data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : null);
+            const parts = [pref, muni].filter(Boolean); // v2.50.2: 日本式「県 市」順
+            result.name = parts.join(' ') || (data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : null);
           }
         } catch (e) { /* オフラインや拒否時は名前なしで進む */ }
         resolve(result);
@@ -7575,7 +7582,7 @@ function IshimonZukan() {
                 {mon.location && mon.location.name && (
                   <div className="flex items-start gap-1.5 text-gray-700">
                     <span className="text-xs leading-3">📍</span>
-                    <span>{mon.location.name}</span>
+                    <span>{formatPlace(mon.location.name)}</span>
                   </div>
                 )}
                 {/* v2.21.0: 思い出メモ(表示・編集・追加) */}
