@@ -679,7 +679,7 @@ const parseMunicipality = (name) => {
   for (const p of parts) { if (ISHIMON_ALL_PREFS.indexOf(p) < 0 && p) return p; }
   return null;
 };
-const APP_VERSION = '2.50.0';
+const APP_VERSION = '2.50.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -839,9 +839,15 @@ const getCurrentLocation = async () => {
           if (r.ok) {
             const data = await r.json();
             const a = data.address || {};
-            // 「市区町村」「都道府県」レベルで取得（プライバシー配慮）
-            const parts = [a.city || a.town || a.village || a.suburb, a.state || a.prefecture].filter(Boolean);
-            result.name = parts.join('・') || data.display_name?.split(',').slice(0, 2).join(',') || null;
+            // 「市区町村」「都道府県」レベルで取得（プライバシー配慮・座標は保存しない）
+            const muni = a.city || a.town || a.village || a.city_district || a.suburb || a.county || null;
+            let pref = a.state || a.province || a.prefecture || null;
+            if (!pref && data.display_name) { // v2.50.1: 県が落ちないよう住所文字列から都道府県を拾う
+              const dn = data.display_name.split(',').map(s => s.trim());
+              pref = dn.find(s => ISHIMON_ALL_PREFS.indexOf(s) >= 0) || null;
+            }
+            const parts = [muni, pref].filter(Boolean);
+            result.name = parts.join('・') || (data.display_name ? data.display_name.split(',').slice(0, 2).join(',') : null);
           }
         } catch (e) { /* オフラインや拒否時は名前なしで進む */ }
         resolve(result);
