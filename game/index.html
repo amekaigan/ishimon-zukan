@@ -640,6 +640,23 @@ window._idb = (function () {
   }
   return { set, get };
 })();
+// ===== Leaflet 遅延ロード（地図を開いた時だけ・v2.51.0）=====
+window._loadLeaflet = function () {
+  if (window._leafletPromise) return window._leafletPromise;
+  window._leafletPromise = new Promise(function (resolve, reject) {
+    if (window.L) { resolve(window.L); return; }
+    var css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    var js = document.createElement('script');
+    js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    js.onload = function () { resolve(window.L); };
+    js.onerror = function () { reject(new Error('leaflet load failed')); };
+    document.head.appendChild(js);
+  });
+  return window._leafletPromise;
+};
 </script>
 
 <script type="text/babel" data-presets="react">
@@ -686,7 +703,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.50.2';
+const APP_VERSION = '2.51.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8227,6 +8244,43 @@ function IshimonZukan() {
     });
     const completeRegions = Object.keys(ISHIMON_REGIONS).filter(r => ISHIMON_REGIONS[r].every(p => prefSet.has(p)));
     const isOwner = window._currentUid === window.OWNER_UID;
+    const mapRef = useRef(null);
+    const mapObjRef = useRef(null);
+    const [mapStatus, setMapStatus] = useState('loading');
+    useEffect(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          await window._loadLeaflet();
+          if (cancelled || !mapRef.current) return;
+          const L = window.L;
+          const geo = await fetch('japan-pref.geojson').then(r => r.json());
+          if (cancelled || !mapRef.current) return;
+          if (mapObjRef.current) { try { mapObjRef.current.remove(); } catch (_) {} mapObjRef.current = null; }
+          const map = L.map(mapRef.current, { attributionControl: false, zoomControl: true, minZoom: 3, maxZoom: 10 });
+          mapObjRef.current = map;
+          const layer = L.geoJSON(geo, {
+            style: (f) => {
+              const on = prefSet.has(f.properties.nam_ja);
+              return { fillColor: on ? '#4361EE' : '#ffffff', fillOpacity: on ? 0.85 : 1, color: '#88AACC', weight: 1 };
+            },
+            onEachFeature: (f, lyr) => {
+              const nm = f.properties.nam_ja;
+              const on = prefSet.has(nm);
+              const c = prefMunis[nm] ? prefMunis[nm].size : 0;
+              lyr.bindTooltip(nm.replace(/[都道府県]$/, ''), { permanent: true, direction: 'center', className: 'ishimon-pref-label' });
+              lyr.bindPopup('<div style="font-weight:900;font-size:13px;">' + nm + '</div>' + (on ? '<div>' + c + 'の市区町村で 出会ったよ！</div>' : '<div style="color:#888;">まだ 行ってないよ</div>'));
+            }
+          }).addTo(map);
+          map.fitBounds(layer.getBounds(), { padding: [8, 8] });
+          const upd = () => { if (mapRef.current) mapRef.current.classList.toggle('ishimon-hide-labels', map.getZoom() < 6); };
+          map.on('zoomend', upd); upd();
+          setTimeout(() => { try { map.invalidateSize(); } catch (_) {} }, 200);
+          setMapStatus('ready');
+        } catch (e) { if (!cancelled) setMapStatus('error'); }
+      })();
+      return () => { cancelled = true; if (mapObjRef.current) { try { mapObjRef.current.remove(); } catch (_) {} mapObjRef.current = null; } };
+    }, []);
     return (
       <div className="px-3 pt-4 pb-24" style={{ maxWidth: '900px', margin: '0 auto' }}>
         <div className="flex items-center mb-3">
@@ -8234,6 +8288,17 @@ function IshimonZukan() {
           <h2 className="flex-1 text-2xl font-black text-white text-center" style={{ textShadow: '0 3px 0 rgba(0,0,0,0.3)' }}>🗺️ であいマップ</h2>
           <div style={{ width: '72px' }} />
         </div>
+
+        <style>{`
+          .ishimon-pref-label { background: transparent !important; border: none !important; box-shadow: none !important; color: #15324F; font-weight: 900; font-size: 9px; padding: 0; white-space: nowrap; }
+          .ishimon-pref-label::before { display: none !important; }
+          .ishimon-hide-labels .ishimon-pref-label { display: none !important; }
+          .leaflet-container { background: #DBEEFF; }
+        `}</style>
+        <div ref={mapRef} style={{ height: '52vh', borderRadius: '16px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.25)', background: '#DBEEFF' }} />
+        {mapStatus === 'loading' && <div className="text-center text-white/60 text-xs mt-2">地図を よみこみ中...</div>}
+        {mapStatus === 'error' && <div className="text-center text-white/60 text-xs mt-2">地図の よみこみに しっぱい。電波の良い所で もう一度 ひらいてね</div>}
+        <div className="text-white/45 text-[10px] text-center mt-1 mb-3">指で 広げたり 動かしたり できるよ。県を タップすると 名前が でるよ</div>
 
         <div className="flex gap-2 mb-3">
           <div className="flex-1 rounded-2xl p-3 text-center" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid rgba(255,255,255,0.15)' }}>
