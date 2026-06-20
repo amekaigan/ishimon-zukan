@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.57.0';
+const APP_VERSION = '2.58.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3020,6 +3020,7 @@ function IshimonZukan() {
   // v2.12.0: 全石モンデータ分析ビュー（オーナー専用）
   const [showMonDataExplorer, setShowMonDataExplorer] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(''); // 購入など成功フィードバック用
   const [previewImage, setPreviewImage] = useState(null);
   const [newMon, setNewMon] = useState(null);
   // v2.18.0: 生成完了後すぐ出さず「会いに行く」を待つ(待ち時間の体感ゼロ化)
@@ -4680,6 +4681,8 @@ function IshimonZukan() {
       inventoryNew: [...new Set([...(player.inventoryNew || []), eq.id])],
     };
     setPlayer(updated);
+    setToast(`「${eq.name}」を 購入しました！`);
+    setTimeout(() => setToast(''), 1800);
     await savePlayer(updated);
   };
 
@@ -10422,6 +10425,13 @@ function IshimonZukan() {
           style={{ background: '#C73E1D', border: '3px solid white', boxShadow: '0 4px 0 #6B1A0E' }}>
           {error}
           <button onClick={() => setError('')} className="ml-2 underline">とじる</button>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-4 left-4 right-4 rounded-2xl p-3 text-white font-bold text-center z-[71]"
+          style={{ background: '#16A34A', border: '3px solid white', boxShadow: '0 4px 0 #0B5C26' }}>
+          {toast}
         </div>
       )}
     </div>
