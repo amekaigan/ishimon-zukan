@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.59.1';
+const APP_VERSION = '2.60.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3008,6 +3008,7 @@ function IshimonZukan() {
   // v2.17.4: 実データが入るまでホームを出さない(「トレーナー Lv.1 / きらめき石0」のチラ見え対策)
   const [dataReady, setDataReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [bgSyncing, setBgSyncing] = useState(true); // v2.60.0: 裏のFirestore同期中フラグ（起動直後の操作ガード用）
   const [loadErrorMsg, setLoadErrorMsg] = useState(''); // 起動失敗の真因を画面表示（診断用）
   // 機能追加(v2.10.0): 長押しメニューと削除確認モーダル
   const [longPressMon, setLongPressMon] = useState(null);  // 長押しメニュー表示中の石モン
@@ -3503,6 +3504,7 @@ function IshimonZukan() {
       } finally {
         // 機能追加(v2.9.0): 初期ロード完了。成功・失敗どちらでも必ずローディング解除。
         setInitialLoading(false);
+        setBgSyncing(false); // v2.60.0: 裏同期も完了。生成ガード解除
         window.__appReady = true;  // 起動完了フラグ（診断ウォッチドッグ用）
         try { var __be = document.getElementById('__bootErr'); if (__be) __be.remove(); } catch(_) {}
         console.log('[初期ロード] 完了');
@@ -3940,6 +3942,7 @@ function IshimonZukan() {
 
   // ===== カメラ直接アクセス（getUserMedia）=====
   const openCamera = async () => {
+    if (bgSyncing) { setError('読み込み中だよ。少し まってね 🔄'); return; }
     setCameraError('');
     // AIエンジンを先に温める（撮影→解析の間にコンテナを起こす・コールドスタート対策）
     warmUpIshimon();
@@ -4017,7 +4020,8 @@ function IshimonZukan() {
   };
 
   const generateMon = async (imageDataUrl) => {
-    // 全体タイムアウト保険（2026-05-25追加）: 120秒で強制的に終了させる
+    if (bgSyncing) { setPreviewImage(null); setError('読み込み中だよ。少し まってね 🔄'); return; }
+    // 全体タイムアウト保険
     let _generateMonTimedOut = false;
     const _generateMonTimeoutId = setTimeout(() => {
       _generateMonTimedOut = true;
@@ -10436,6 +10440,13 @@ function IshimonZukan() {
         <div className="fixed bottom-4 left-4 right-4 rounded-2xl p-3 text-white font-bold text-center z-[71]"
           style={{ background: '#16A34A', border: '3px solid white', boxShadow: '0 4px 0 #0B5C26' }}>
           {toast}
+        </div>
+      )}
+
+      {bgSyncing && !initialLoading && !loadError && (
+        <div className="fixed left-1/2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-white text-[11px] font-black z-[72]"
+          style={{ top: 'calc(env(safe-area-inset-top) + 8px)', transform: 'translateX(-50%)', background: 'rgba(20,16,28,0.92)', border: '1.5px solid rgba(255,255,255,0.3)', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+          <span className="animate-spin inline-block">🔄</span> 同期中…
         </div>
       )}
     </div>
