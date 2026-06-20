@@ -685,6 +685,7 @@ const ISHIMON_REGIONS = {
 const ISHIMON_ALL_PREFS = Object.values(ISHIMON_REGIONS).reduce((a, b) => a.concat(b), []);
 const ISHIMON_PREF_CENTER = {'京都府':[35.243,135.478], '佐賀県':[33.246,130.088], '熊本県':[32.721,130.906], '香川県':[34.197,134.012], '愛知県':[34.991,137.246], '栃木県':[36.663,139.79], '山梨県':[35.604,138.683], '滋賀県':[35.24,136.131], '群馬県':[36.519,138.927], '宮城県':[38.406,140.926], '静岡県':[35.123,138.218], '茨城県':[36.337,140.261], '沖縄県':[26.477,127.903], '山形県':[38.445,140.15], '和歌山県':[33.947,135.357], '長崎県':[32.995,129.723], '秋田県':[39.671,140.424], '岡山県':[34.899,133.797], '福岡県':[33.458,130.613], '岐阜県':[35.787,136.962], '青森県':[40.915,140.485], '大阪府':[34.668,135.547], '長野県':[36.16,138.1], '大分県':[33.213,131.355], '三重県':[34.491,136.524], '広島県':[34.653,132.765], '北海道':[43.469,143.327], '兵庫県':[35.168,134.823], '千葉県':[35.529,140.253], '富山県':[36.649,137.279], '東京都':[35.709,139.483], '埼玉県':[36.01,139.278], '山口県':[34.302,131.499], '福島県':[37.401,140.131], '石川県':[36.769,136.776], '福井県':[35.828,136.43], '愛媛県':[33.511,132.714], '奈良県':[34.318,135.88], '島根県':[35.001,132.488], '岩手県':[39.584,141.403], '鳥取県':[35.325,134.093], '徳島県':[33.916,134.177], '鹿児島県':[31.606,130.969], '新潟県':[37.638,139.158], '高知県':[33.342,133.085], '宮崎県':[32.111,131.189], '神奈川県':[35.427,139.285]}; // v2.51.1: 県ラベルの中心座標（本土）
 const ISHIMON_PREF_CODE = {'北海道':'01','青森県':'02','岩手県':'03','宮城県':'04','秋田県':'05','山形県':'06','福島県':'07','茨城県':'08','栃木県':'09','群馬県':'10','埼玉県':'11','千葉県':'12','東京都':'13','神奈川県':'14','新潟県':'15','富山県':'16','石川県':'17','福井県':'18','山梨県':'19','長野県':'20','岐阜県':'21','静岡県':'22','愛知県':'23','三重県':'24','滋賀県':'25','京都府':'26','大阪府':'27','兵庫県':'28','奈良県':'29','和歌山県':'30','鳥取県':'31','島根県':'32','岡山県':'33','広島県':'34','山口県':'35','徳島県':'36','香川県':'37','愛媛県':'38','高知県':'39','福岡県':'40','佐賀県':'41','長崎県':'42','熊本県':'43','大分県':'44','宮崎県':'45','鹿児島県':'46','沖縄県':'47'}; // v2.52.0: 県名→JISコード（市区町村geojson遅延ロード用）
+const ISHIMON_PREF_MUNI_TOTAL = {'北海道':184, '青森県':40, '岩手県':33, '宮城県':35, '秋田県':25, '山形県':35, '福島県':59, '茨城県':44, '栃木県':25, '群馬県':35, '埼玉県':63, '千葉県':54, '東京都':62, '神奈川県':33, '新潟県':30, '富山県':15, '石川県':19, '福井県':17, '山梨県':27, '長野県':77, '岐阜県':42, '静岡県':35, '愛知県':54, '三重県':29, '滋賀県':19, '京都府':26, '大阪府':43, '兵庫県':41, '奈良県':39, '和歌山県':30, '鳥取県':19, '島根県':19, '岡山県':27, '広島県':23, '山口県':19, '徳島県':24, '香川県':17, '愛媛県':20, '高知県':34, '福岡県':60, '佐賀県':20, '長崎県':21, '熊本県':45, '大分県':18, '宮崎県':26, '鹿児島県':43, '沖縄県':41}; // v2.53.0: 県別の総市区町村数（県コンプ判定の分母）
 const parsePrefecture = (name) => {
   if (!name || typeof name !== 'string') return null;
   const parts = name.split(/[・,、\s]+/).map(s => s.trim()).filter(Boolean);
@@ -705,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.52.1';
+const APP_VERSION = '2.53.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1632,6 +1633,16 @@ const TITLES = [
     }},
   { id: 'dragon_tamer_first', emoji: '🐉', name: 'ドラゴン使い 初代', desc: '2026年中にドラゴンタイプと出会った者', rarity: 'legendary',
     check: ({ player, collection }) => player.registeredAt && new Date(player.registeredAt) < new Date('2027-01-01') && collection.some(m => m.type === 'ドラゴン') },
+
+  // ===== 出会いマップ系 =====
+  { id: 'pref_5', emoji: '🚃', name: 'ご当地めぐり', desc: '5つの都道府県で石モンと出会った', rarity: 'rare',
+    check: ({ collection }) => { const s = new Set(); collection.forEach(m => { const p = parsePrefecture(m.location && m.location.name); if (p) s.add(p); }); return s.size >= 5; }},
+  { id: 'region_complete', emoji: '🏯', name: '地方せいは', desc: 'ひとつの地方の全県で石モンと出会った', rarity: 'epic',
+    check: ({ collection }) => { const s = new Set(); collection.forEach(m => { const p = parsePrefecture(m.location && m.location.name); if (p) s.add(p); }); return Object.keys(ISHIMON_REGIONS).some(r => ISHIMON_REGIONS[r].every(p => s.has(p))); }},
+  { id: 'pref_all', emoji: '🗾', name: '日本一周', desc: '47都道府県すべてで石モンと出会った', rarity: 'legendary',
+    check: ({ collection }) => { const s = new Set(); collection.forEach(m => { const p = parsePrefecture(m.location && m.location.name); if (p) s.add(p); }); return s.size >= 47; }},
+  { id: 'pref_complete', emoji: '🏆', name: '県マスター', desc: 'ひとつの県の ぜんぶの市区町村を制覇した', rarity: 'legendary',
+    check: ({ collection }) => { const byPref = {}; collection.forEach(m => { const p = parsePrefecture(m.location && m.location.name); const mu = parseMunicipality(m.location && m.location.name); if (p && mu) { (byPref[p] = byPref[p] || new Set()).add(mu); } }); return Object.keys(byPref).some(p => ISHIMON_PREF_MUNI_TOTAL[p] && byPref[p].size >= ISHIMON_PREF_MUNI_TOTAL[p]); }},
 ];
 
 // 新規獲得した称号IDの配列を返す（未獲得 & 条件達成）
@@ -8245,6 +8256,7 @@ function IshimonZukan() {
       }
     });
     const completeRegions = Object.keys(ISHIMON_REGIONS).filter(r => ISHIMON_REGIONS[r].every(p => prefSet.has(p)));
+    const completePrefs = Object.keys(prefMunis).filter(p => ISHIMON_PREF_MUNI_TOTAL[p] && prefMunis[p].size >= ISHIMON_PREF_MUNI_TOTAL[p]);
     const isOwner = window._currentUid === window.OWNER_UID;
     const mapRef = useRef(null);
     const mapObjRef = useRef(null);
@@ -8287,7 +8299,8 @@ function IshimonZukan() {
           const layer = L.geoJSON(geo, {
             style: (f) => {
               const on = prefSet.has(f.properties.nam_ja);
-              return { fillColor: on ? '#4361EE' : '#ffffff', fillOpacity: on ? 0.85 : 1, color: '#88AACC', weight: 1 };
+              const _comp = completePrefs.indexOf(f.properties.nam_ja) >= 0;
+              return { fillColor: _comp ? '#FFC400' : (on ? '#4361EE' : '#ffffff'), fillOpacity: _comp ? 0.92 : (on ? 0.85 : 1), color: _comp ? '#FF8C00' : '#88AACC', weight: _comp ? 1.5 : 1 };
             },
             onEachFeature: (f, lyr) => {
               const nm = f.properties.nam_ja;
@@ -8343,6 +8356,16 @@ function IshimonZukan() {
           </div>
         </div>
 
+        {completePrefs.length > 0 && (
+          <div className="mb-3 rounded-2xl p-3" style={{ background: 'linear-gradient(135deg, rgba(255,196,0,0.2), rgba(255,140,0,0.15))', border: '1.5px solid #FFC400' }}>
+            <div className="text-yellow-100 font-black text-xs mb-1.5">🏅 都道府県コンプリート！ {completePrefs.length}/47県（ぜんぶの 市区町村で 出会った県）</div>
+            <div className="flex flex-wrap gap-1.5">
+              {completePrefs.map(p => (
+                <span key={p} className="px-2 py-1 rounded-full text-white font-black text-xs" style={{ background: 'linear-gradient(135deg,#FFC400,#FF8C00)' }}>{p} 完全制覇</span>
+              ))}
+            </div>
+          </div>
+        )}
         {completeRegions.length > 0 && (
           <div className="mb-3 rounded-2xl p-3" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,53,0.15))', border: '1.5px solid #FFD700' }}>
             <div className="text-yellow-200 font-black text-xs mb-1.5">🏆 地方コンプリート！</div>
