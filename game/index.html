@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.53.0';
+const APP_VERSION = '2.54.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -6258,7 +6258,7 @@ function IshimonZukan() {
               <div className="text-white font-black mt-2 text-sm">結果は...</div>
             </div>
           )}
-          {battlePhase === 'result' && battleResult && <BattleResultModal result={battleResult} onClose={closeBattle} />}
+          {battlePhase === 'result' && battleResult && BattleResultModal({ result: battleResult, onClose: closeBattle })}
         </div>
         <style>{`
           @keyframes shake { 0%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(-10px) rotate(-3deg); } 75% { transform: translateX(10px) rotate(3deg); } }
@@ -10152,17 +10152,17 @@ function IshimonZukan() {
 
       {view === 'home' && <HomeView />}
       {view === 'collection' && !selected && !newMon && !showEquip && <CollectionView />}
-      {view === 'ranking' && <RankingView />}
+      {view === 'ranking' && RankingView()}
       {view === 'placemap' && <PlaceMapView />}
       {view === 'stages' && <StageSelectView />}
       {view === 'battle' && <BattleView />}
       {view === 'profile' && <ProfileView />}
       {view === 'settings' && <SettingsView />}
-      {view === 'gacha' && <GachaModal />}
+      {view === 'gacha' && GachaModal()}
 
       {/* 下部固定タブメニュー（バトル中・カメラ中以外で表示） */}
       {view !== 'battle' && !showCamera && (
-        <BottomTabBar />
+        BottomTabBar()
       )}
 
       {selected && <MonCard mon={selected} onClose={() => { setSelected(null); monScrollRef.current = 0; }}
@@ -10361,7 +10361,7 @@ function IshimonZukan() {
         </div>
       )}
 
-      <LoginBonusModal />
+      {LoginBonusModal()}
       <MissionsModal />
       <ShopModal />
       <InventoryModal />
@@ -10389,7 +10389,7 @@ function IshimonZukan() {
       )}
       <ConsentModal />
       <OnboardingModal />
-      <NewTitleAlert />
+      {NewTitleAlert()}
 
       {/* AI画像生成中のローディング */}
       {aiGenerating && (
