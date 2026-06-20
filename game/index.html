@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.58.0';
+const APP_VERSION = '2.59.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -4674,6 +4674,7 @@ function IshimonZukan() {
       setError(`プレイヤー Lv.${eq.unlock} で つかえるよ`);
       return;
     }
+    if (!window.confirm(`「${eq.name}」を きらめき石 ${eq.price}個 で 購入しますか？`)) return;
     const updated = {
       ...player,
       gems: player.gems - eq.price,
@@ -4682,7 +4683,7 @@ function IshimonZukan() {
     };
     setPlayer(updated);
     setToast(`「${eq.name}」を 購入しました！`);
-    setTimeout(() => setToast(''), 1800);
+    setTimeout(() => setToast(''), 2500);
     await savePlayer(updated);
   };
 
@@ -4699,6 +4700,8 @@ function IshimonZukan() {
     if (idx >= 0) newInv.splice(idx, 1);
     const updated = { ...player, inventory: newInv, gems: (player.gems || 0) + refund };
     setPlayer(updated);
+    setToast(`「${eq.name}」を 売りました！ きらめき石 +${refund}`);
+    setTimeout(() => setToast(''), 2500);
     await savePlayer(updated);
   };
 
