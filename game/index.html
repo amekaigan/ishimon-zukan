@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.59.0';
+const APP_VERSION = '2.59.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2682,7 +2682,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
           📁 写真から 選ぶ
         </button>
 
-        <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} style={{ position: 'absolute', width: 1, height: 1, opacity: 0, overflow: 'hidden', pointerEvents: 'none' }} />
 
         {/* ショップ・アイテムへのクイックアクセス */}
         <div className="grid grid-cols-2 gap-2 mb-5">
@@ -3994,6 +3994,7 @@ function IshimonZukan() {
   // GA4: 撮影完了時に自動計測（石モン生成完了時）
   const handleImage = (e) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // 同じ写真を連続で選べるように（onChange再発火のため）
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
