@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.60.0';
+const APP_VERSION = '2.62.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3940,6 +3940,55 @@ function IshimonZukan() {
     });
   };
 
+  // v2.62.0: 初めて塗った市区町村/県の小さなごほうび（追加前コレクションと比較）
+  const grantPlaceReward = (entry, existingCollection) => {
+    try {
+      const loc = entry && entry.location && entry.location.name;
+      const pref = parsePrefecture(loc);
+      if (!pref) return; // 県が取れない記録は対象外（ごほうび無し）
+      const muni = parseMunicipality(loc);
+
+      const prefs = new Set();
+      const muniByPref = {};
+      (existingCollection || []).forEach(m => {
+        const p = parsePrefecture(m.location && m.location.name);
+        if (!p) return;
+        prefs.add(p);
+        const mu = parseMunicipality(m.location && m.location.name);
+        if (mu) (muniByPref[p] = muniByPref[p] || new Set()).add(mu);
+      });
+
+      const isNewPref = !prefs.has(pref);
+      const isNewMuni = !!muni && !(muniByPref[pref] && muniByPref[pref].has(muni));
+
+      let completedNow = false;
+      if (muni && ISHIMON_PREF_MUNI_TOTAL[pref]) {
+        const before = muniByPref[pref] ? muniByPref[pref].size : 0;
+        const after = before + (isNewMuni ? 1 : 0);
+        completedNow = before < ISHIMON_PREF_MUNI_TOTAL[pref] && after >= ISHIMON_PREF_MUNI_TOTAL[pref];
+      }
+
+      let gems = 0, cards = 0, msg = '';
+      if (completedNow) {
+        gems = 10; cards = 1; msg = `🏅 ${pref} コンプリート！ きらめき石+${gems}・ガチャ+${cards}`;
+      } else if (isNewPref) {
+        gems = 3; cards = 1; msg = `🎉 はじめての ${pref}！ きらめき石+${gems}・ガチャ+${cards}`;
+      } else if (isNewMuni) {
+        gems = 1; cards = 0; msg = `🗺️ はじめての ${muni}！ きらめき石+${gems}`;
+      } else {
+        return; // 既訪問＝ごほうび無し
+      }
+
+      setPlayer(prev => {
+        const np = { ...prev, gems: (prev.gems || 0) + gems, gachaCards: (prev.gachaCards || 0) + cards };
+        savePlayer(np);
+        return np;
+      });
+      setToast(msg);
+      setTimeout(() => setToast(''), 2500);
+    } catch (_) {}
+  };
+
   // ===== カメラ直接アクセス（getUserMedia）=====
   const openCamera = async () => {
     if (bgSyncing) { setError('読み込み中だよ。少し まってね 🔄'); return; }
@@ -4238,6 +4287,7 @@ function IshimonZukan() {
       setCollection(updated);
       saveCollection(updated); // 保存は裏で実行（UIを待たせない）。Replicate完了後の待ち対策。
       addPlayerExp(15 + (entry.rarity || 1) * 5); // v2.45.0: 石モン作成でプレイヤーEXP（★で増量）
+      grantPlaceReward(entry, collection); // v2.62.0: 初めて塗った市区町村/県のごほうび
       if (!entry.needsImageRegen) collectDevSample(entry); // v2.34.0: 本物画像が間に合った時だけ収集（ダミーは送らない）
       updateMission('capture');
       grantTitlesIfAny('photo', { mon: entry }, null, updated);
@@ -4290,6 +4340,7 @@ function IshimonZukan() {
         grantTitlesIfAny('photo', { mon: entry }, null, updated);
         if (window._currentUid) assignUserNumber(window._currentUid);
         addPlayerExp(15 + (entry.rarity || 1) * 5); // v2.45.0: 石モン作成でプレイヤーEXP（★で増量）
+        grantPlaceReward(entry, collection); // v2.62.0: 初めて塗った市区町村/県のごほうび
       } catch (fallbackErr) {
         console.error('fallback error:', fallbackErr);
         setError('失敗しました。もう一度お試しください');
