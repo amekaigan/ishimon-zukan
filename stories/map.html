@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<!-- SEO -->
+<title>出会った場所が、地図になる | 石モン図鑑マガジン #3</title>
+<meta name="description" content="石モンと出会った街を集めると、白い日本地図が少しずつ自分の色に染まっていく。「であいマップ」に込めた、家族のお出かけの記録という思いを語ります。">
+<meta name="keywords" content="石モン図鑑,であいマップ,地図,都道府県,お出かけ,思い出">
+<link rel="canonical" href="https://ishimonzukan.com/stories/map.html">
+<link rel=”icon” type=”image/x-icon” href=”/favicon.ico”>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+<!-- OGP -->
+<meta property="og:title" content="出会った場所が、地図になる | 石モン図鑑マガジン #3">
+<meta property="og:description" content="石モンを集めると、白い日本地図が家族のお出かけの色で染まっていく。であいマップの話。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://ishimonzukan.com/stories/map.html">
+<meta property="og:image" content="https://ishimonzukan.com/ogp_ishimon.png">
+<meta property="og:site_name" content="石モン図鑑">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="出会った場所が、地図になる | 石モン図鑑マガジン #3">
+<meta name="twitter:description" content="石モンを集めると、白い日本地図が家族のお出かけの色で染まっていく。であいマップの話。">
+<meta name="twitter:image" content="https://ishimonzukan.com/ogp_ishimon.png">
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-J4CZ7ZZST3');
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+
+<!-- Common CSS -->
+<link rel="stylesheet" href="/common.css">
+
+<!-- Page-specific -->
+<style>
+.map-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 32px 0;
+}
+.map-card {
+  border-radius: 16px;
+  padding: 22px;
+  border: 2px solid;
+}
+.map-card.pref {
+  background: linear-gradient(135deg, rgba(61,165,245,0.06), rgba(30,64,175,0.06));
+  border-color: rgba(61,165,245,0.3);
+}
+.map-card.region {
+  background: linear-gradient(135deg, rgba(255,196,0,0.08), rgba(255,107,53,0.06));
+  border-color: rgba(255,196,0,0.4);
+}
+.map-card.city {
+  background: linear-gradient(135deg, rgba(82,183,136,0.06), rgba(61,165,245,0.06));
+  border-color: rgba(82,183,136,0.3);
+}
+.map-card .card-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.map-card .card-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #2a0a4a;
+  margin-bottom: 10px;
+}
+.map-card .card-body {
+  font-size: 14px;
+  color: #555;
+  line-height: 2;
+}
+/* 塗られていく地図のイメージ（装飾・画像なし） */
+.map-demo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: center;
+  margin: 28px 0 4px;
+}
+.map-demo .chip {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0,0,0,0.06);
+  color: #9aa;
+  background: #f3f4f7;
+}
+.map-demo .chip.filled {
+  color: #fff;
+  background: #1E40AF;
+  border-color: #1E40AF;
+}
+.map-demo .chip.complete {
+  color: #5a3a00;
+  background: #FFC400;
+  border-color: #FFC400;
+}
+.map-demo-cap {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 24px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="breadcrumb">
+    <a href="/">ホーム</a> &rsaquo;
+    <a href="/about.html">石モン図鑑とは</a> &rsaquo;
+    石モン図鑑マガジン
+  </div>
+
+  <div class="article-header">
+    <div class="section-label-tag">📖 石モン図鑑マガジン #3 — 開発者の声</div>
+    <h1 class="article-title">出会った場所が、<br>地図になる。</h1>
+    <div class="article-meta">石モン図鑑 / ishimonzukan.com</div>
+  </div>
+
+  <div class="prose">
+    <p>
+      前の話（<a href="./records.html">あの日を忘れない仕組み</a>）で、
+      石モンには「拾った場所」も一緒に記録される、という話をしました。
+    </p>
+    <p>
+      実は、その記録された場所が、<br>
+      <strong>1枚の地図になって貯まっていきます。</strong><br>
+      それが「であいマップ」です。
+    </p>
+
+    <div class="divider"></div>
+
+    <p>
+      最初は、まっさらな白い日本地図。
+    </p>
+    <p>
+      石モンと出会った街がある都道府県から、<br>
+      少しずつ、色がついていきます。<br>
+      行った県が増えるほど、地図がだんだん、<br>
+      自分の色に染まっていく。
+    </p>
+  </div>
+
+  <div class="map-demo">
+    <span class="chip complete">北海道</span>
+    <span class="chip filled">東京</span>
+    <span class="chip filled">千葉</span>
+    <span class="chip">神奈川</span>
+    <span class="chip filled">長野</span>
+    <span class="chip">大阪</span>
+    <span class="chip filled">福岡</span>
+    <span class="chip">沖縄</span>
+  </div>
+  <div class="map-demo-cap">出会った県が点灯。コンプした県は金色に。</div>
+
+  <div class="prose">
+    <p>
+      であいマップでできることは、ざっくり3つ。
+    </p>
+  </div>
+
+  <div class="map-grid">
+    <div class="map-card pref">
+      <div class="card-icon">🗾</div>
+      <div class="card-title">① 都道府県がぬられる</div>
+      <div class="card-body">
+        石モンと出会った街のある県が点灯します。<br>
+        目指せ、47都道府県コンプリート。<br>
+        全部そろうと、日本一周の称号がもらえます。
+      </div>
+    </div>
+    <div class="map-card region">
+      <div class="card-icon">🏯</div>
+      <div class="card-title">② 地方コンプリート</div>
+      <div class="card-body">
+        東北、関東、近畿……。<br>
+        8つの地方ごとに「制覇」のごほうびがあります。<br>
+        コンプした県は、金色にかがやきます。
+      </div>
+    </div>
+    <div class="map-card city">
+      <div class="card-icon">📍</div>
+      <div class="card-title">③ 市区町村までぬれる</div>
+      <div class="card-body">
+        県をタップすると、その中の市区町村まで地図がひらきます。<br>
+        「この街にも行った」が、もっと細かく残せます。
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="prose">
+    <p>
+      でも、この地図。<br>
+      ただのゲームの進捗グラフじゃないんです。
+    </p>
+    <p>
+      よく見ると、これは<br>
+      <strong>「家族でどこへ行ったか」の地図</strong>でもある。
+    </p>
+    <p>
+      ここは、去年の夏に海へ行った県。<br>
+      ここは、おばあちゃんちのある町。<br>
+      ここは、家族旅行で泊まった街。
+    </p>
+    <p>
+      石モンを集めた地図を眺めていると、<br>
+      自然と、家族のお出かけの軌跡が<br>
+      浮かび上がってくるんです。
+    </p>
+    <p>
+      そして、まだ白いところを見ると、<br>
+      ふと思う。<br>
+      「次は、ここ行ってみようか」って。
+    </p>
+    <p>
+      子どもと一緒に地図をのぞき込んで、<br>
+      「次の休みは、この県まだ白いよ」<br>
+      なんて話す。<br>
+      それだけで、もう次の冒険の計画がはじまっています。
+    </p>
+
+    <div class="divider"></div>
+
+    <p>
+      念のため、もう一度だけ。<br>
+      場所の記録は<strong>市区町村まで</strong>。<br>
+      それより細かい正確な位置は、いっさい保存していません。<br>
+      子どもが安心して遊べることが、<br>
+      何よりも大事だと思っているからです。
+    </p>
+
+    <div class="highlight-box">
+      <p>
+        白かった地図が、<br>
+        家族の思い出で少しずつ埋まっていく。
+      </p>
+      <p>
+        何年か経って見返したとき、それはきっと、<br>
+        「どれだけ強い石モンを集めたか」じゃなくて、<br>
+        「どれだけの場所を、誰と歩いたか」の記録になっている。
+      </p>
+    </div>
+
+    <p>
+      強さの地図じゃなくて、思い出の地図。<br>
+      そんなふうに、であいマップを育ててもらえたら、<br>
+      作った甲斐があります。
+    </p>
+    <p>
+      ところで——<br>
+      そもそも石って、なんであんなに不思議なんだろう。<br>
+      次は、その話を。
+    </p>
+  </div>
+
+  <div class="sign">── 石モン図鑑</div>
+
+  <div class="story-nav">
+    <a href="./records.html">
+      <div class="nav-label">← マガジン #2</div>
+      あの日を忘れない仕組み
+    </a>
+    <a href="/about.html">
+      <div class="nav-label">↑ 最初から読む</div>
+      石モン図鑑とは
+    </a>
+  </div>
+
+  <div class="cta-wrap">
+    <a href="/game/" class="cta-btn">▶ 石モンを探しに行く</a>
+    <div class="cta-sub">無料・ブラウザだけで遊べます</div>
+  </div>
+
+  <nav class="footer-nav">
+    <a href="/">ホーム</a>
+    <span class="sep">·</span>
+    <a href="/about.html">石モン図鑑とは</a>
+    <span class="sep">·</span>
+    <a href="/privacy.html">プライバシーポリシー</a>
+    <span class="sep">·</span>
+    <a href="/terms.html">利用規約</a>
+  </nav>
+
+  <div class="meta-footer">石モン図鑑 / ishimonzukan.com</div>
+</div>
+</body>
+</html>
