@@ -7311,6 +7311,8 @@ function IshimonZukan() {
     const [openId, setOpenId] = React.useState(null);    // 画像を開いてるサンプル
     const [v2Only, setV2Only] = React.useState(false);   // v2候補のみ表示
     const [picks, setPicks] = React.useState({});        // { sampleId: bool }
+    const [groupByUser, setGroupByUser] = React.useState(false); // ユーザー数タップで同一ユーザーをまとめて表示
+    const [locOnly, setLocOnly] = React.useState(false);         // 位置ありタップで位置情報ありのみ表示
 
     const toggleV2Pick = async (sampleId, current) => {
       const next = !current;
@@ -7396,7 +7398,18 @@ function IshimonZukan() {
       } catch (_) { return String(ts); }
     };
     const formatLocation = (loc) => (loc && loc.name) || null;
-    const sorted = v2Only ? rows.filter(r => picks[r._id] ?? r.v2pick) : rows;
+    const filtered = rows
+      .filter(r => !v2Only || (picks[r._id] ?? r.v2pick))
+      .filter(r => !locOnly || r.location);
+    // ユーザー数タップ時：同一ユーザーの石モンが連続するように並べ替え（各ユーザー内は新しい順を維持）
+    const sorted = groupByUser
+      ? [...filtered].sort((a, b) => {
+          const ua = a.uid ? (userNoMap[a.uid] || 0) : Infinity;
+          const ub = b.uid ? (userNoMap[b.uid] || 0) : Infinity;
+          if (ua !== ub) return ua - ub;
+          return (b.ts || 0) - (a.ts || 0);
+        })
+      : filtered;
 
     return (
       <div className="fixed inset-0 z-[95] flex flex-col"
@@ -7435,17 +7448,27 @@ function IshimonZukan() {
             <div className="text-white/60 text-[9px] font-bold">読込済み</div>
           </div>
           <div className="text-center">
-            <div className="text-pink-400 font-black text-base">{stats.users}</div>
-            <div className="text-white/60 text-[9px] font-bold">ユーザー数</div>
-          </div>
-          <div className="text-center">
-            <div className="text-blue-400 font-black text-base">{stats.withLocation}</div>
-            <div className="text-white/60 text-[9px] font-bold">位置あり</div>
-          </div>
-          <div className="text-center">
             <div className="text-purple-400 font-black text-base">{stats.withPrompt}</div>
             <div className="text-white/60 text-[9px] font-bold">プロンプト</div>
           </div>
+          <button onClick={() => setGroupByUser(g => !g)}
+            className="text-center rounded-lg py-1 active:scale-95"
+            style={{
+              background: groupByUser ? 'rgba(236,72,153,0.2)' : 'transparent',
+              border: groupByUser ? '1px solid rgba(236,72,153,0.6)' : '1px solid transparent',
+            }}>
+            <div className="text-pink-400 font-black text-base">{stats.users}</div>
+            <div className="text-white/60 text-[9px] font-bold">ユーザー数{groupByUser ? ' ✓' : ''}</div>
+          </button>
+          <button onClick={() => setLocOnly(v => !v)}
+            className="text-center rounded-lg py-1 active:scale-95"
+            style={{
+              background: locOnly ? 'rgba(96,165,250,0.2)' : 'transparent',
+              border: locOnly ? '1px solid rgba(96,165,250,0.6)' : '1px solid transparent',
+            }}>
+            <div className="text-blue-400 font-black text-base">{stats.withLocation}</div>
+            <div className="text-white/60 text-[9px] font-bold">位置あり{locOnly ? ' ✓' : ''}</div>
+          </button>
         </div>
 
         {/* リスト */}
@@ -10075,7 +10098,7 @@ function IshimonZukan() {
                       background: 'linear-gradient(135deg, #52B788, #2D6A4F)',
                       border: '1px solid rgba(82,183,136,0.7)',
                     }}>
-                    📊 全石モンデータを 見る（{collection.length}体）
+                    📊 全石モンデータを 見る
                   </button>
                 </div>
               </div>
