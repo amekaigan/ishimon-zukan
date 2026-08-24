@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.65.2';
+const APP_VERSION = '2.66.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2528,6 +2528,8 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
 }
 
 function HomeView({ authLoading, claimableMissions, collection, fileRef, firebaseReady, firebaseUser, player, setSelected, setShowInventory, setShowMissions, setShowShop, setView, signInWithGoogle, forceSaveToFirestore, openCamera, handleImage }) {
+    // v2.66.0: 撮影ボタンが目立つホーム画面に来た時点でウォームアップ（撮影ボタンを押す前の頭出し）
+    useEffect(() => { if (typeof warmUpIshimon === 'function') warmUpIshimon(); }, []);
     const recentMons = collection.slice(0, 6); // 直近6体
     return (
       <div className="px-5 pt-6 pb-32">
@@ -3646,12 +3648,13 @@ function IshimonZukan() {
         localStorage.setItem('ishimon-player-v3', JSON.stringify(player));
       } catch (_) {}
     };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handlePageHide);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handlePageHide);
+    // v2.66.0: バックグラウンドから復帰した瞬間もウォームアップ（再開=撮る気配が強い）
+    const handleVisibilityChangeWarm = () => {
+      if (document.visibilityState === 'visible' && typeof warmUpIshimon === 'function') warmUpIshimon();
     };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChangeWarm);
+    window.addEventListener('pagehide', handlePageHide);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('visibilitychange', handleVisibilityChangeWarm);
