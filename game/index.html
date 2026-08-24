@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.63.0';
+const APP_VERSION = '2.64.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1011,7 +1011,12 @@ const getMonCacheKey = (mon) => mon.id ? `aiimg:id_${mon.id}` : `aiimg:${mon.typ
 const loadCachedImage = async (mon) => {
   try {
     const key = getMonCacheKey(mon);
-    const r = await window.storage.get(key);
+    // v2.64.0: 新規石モンはキャッシュに無いのにFirestore照会で毎回30秒待たされていた。
+    // メモリヒットは即返るので、3秒で見切って生成へ進む。
+    const r = await Promise.race([
+      window.storage.get(key),
+      new Promise(resolve => setTimeout(() => resolve(null), 3000)),
+    ]);
     return r?.value || null;
   } catch (e) { return null; }
 };
@@ -1032,13 +1037,13 @@ const getOrGenerateMonImage = async (mon, seed) => {
   // AI生成
   const usedSeed = seed || Math.floor(Math.random() * 1000000);
   const prompt = buildMonPrompt(mon);
-  const generated = await generateAiImage(prompt, usedSeed);
+    const generated = await generateAiImage(prompt, usedSeed);
   if (generated) {
-    await saveCachedImage(mon, generated);
+    // v2.64.0: Firestoreへのキャッシュ書き込み(約1.5MB)を待つとUIが最大55秒止まる。
+    // 画像の正本はcollectionのimageDataUrlなので、ここは裏で書けば十分。
+    saveCachedImage(mon, generated).catch(() => {});
     return { image: generated, fromCache: false, seed: usedSeed, prompt };
-  }
-  return { image: null, fromCache: false, seed: usedSeed, prompt };
-};
+  };
 
 // ★ 石モン図鑑スタイルDNA（全生成に自動付加されるブランドスタイル）
 // v6: 👍/👎評価の分析に基づき改訂（2026-05-18・v2.7.1）
