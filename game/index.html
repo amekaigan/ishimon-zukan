@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.62.0';
+const APP_VERSION = '2.63.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -902,12 +902,14 @@ const generateAiImageRaw = async (prompt, seed) => {
 
   // 画像Worker（ishimon=LoRA / pollinations / turbo）
   const url = buildImageUrl(prompt, seed);
+  if (window._gmark) window._gmark('画像送信');
   const controller = new AbortController();
   // LoRA(Replicate)はコールドスタートで時間がかかるので長め
   const abortMs = engine === 'ishimon' ? 90000 : 30000;
   const timeout = setTimeout(() => controller.abort(), abortMs);
   try {
     const res = await fetch(url, { signal: controller.signal });
+    if (window._gmark) window._gmark('画像到着');
     clearTimeout(timeout);
     if (!res.ok) {
       const err = new Error(`API ${res.status}`);
@@ -4068,8 +4070,11 @@ function IshimonZukan() {
     reader.readAsDataURL(file);
   };
 
-  const generateMon = async (imageDataUrl) => {
+    const generateMon = async (imageDataUrl) => {
     if (bgSyncing) { setPreviewImage(null); setError('読み込み中だよ。少し まってね 🔄'); return; }
+    window._gt0 = Date.now();
+    window._gt = [];
+    window._gmark = (label) => { try { window._gt.push(label + ' ' + ((Date.now() - window._gt0) / 1000).toFixed(1) + 's'); } catch (_) {} };
     // 全体タイムアウト保険
     let _generateMonTimedOut = false;
     const _generateMonTimeoutId = setTimeout(() => {
@@ -4220,6 +4225,7 @@ function IshimonZukan() {
       }
       if (!jsonStr) throw new Error('JSON not found in response');
       const mon = JSON.parse(jsonStr);
+      if (window._gmark) window._gmark('解析');
 
       // not_stone チェック — 削除（2026-05-25）
       // 「何を石モン化するかはユーザーに委ねる」設計思想のため、判定そのものを廃止。
@@ -4282,6 +4288,11 @@ function IshimonZukan() {
         imagePrompt: imgPrompt, // テイスト記録用
         needsImageRegen: !aiImage, // AI画像未取得フラグ
       };
+            if (window._gmark) window._gmark('完了');
+      if (window._currentUid === window.OWNER_UID && window._gt) {
+        setToast('⏱ ' + window._gt.join(' / '));
+        setTimeout(() => setToast(''), 12000);
+      }
       setPendingMon(entry); // v2.18.0: すぐ出さず「会いに行く」待ち
       const updated = [entry, ...collection];
       setCollection(updated);
