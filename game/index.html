@@ -723,7 +723,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.67.0';
+const APP_VERSION = '2.67.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3607,6 +3607,7 @@ function IshimonZukan() {
       localStorage.setItem('ishimon-player-v3', playerJson);
       _lsSetCollection(collectionData);
       try { if (window._idb) window._idb.set('ishimon-collection-v3', collectionJson); } catch (_) {}
+    } catch (_) {}
     const withTimeout = (promise, ms) => Promise.race([
       promise,
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
