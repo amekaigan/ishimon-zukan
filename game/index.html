@@ -706,7 +706,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.64.1';
+const APP_VERSION = '2.65.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2778,9 +2778,12 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
         )}
 
         {/* 💾 手動保存ボタン（ログイン中のみ・一番下） */}
-        {firebaseUser && (() => {
+        {(() => {
+          // v2.65.2: useStateをfirebaseUserの条件分岐の外に出す（React error #310対策）。
+          // ログイン確定前後でフックの呼び出し数が変わり、白画面クラッシュの原因になっていた。
           const [homeSaveStatus, setHomeSaveStatus] = React.useState('');
           const [homeSaving, setHomeSaving] = React.useState(false);
+          if (!firebaseUser) return null;
           const handleHomeSave = async () => {
             if (homeSaving) return;
             setHomeSaving(true);
