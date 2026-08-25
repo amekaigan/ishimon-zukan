@@ -730,7 +730,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.69.0';
+const APP_VERSION = '2.69.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -7482,8 +7482,8 @@ function IshimonZukan() {
       <div className="fixed inset-0 z-[95] flex flex-col"
         style={{ background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)' }}>
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-4 py-3"
-          style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="flex items-center justify-between px-4 pb-3"
+          style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <div>
             <div className="text-yellow-300 font-black text-lg">📊 全石モンデータ</div>
             <div className="text-white/60 text-[10px] font-bold">オーナー専用・分析用</div>
