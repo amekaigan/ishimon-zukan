@@ -798,6 +798,8 @@ const buildImageUrl = (prompt, seed) => {
     seed: String(seed || Math.floor(Math.random() * 1000000)),
     engine: engine, // 'ishimon'(本命LoRA) / 'pollinations'(保険) / それ以外→turbo
     model: engine === 'pollinations' ? 'flux' : engine === 'ishimon' ? 'ishimon' : 'turbo',
+    uid: window._currentUid || '',   // v2.68.0: Worker側の日次上限判定に使う
+    gid: window._curGid || '',       // v2.68.0: 撮影1回の識別子。リトライでも同じ＝二重消費しない
   });
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
@@ -986,6 +988,8 @@ const processAiQueue = async () => {
     }
     _lastRequestAt = Date.now();
 
+    // v2.68.0: この撮影の識別子。リトライしても同じ値なのでWorker側の日次枠を二重に消費しない。
+    window._curGid = job.gid || '';
     // 生成本体（失敗時は1回だけリトライ）
     let result = null;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -994,6 +998,11 @@ const processAiQueue = async () => {
         if (result) { _consecutiveFailures = 0; break; } // 成功でリセット
         // resultがnull（画像取得できず）→ リトライへ
       } catch (e) {
+        if (e.status === 402) { // v2.68.0: Worker判定の日次上限。リトライしても無駄なので即やめる
+          window._genQuotaHit = true;
+          console.warn('daily quota reached (worker)');
+          break;
+        }
         if (e.status === 429) {
           _consecutiveFailures = Math.min(_consecutiveFailures + 1, MAX_BACKOFF_COUNT);
           console.warn(`Rate limited (429). Backoff: ${Math.min(_consecutiveFailures, MAX_BACKOFF_COUNT) * (BACKOFF_PER_FAIL_MS / 1000)}s`);
@@ -1014,8 +1023,9 @@ const processAiQueue = async () => {
 
 // 公開関数: キュー経由で生成
 const generateAiImage = (prompt, seed) => {
+  const gid = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   return new Promise((resolve) => {
-    _aiQueue.push({ prompt, seed, resolve });
+    _aiQueue.push({ prompt, seed, gid, resolve });
     processAiQueue();
   });
 };
