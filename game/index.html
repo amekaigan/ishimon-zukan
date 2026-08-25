@@ -187,6 +187,13 @@
   </div>
 </div>
 <style>
+  /* v2.69.0: 上部セーフエリアの共通ルール。
+     iPhoneの時計・ダイナミックアイランドに重ならないよう、
+     fixed配置のモーダル内側コンテナへ一括で上余白を足す。
+     Tailwindの pt-3 等より詳細度が高いので !important 無しで勝つ。 */
+  .min-h-full.flex.items-start.justify-center {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+  }
   @keyframes ishimon-bounce {
     from { transform: translateY(0); }
     to { transform: translateY(-10px); }
@@ -723,7 +730,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.68.0';
+const APP_VERSION = '2.69.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3334,11 +3341,11 @@ function IshimonZukan() {
   const [consentDevCoop, setConsentDevCoop] = useState(true); // §4: 開発協力モード同意モーダル用（初回はtrueデフォルト、既存ユーザーは現設定を引き継ぐ）
 
   // ===== 共通: 閉じるボタン（全モーダル・画面で統一使用） =====
-  const CloseButton = ({ onClick, position = 'absolute' }) => (
+  const CloseButton = ({ onClick, position = 'absolute', topOffset = '12px' }) => (
     <button onClick={onClick}
       style={{
         position,
-        top: position === 'absolute' ? '12px' : 'auto',
+        top: position === 'absolute' ? topOffset : 'auto',
         right: position === 'absolute' ? '12px' : 'auto',
         width: '38px',
         height: '38px',
@@ -8013,8 +8020,8 @@ function IshimonZukan() {
     return (
       <div className="fixed inset-0 z-[100] overflow-y-auto"
         style={{ background: 'rgba(0,0,0,0.92)', WebkitOverflowScrolling: 'touch' }}>
-        <CloseButton onClick={onClose} />
-        <div className="flex flex-col items-center px-3 pt-12 pb-24" style={{ minHeight: '100%' }}>
+        <CloseButton onClick={onClose} topOffset="calc(env(safe-area-inset-top, 0px) + 12px)" />
+        <div className="flex flex-col items-center px-3 pb-24" style={{ minHeight: '100%', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3rem)' }}>
           <div className="text-center mb-3">
             <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-1">SHARE CARD</div>
             <h2 className="text-white text-xl font-black">シェアカード</h2>
@@ -10286,6 +10293,7 @@ function IshimonZukan() {
       style={{
         background: view === 'battle' ? 'transparent' : 'linear-gradient(180deg, #FF6B35 0%, #C71F8E 50%, #5A1A78 100%)',
         fontFamily: 'M PLUS Rounded 1c, sans-serif',
+        paddingTop: 'env(safe-area-inset-top, 0px)', // v2.69.0: 全画面共通の上部セーフエリア
       }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap');
