@@ -2490,7 +2490,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
               const r = getRarityLabel(m.rarity);
               const monGroup = groups.find(g => g.id === m.groupId);
               const longPressProps = makeLongPressHandlers({
-                onClick: () => setSelected(m),
+                onClick: () => { window._zukanScrollY = window.scrollY; setSelected(m); },
                 onLongPress: () => setLongPressMon(m),
               });
               return (
@@ -8048,6 +8048,15 @@ function IshimonZukan() {
   const [editingMemoId, setEditingMemoId] = useState(null);
   const memoEditRef = useRef(null);
   const monScrollRef = useRef(0); // v2.21.1: 詳細画面が作り直されてもスクロール位置を保つ
+  // v2.68.0: 詳細を閉じたら図鑑の元の位置へ戻す。
+  //   MonCardが body.overflow='hidden' を掛けた瞬間にiOSがページ先頭へ飛ぶため、
+  //   開いた時点の scrollY を控えておき、overflow解除が効いた後のフレームで復元する。
+  const restoreZukanScroll = () => {
+    const y = window._zukanScrollY;
+    window._zukanScrollY = null;
+    if (typeof y !== 'number' || y <= 0) return;
+    requestAnimationFrame(() => { requestAnimationFrame(() => { try { window.scrollTo(0, y); } catch (_) {} }); });
+  };
   const saveMonMemo = (monId) => {
     const text = (memoEditRef.current?.value || '').trim();
     setCollection(prev => {
@@ -10302,7 +10311,7 @@ function IshimonZukan() {
         BottomTabBar()
       )}
 
-      {selected && <MonCard mon={selected} onClose={() => { setSelected(null); monScrollRef.current = 0; }}
+      {selected && <MonCard mon={selected} onClose={() => { setSelected(null); monScrollRef.current = 0; restoreZukanScroll(); }}
         onNav={(collection.length > 1 && collection.some(m => m.id === selected.id)) ? (dir => {
           const i = collection.findIndex(m => m.id === selected.id);
           if (i < 0) return;
