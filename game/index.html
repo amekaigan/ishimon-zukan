@@ -723,7 +723,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.67.1';
+const APP_VERSION = '2.68.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -5198,9 +5198,10 @@ function IshimonZukan() {
   // ショップ
   // ===========================================
     const ShopModal = () => {
-    if (!showShop) return null;
+    // v2.68.0: フックは条件分岐より前。早期returnの後ろにあると開閉でフック数が変わりReact #310（白画面）。
     const [mode, setMode] = useState('buy');   // 'buy' | 'sell'
     const [tab, setTab] = useState('sword');
+    if (!showShop) return null;
     const items = Object.values(EQUIPMENT).filter(e => e.type === tab);
     const equippedCount = (id) => collection.filter(m => m.equipped && EQUIP_SLOTS.some(s => m.equipped[s] === id)).length;
     const sellList = items.filter(eq => invCount(player.inventory, eq.id) > 0);
@@ -5316,7 +5317,7 @@ function IshimonZukan() {
   // アイテム画面（道具箱）
   // ===========================================
   const InventoryModal = () => {
-    if (!showInventory) return null;
+    // v2.68.0: フックは条件分岐より前（React #310対策）。閉じ判定は全フックの後・return直前へ移動。
     const [tab, setTab] = useState('all');
 
     // 各装備を「誰が装備中か」マップ化
@@ -5367,9 +5368,10 @@ function IshimonZukan() {
     const tabs = [
       { id: 'all', label: 'すべて', emoji: '📦' },
       { id: 'sword', label: '剣', emoji: '🗡️' },
-      { id: 'shield', label: '盾', emoji: '🛡️' },
       { id: 'charm', label: 'お守り', emoji: '🍀' },
     ];
+
+    if (!showInventory) return null;
 
     return (
       <div className="fixed inset-0 z-[55] overflow-y-auto p-3" style={{ background: 'rgba(0,0,0,0.85)' }}>
@@ -5873,6 +5875,13 @@ function IshimonZukan() {
   // 装備画面
   // ===========================================
     const EquipModal = () => {
+    // v2.68.0: フックは条件分岐より前（React #310対策）。開いている時だけ効くよう中で判定する。
+    useEffect(() => {
+      if (!showEquip) return;
+      const _prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = _prev; };
+    }, [showEquip]);
     if (!showEquip) return null;
     const mon = showEquip;
     const t = TYPES[mon.type] || TYPES['土'];
@@ -5880,11 +5889,6 @@ function IshimonZukan() {
     const eq = getEquipBoost(mon);
     const invTotal = (player.inventory || []).length;
     const invMax = player.inventorySlots || 20;
-    useEffect(() => {
-      const _prev = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = _prev; };
-    }, []);
     const close = () => setShowEquip(null);
     const activeSlot = equipTab, setActiveSlot = setEquipTab;
     const equippedCounts = {};
@@ -6192,16 +6196,17 @@ function IshimonZukan() {
   // 初回オンボーディング画面
   // ===========================================
   const OnboardingModal = () => {
+    // v2.68.0: フックは条件分岐より前（React #310対策）。
+    const sliderRef = useRef(null);
+    const touchStart = useRef(null);
     if (!showOnboarding) return null;
 
     // v2.14.0: 親のstateを参照(再マウント時もスライド位置を保持)
     const slideIdx = onboardingSlideIdx;
     const setSlideIdx = setOnboardingSlideIdx;
     const totalSlides = 5;
-    const sliderRef = useRef(null);
 
     // タッチスワイプ対応
-    const touchStart = useRef(null);
     const handleTouchStart = (e) => { touchStart.current = e.touches[0].clientX; };
     const handleTouchEnd = (e) => {
       if (touchStart.current === null) return;
