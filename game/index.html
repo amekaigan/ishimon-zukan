@@ -378,7 +378,9 @@ const _fsSaveCollectionDiff = async (collectionJson, onProgress) => {
   const { deleteDoc, doc, db } = window._firebase;
   const uid = window._currentUid;
   let arr;
-  try { arr = JSON.parse(collectionJson); } catch (_) { return; }
+  // v2.72.0: 配列をそのまま受け取れるようにした（巨大JSONの二重パースを避ける）
+  if (Array.isArray(collectionJson)) arr = collectionJson;
+  else { try { arr = JSON.parse(collectionJson); } catch (_) { return; } }
   if (!Array.isArray(arr)) return;
   const prev = (window._monIndex && window._monIndex.hashes) || {};
   const newIdx = { ids: [], hashes: {} };
@@ -730,7 +732,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.70.0';
+const APP_VERSION = '2.72.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -931,7 +933,7 @@ const generateAiImageRaw = async (prompt, seed) => {
   if (window._gmark) window._gmark('画像送信');
   const controller = new AbortController();
   // LoRA(Replicate)はコールドスタートで時間がかかるので長め
-  const abortMs = engine === 'ishimon' ? 90000 : 30000;
+  const abortMs = engine === 'ishimon' ? 150000 : 30000; // v2.71.0: コールドスタートは90秒を超える
   const timeout = setTimeout(() => controller.abort(), abortMs);
   try {
     const res = await fetch(url, { signal: controller.signal });
@@ -1015,6 +1017,7 @@ const processAiQueue = async () => {
           console.warn(`Rate limited (429). Backoff: ${Math.min(_consecutiveFailures, MAX_BACKOFF_COUNT) * (BACKOFF_PER_FAIL_MS / 1000)}s`);
         } else {
           console.warn(`AI generation attempt ${attempt + 1} failed:`, e?.message || e);
+          if (e?.name === 'AbortError') break; // v2.71.0: 時間切れ。もう一度待たせない
         }
       }
       // 1回目が失敗したら、間隔を空けて2回目へ
@@ -3606,10 +3609,19 @@ function IshimonZukan() {
     catch (e) { console.error(e); }
   };
   const saveCollection = async (c) => {
-    const _json = JSON.stringify(c);
-    try { await window.storage.set('ishimon-collection-v3', _json); }
-    catch (e) { console.error(e); }
-    try { if (window._idb) window._idb.set('ishimon-collection-v3', _json); } catch (_) {} // v2.47.0: IndexedDBミラー
+    // v2.72.0: 1回の保存で巨大JSONを4回作っていたのを1回に削減。
+    //   旧: stringify → localStorageへ15MB書き込み(必ず失敗) → 空判定でparse → 差分保存でまたparse。
+    //   このメモリの跳ねでiPhoneがタブごと落ちていた（進化・アート変換で多発）。
+    _lsSetCollection(c); // localStorageは画像を抜いた軽量版のみ
+    _markLocalSaved('ishimon-collection-v3', Date.now());
+    const isEmpty = !Array.isArray(c) || c.length === 0 ||
+      c.every(m => typeof m?.id === 'string' && m.id.startsWith('demo-'));
+    try { if (window._idb) window._idb.set('ishimon-collection-v3', JSON.stringify(c)); } catch (_) {} // 画像入りの正本はIndexedDB
+    if (isEmpty || !window._currentUid || !window._firebase) return;
+    try {
+      if (window._fsDiffMode) await _fsSaveCollectionDiff(c); // 配列のまま渡す＝parseなし
+      else await _fsSet('ishimon-collection-v3', JSON.stringify(c));
+    } catch (e) { console.error('[保存] Firestore:', e); }
   };
 
   // 強制Firestore保存（v2.30.0: 差分化対応）
@@ -4455,16 +4467,19 @@ function IshimonZukan() {
       setShowQuotaOver(true);
       return;
     }
+    if (evolvingImageId) { setToast('いま べつの絵を描いているよ 🎨'); setTimeout(() => setToast(''), 2500); return; }
     window._genQuotaHit = false;
-    setAiGenerating(true);
+    warmUpIshimon(); // v2.71.0: 眠っているAIを先に起こす（コールドスタート対策）
+    // v2.71.0: 全画面で待たせるのをやめ「裏で描く」方式へ。絵の上に進行表示が出る。
+    setEvolvingImageId(mon.id);
+    setToast('✨ AIが 描きはじめたよ！ できたら 図鑑に出るよ');
+    setTimeout(() => setToast(''), 3500);
     let timedOut = false;
-    // タイムアウト: レート制限の最大待機(約61秒)＋生成＋1回リトライを考慮し150秒に設定
-    //   (v2.7.3: 旧90秒だと待機中にタイムアウトする悪循環があったため延長)
     const timeoutId = setTimeout(() => {
       timedOut = true;
-      setAiGenerating(false);
-      setError('AI生成がタイムアウトしました。少し時間をおいてから再試行してください');
-    }, 100000);
+      setEvolvingImageId(null);
+      setError('AIが 混んでいるみたい。少し時間をおいて もう一度ためしてね');
+    }, 210000);
     try {
       const prompt = buildMonPrompt(mon);
       // 強制的に新しいseedで生成（既存キャッシュは新画像で上書き）
@@ -4481,17 +4496,19 @@ function IshimonZukan() {
         setSelected(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
         setNewMon(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
         // v2.34.0: コールドで遅れて本物が出た石モンを収集（捕獲時はダミーで送らなかった分）
+        setToast('🎨 あたらしい すがたが できたよ！');
+        setTimeout(() => setToast(''), 3000);
         if (mon.needsImageRegen) collectDevSample({ ...mon, imageDataUrl: aiImage, needsImageRegen: false });
       } else if (window._genQuotaHit) {
         setShowQuotaOver(true);
       } else {
-        setError('AI生成に失敗しました。15秒後に再度お試しください');
+        setError('AI生成に失敗しました。少し時間をおいて もう一度ためしてね');
       }
     } catch (e) {
       clearTimeout(timeoutId);
       if (!timedOut) setError('AI生成エラー');
     } finally {
-      if (!timedOut) setAiGenerating(false);
+      if (!timedOut) setEvolvingImageId(null);
     }
   };
 
@@ -8174,7 +8191,7 @@ function IshimonZukan() {
                   style={{ background: 'rgba(0,0,0,0.45)', border: '2px solid #FFD700' }}>
                   <Loader2 className="w-8 h-8 text-white animate-spin" />
                   <div className="text-white font-black text-sm">✨ 新しい姿を描いています…</div>
-                  <div className="text-white/70 text-[11px]">少し待ってね(最大30秒ほど)</div>
+                  <div className="text-white/70 text-[11px]">1〜2ふん かかることがあるよ。画面を とじても だいじょうぶ</div>
                 </div>
               )}
             </div>
@@ -8426,11 +8443,11 @@ function IshimonZukan() {
                   regenerateMonImage(mon);
                 }
               }}
-              disabled={aiGenerating}
+              disabled={evolvingImageId === mon.id}
               className="w-full py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #6A0DAD, #C77DFF, #FFD700)', boxShadow: '0 4px 0 #2E0068', border: '3px solid white' }}>
               <Wand2 className="w-4 h-4" />
-              {aiGenerating ? <>描いています...</> : <>✨ AIで オリジナルアートに変換！</>}
+              {evolvingImageId === mon.id ? <>描いています…（とじてもOK）</> : <>✨ AIで オリジナルアートに変換！</>}
             </button>
           )}
 
