@@ -730,7 +730,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.69.1';
+const APP_VERSION = '2.70.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -964,7 +964,7 @@ const generateAiImageRaw = async (prompt, seed) => {
 //       悪循環を解消）
 //   - 失敗カウンタが成功するまで永久に減らない問題を、時間経過での自然減衰で解消
 //   - 1回失敗したら即諦めず、間隔を空けて1回だけリトライ
-const RATE_LIMIT_MS = 16000;     // 通常の最小間隔（16秒）
+const RATE_LIMIT_MS = 2000;      // v2.70.0: LoRA(Worker)は自前でレート制限するので待たない
 const BACKOFF_PER_FAIL_MS = 15000; // 失敗1回ごとの追加待機（15秒）
 const MAX_BACKOFF_COUNT = 3;       // バックオフ加算の上限（最大 16+45=61秒）
 const FAILURE_DECAY_MS = 300000;   // 最終リクエストから5分経過で失敗カウンタをリセット
@@ -4451,6 +4451,11 @@ function IshimonZukan() {
 
   // ===== AI画像で再生成（既存の石モンの絵柄を変える、キャッシュ更新）=====
   const regenerateMonImage = async (mon) => {
+    if (window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) {
+      setShowQuotaOver(true);
+      return;
+    }
+    window._genQuotaHit = false;
     setAiGenerating(true);
     let timedOut = false;
     // タイムアウト: レート制限の最大待機(約61秒)＋生成＋1回リトライを考慮し150秒に設定
@@ -4459,7 +4464,7 @@ function IshimonZukan() {
       timedOut = true;
       setAiGenerating(false);
       setError('AI生成がタイムアウトしました。少し時間をおいてから再試行してください');
-    }, 150000);
+    }, 100000);
     try {
       const prompt = buildMonPrompt(mon);
       // 強制的に新しいseedで生成（既存キャッシュは新画像で上書き）
@@ -4467,6 +4472,7 @@ function IshimonZukan() {
       if (timedOut) return; // タイムアウト後は無視
       clearTimeout(timeoutId);
       if (aiImage) {
+        if (window._currentUid !== window.OWNER_UID) bumpGenCountToday();
         await saveCachedImage(mon, aiImage); // キャッシュも更新
         // v2.18.1: 関数型updateで最新のcollection(メモ等)を壊さず画像だけ差し替え
         let saved = null;
@@ -4476,6 +4482,8 @@ function IshimonZukan() {
         setNewMon(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
         // v2.34.0: コールドで遅れて本物が出た石モンを収集（捕獲時はダミーで送らなかった分）
         if (mon.needsImageRegen) collectDevSample({ ...mon, imageDataUrl: aiImage, needsImageRegen: false });
+      } else if (window._genQuotaHit) {
+        setShowQuotaOver(true);
       } else {
         setError('AI生成に失敗しました。15秒後に再度お試しください');
       }
@@ -4627,6 +4635,10 @@ function IshimonZukan() {
   // ===== 進化 =====
   const evolveMon = async (mon) => {
     if (!mon.evolveTo || mon.stage >= 3) return;
+    if (window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) {
+      setShowQuotaOver(true);
+      return;
+    }
     const cost = EVOLVE_COST[mon.rarity] || EVOLVE_COST[4];
     if ((player.stoneFragments || 0) < cost) {
       alert(`石のかけらが 足りません！\n${cost}個 必要 / 現在 ${player.stoneFragments || 0}個`);
@@ -4680,7 +4692,10 @@ function IshimonZukan() {
       // バグ修正(v2.7.5): 画像生成の失敗で「進化に失敗しました」が出ていた問題。
       //   imagePromise を .catch でラップして、画像エラーは null 扱いに。
       //   進化処理は画像の有無に関わらず成功させる。
-      const imagePromise = getOrGenerateMonImage(evolved).catch(err => {
+      const imagePromise = getOrGenerateMonImage(evolved).then(r => {
+        if (r?.image && !r.fromCache && window._currentUid !== window.OWNER_UID) bumpGenCountToday();
+        return r;
+      }).catch(err => {
         console.warn('[Evolve] 画像生成エラー（進化は成功扱い）:', err);
         return { image: null };
       });
@@ -10569,7 +10584,11 @@ function IshimonZukan() {
           <div className="mt-6 text-yellow-300 font-black text-xl" style={{ textShadow: '0 0 20px #FFAA00' }}>
             AIが 描いています...
           </div>
-          <div className="text-white/70 text-xs font-bold mt-1">5〜90びょう かかることがあります</div>
+          <div className="text-white/70 text-xs font-bold mt-1">ふつうは 30びょうくらい</div>
+          <div className="mt-3 w-56 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
+            <div style={{ height: '100%', width: '0%', background: 'linear-gradient(90deg,#C77DFF,#FFD700)', animation: 'aiprog 100s linear forwards' }} />
+          </div>
+          <style>{`@keyframes aiprog { from { width: 0%; } to { width: 100%; } }`}</style>
           <button onClick={() => setAiGenerating(false)}
             className="mt-6 px-6 py-2 rounded-full text-white/80 font-black text-sm active:scale-95"
             style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>
