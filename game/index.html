@@ -732,7 +732,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.73.0';
+const APP_VERSION = '2.74.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3690,19 +3690,28 @@ function IshimonZukan() {
     window._imgJobs[mon.id] = true;
     warmUpIshimon();
     let got = null;
+    let got = null;
     try {
-      const r = await getOrGenerateMonImage(mon);
+      let r;
+      if (mon.imageForce) {
+        // v2.74.0: アート変換はキャッシュを使わず必ず新しく描く
+        const img = await generateAiImage(buildMonPrompt(mon), Date.now() % 1000000);
+        if (img) { await saveCachedImage(mon, img); r = { image: img, fromCache: false }; }
+        else r = { image: null };
+      } else {
+        r = await getOrGenerateMonImage(mon);
+      }
       if (r && r.image) {
         got = r;
         if (!r.fromCache && window._currentUid !== window.OWNER_UID) bumpGenCountToday();
-        const finalMon = { ...mon, imageDataUrl: r.image, imagePending: false };
+        const finalMon = { ...mon, imageDataUrl: r.image, imagePending: false, imageForce: false };
         setCollection(prev => {
-          const next = prev.map(c => c.id === finalMon.id ? { ...c, imageDataUrl: r.image, imagePending: false } : c);
+          const next = prev.map(c => c.id === finalMon.id ? { ...c, imageDataUrl: r.image, imagePending: false, imageForce: false } : c);
           saveCollection(next).catch(() => {});
           return next;
         });
-        setSelected(prev => (prev && prev.id === finalMon.id) ? { ...prev, imageDataUrl: r.image, imagePending: false } : prev);
-        setToast(`🎉 ${finalMon.name} が うまれた！`);
+        setSelected(prev => (prev && prev.id === finalMon.id) ? { ...prev, imageDataUrl: r.image, imagePending: false, imageForce: false } : prev);
+        setToast(mon.imageForce ? '🎨 あたらしい すがたが できたよ！' : `🎉 ${finalMon.name} が うまれた！`);
         setTimeout(() => setToast(''), 4000);
       }
     } catch (e) {
@@ -4516,11 +4525,22 @@ function IshimonZukan() {
 
   // ===== AI画像で再生成（既存の石モンの絵柄を変える、キャッシュ更新）=====
   const regenerateMonImage = async (mon) => {
+    // v2.74.0: アート変換も進化と同じ「たまご方式」へ。押した瞬間に完了し、絵は裏で作る。
+    //   アプリを閉じても imagePending がコレクションに残るので、次回起動で続きから描き直す。
     if (window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) {
       setShowQuotaOver(true);
       return;
     }
-    if (evolvingImageId) { setToast('いま べつの絵を描いているよ 🎨'); setTimeout(() => setToast(''), 2500); return; }
+    if (mon.imagePending) { setToast('いま 描いているよ 🎨'); setTimeout(() => setToast(''), 2500); return; }
+    setCollection(prev => {
+      const next = prev.map(c => c.id === mon.id ? { ...c, imagePending: true, imageForce: true } : c);
+      saveCollection(next).catch(() => {});
+      return next;
+    });
+    setSelected(prev => (prev && prev.id === mon.id) ? { ...prev, imagePending: true, imageForce: true } : prev);
+    setToast('🥚 AIが 描きはじめたよ！ できるまで まってね');
+    setTimeout(() => setToast(''), 4000);
+    return;
     window._genQuotaHit = false;
     warmUpIshimon(); // v2.71.0: 眠っているAIを先に起こす（コールドスタート対策）
     // v2.71.0: 全画面で待たせるのをやめ「裏で描く」方式へ。絵の上に進行表示が出る。
@@ -8199,8 +8219,8 @@ function IshimonZukan() {
                 <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-2"
                   style={{ background: 'rgba(0,0,0,0.72)', border: '2px solid #FFD700' }}>
                   <div className="text-6xl" style={{ animation: 'eggwob 1.6s ease-in-out infinite' }}>🥚</div>
-                  <div className="text-white font-black text-sm">{mon.imagePending ? 'たまごの なか…' : '✨ 新しい姿を描いています…'}</div>
-                  <div className="text-white/70 text-[11px] text-center px-4">すがたが できたら おしらせするよ。アプリを とじても だいじょうぶ</div>
+                  <div className="text-white font-black text-sm">{mon.imagePending ? '🥚 たまごの中…' : '✨ 新しい姿を描いています…'}</div>
+                  <div className="text-white/70 text-[11px] text-center px-4">開いている間に描くよ。閉じても途中から再開するよ</div>
                   <style>{`@keyframes eggwob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }`}</style>
                 </div>
               )}
@@ -8453,11 +8473,11 @@ function IshimonZukan() {
                   regenerateMonImage(mon);
                 }
               }}
-              disabled={evolvingImageId === mon.id}
+              disabled={!!mon.imagePending}
               className="w-full py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #6A0DAD, #C77DFF, #FFD700)', boxShadow: '0 4px 0 #2E0068', border: '3px solid white' }}>
               <Wand2 className="w-4 h-4" />
-              {evolvingImageId === mon.id ? <>描いています…（とじてもOK）</> : <>✨ AIで オリジナルアートに変換！</>}
+              {mon.imagePending ? <>描いています…</> : <>✨ AIで オリジナルアートに変換！</>}
             </button>
           )}
 
