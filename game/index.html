@@ -732,7 +732,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.74.0';
+const APP_VERSION = '2.74.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3689,7 +3689,6 @@ function IshimonZukan() {
     if (window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) return; // 枠切れは明日に持ち越し
     window._imgJobs[mon.id] = true;
     warmUpIshimon();
-    let got = null;
     let got = null;
     try {
       let r;
