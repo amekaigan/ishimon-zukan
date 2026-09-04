@@ -1458,7 +1458,7 @@ const fallbackMon = (color, difficulty = 'normal') => {
   }
   // 難易度バイアスを適用（かんたん:上振れ / むずかしい:下振れ）
   rarity = adjustRarityByDifficulty(rarity, difficulty);
-  const shiny = Math.random() < 0.02; // v2.79.0: 色違い抽選（1/50）
+  const shiny = Math.random() < 1; // v2.79.0: 色違い抽選（1/50）
   const total = 180 + rarity * 50;
   const split = (total) => {
     const a = 0.2 + Math.random() * 0.4;
