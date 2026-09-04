@@ -691,7 +691,72 @@ window._idb = (function () {
     const p = _pend; _pend = null;
     return p ? set(p.key, p.value) : Promise.resolve(true);
   }
-  return { set, get, setSoon, flush };
+  // v2.81.0: IndexedDB差分保存（1体1レコード方式）
+  //   キー: idb-mon:{id}  値: JSON文字列
+  //   インデックス: idb-monindex { ids:[], hashes:{} }
+  // Firestore側と同じ構造をローカルにも持つ。15MB丸ごとをやめて1体単位で差し替える。
+  let _idbPendingDiff = null, _idbDiffTimer = null;
+  // ハッシュ（簡易djb2）
+  function _idbHash(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+    return h >>> 0;
+  }
+  async function _idbMonIndex() {
+    try {
+      const raw = await get('idb-monindex');
+      if (!raw) return { ids: [], hashes: {} };
+      return JSON.parse(raw);
+    } catch (_) { return { ids: [], hashes: {} }; }
+  }
+  async function _idbSaveDiff(arr) {
+    if (!Array.isArray(arr) || arr.length === 0) return;
+    const prev = await _idbMonIndex();
+    const prevH = prev.hashes || {};
+    const newIdx = { ids: [], hashes: {} };
+    for (const m of arr) {
+      if (!m || m.id == null) continue;
+      const s = JSON.stringify(m);
+      const h = _idbHash(s);
+      newIdx.ids.push(m.id);
+      newIdx.hashes[m.id] = h;
+      if (prevH[m.id] !== h) await set('idb-mon:' + m.id, s);
+    }
+    // 削除された石モンのレコードを掃除
+    for (const oldId of Object.keys(prevH)) {
+      if (!(oldId in newIdx.hashes)) await set('idb-mon:' + oldId, null);
+    }
+    await set('idb-monindex', JSON.stringify(newIdx));
+  }
+  async function _idbLoadAll() {
+    const idx = await _idbMonIndex();
+    if (!idx.ids || idx.ids.length === 0) return null;
+    const result = [];
+    for (const id of idx.ids) {
+      try {
+        const raw = await get('idb-mon:' + id);
+        if (raw) result.push(JSON.parse(raw));
+      } catch (_) {}
+    }
+    return result.length > 0 ? result : null;
+  }
+  // 間引き: 連続保存をまとめて1回にする（20秒）
+  function saveDiffSoon(arr) {
+    _idbPendingDiff = arr;
+    if (_idbDiffTimer) return;
+    _idbDiffTimer = setTimeout(() => {
+      _idbDiffTimer = null;
+      const a = _idbPendingDiff; _idbPendingDiff = null;
+      if (a) _idbSaveDiff(a).catch(() => {});
+    }, 20000);
+  }
+  function flushDiff() {
+    if (_idbDiffTimer) { clearTimeout(_idbDiffTimer); _idbDiffTimer = null; }
+    const a = _idbPendingDiff; _idbPendingDiff = null;
+    return a ? _idbSaveDiff(a) : Promise.resolve();
+  }
+  return { set, get, setSoon, flush, saveDiffSoon, flushDiff, loadAll: _idbLoadAll };
+})();
 })();
 // ===== Leaflet 遅延ロード（地図を開いた時だけ・v2.51.0）=====
 window._loadLeaflet = function () {
@@ -759,7 +824,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.80.1';
+const APP_VERSION = '2.81.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3512,11 +3577,20 @@ function IshimonZukan() {
         let _idbCol = null; // v2.49.0: idb先行描画できた時は後続のFirestore全件再取得を省きOOM回避
         try {
           let _lc = null;
-          try { if (window._idb) _lc = await window._idb.get('ishimon-collection-v3'); } catch (_) {} // v2.48.0: 大容量はIndexedDB優先
+          // v2.81.0: IndexedDB差分方式（1体1レコード）から先行ロード
+          //   新方式: idb-monindex + idb-mon:{id} / 旧キー(ishimon-collection-v3)はfallback
+          if (window._idb) {
+            try {
+              const _fromDiff = await window._idb.loadAll();
+              if (_fromDiff) { _lc = _fromDiff; } // 配列のまま保持
+            } catch (_) {}
+          }
+          // 新方式で取れなかった場合は旧キーfallback（移行前ユーザー対応）
+          if (!_lc) try { if (window._idb) { const _old = await window._idb.get('ishimon-collection-v3'); if (_old) _lc = _old; } } catch (_) {}
           if (!_lc) _lc = localStorage.getItem('ishimon-collection-v3');
           const _lp = localStorage.getItem('ishimon-player-v3');
           if (_lc && _lp) {
-            const _pc = JSON.parse(_lc);
+            const _pc = Array.isArray(_lc) ? _lc : JSON.parse(_lc);
             const _pp = JSON.parse(_lp);
             if (Array.isArray(_pc) && _pc.length > 0 && _pp && typeof _pp === 'object') {
               setCollection(_pc);
@@ -3754,7 +3828,7 @@ function IshimonZukan() {
     _markLocalSaved('ishimon-collection-v3', Date.now());
     const isEmpty = !Array.isArray(c) || c.length === 0 ||
       c.every(m => typeof m?.id === 'string' && m.id.startsWith('demo-'));
-    try { if (window._idb) window._idb.setSoon('ishimon-collection-v3', JSON.stringify(c)); } catch (_) {} // 画像入りの正本はIndexedDB(間引き書き込み)
+    try { if (window._idb) window._idb.saveDiffSoon(c); } catch (_) {} // v2.81.0: 差分方式(1体1レコード)で間引き保存
     if (isEmpty || !window._currentUid || !window._firebase) return;
     try {
       if (window._fsDiffMode) await _fsSaveCollectionDiff(c); // 配列のまま渡す＝parseなし
@@ -3773,7 +3847,7 @@ function IshimonZukan() {
     try {
       localStorage.setItem('ishimon-player-v3', playerJson);
       _lsSetCollection(collectionData);
-      try { if (window._idb) window._idb.set('ishimon-collection-v3', collectionJson).catch(() => {}); } catch (_) {}
+      try { if (window._idb) window._idb.flushDiff ? window._idb.flushDiff() : null; } catch (_) {} // v2.81.0: 差分を即時書き出し
     } catch (_) {}
     const withTimeout = (promise, ms) => Promise.race([
       promise,
@@ -3885,7 +3959,7 @@ function IshimonZukan() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        try { if (window._idb) window._idb.flush(); } catch (_) {} // v2.80.0: 溜めた分を書き出す
+        try { if (window._idb) window._idb.flushDiff(); } catch (_) {} // v2.81.0: 差分を即時書き出し
         try {
           _lsSetCollection(collection);
           localStorage.setItem('ishimon-player-v3', JSON.stringify(player));
@@ -9983,11 +10057,17 @@ function IshimonZukan() {
                 <div className="mb-3">
                   <button onClick={async () => {
                     try {
-                      const v = window._idb ? await window._idb.get('ishimon-collection-v3') : null;
-                      if (!v) { setError('IndexedDBキャッシュ: まだ無し（石モンを作るか「今すぐ保存」で保存されます）'); return; }
-                      const mb = (v.length / 1024 / 1024).toFixed(1);
-                      let n = 0; try { n = JSON.parse(v).length; } catch (_) {}
-                      setError('IndexedDBキャッシュ: ' + mb + 'MB / ' + n + '体 保存済み');
+                      // v2.81.0: 差分方式の確認
+                      if (!window._idb) { setError('IndexedDB: 利用不可'); return; }
+                      const _idx = await window._idb.get('idb-monindex');
+                      if (!_idx) {
+                        const _old = await window._idb.get('ishimon-collection-v3');
+                        if (!_old) { setError('IndexedDBキャッシュ: まだ無し（石モンを作るか「今すぐ保存」で保存されます）'); return; }
+                        setError('IndexedDB: 旧方式のキャッシュあり / 次回保存で自動移行されます'); return;
+                      }
+                      let _idxObj = {}; try { _idxObj = JSON.parse(_idx); } catch (_) {}
+                      const _n = (_idxObj.ids || []).length;
+                      setError('IndexedDB差分: ' + _n + '体 / 1体1レコード方式');
                     } catch (e) { setError('IndexedDB確認エラー: ' + (e && e.message)); }
                   }}
                     className="w-full py-2 rounded-xl text-white font-black text-xs active:scale-95 transition-transform"
