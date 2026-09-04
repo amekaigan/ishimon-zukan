@@ -757,7 +757,7 @@ window._idb = (function () {
   }
   return { set, get, setSoon, flush, saveDiffSoon, flushDiff, loadAll: _idbLoadAll };
 })();
-})();
+
 // ===== Leaflet 遅延ロード（地図を開いた時だけ・v2.51.0）=====
 window._loadLeaflet = function () {
   if (window._leafletPromise) return window._leafletPromise;
@@ -824,7 +824,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.81.1';
+const APP_VERSION = '2.81.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
