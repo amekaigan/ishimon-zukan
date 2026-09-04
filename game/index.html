@@ -646,25 +646,52 @@ window._idb = (function () {
       req.onerror = () => reject(req.error);
     });
   }
+  // v2.80.0: IndexedDBの失敗でアプリを落とさない。
+  //   iOS Safariは巨大な値の書き込みで "internal error" を返すことがあり、
+  //   rejectのままだと未処理Promiseとして起動エラー扱いになっていた。
   async function set(key, value) {
-    const db = await open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(value, key);
-      tx.oncomplete = () => { db.close(); resolve(true); };
-      tx.onerror = () => { db.close(); reject(tx.error); };
-    });
+    try {
+      const db = await open();
+      return await new Promise((resolve) => {
+        const done = (ok) => { try { db.close(); } catch (_) {} resolve(ok); };
+        const tx = db.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).put(value, key);
+        tx.oncomplete = () => done(true);
+        tx.onerror = () => done(false);
+        tx.onabort = () => done(false);
+      });
+    } catch (_) { return false; }
   }
   async function get(key) {
-    const db = await open();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readonly');
-      const r = tx.objectStore(STORE).get(key);
-      r.onsuccess = () => { db.close(); resolve(r.result == null ? null : r.result); };
-      r.onerror = () => { db.close(); reject(r.error); };
-    });
+    try {
+      const db = await open();
+      return await new Promise((resolve) => {
+        const done = (v) => { try { db.close(); } catch (_) {} resolve(v); };
+        const tx = db.transaction(STORE, 'readonly');
+        const r = tx.objectStore(STORE).get(key);
+        r.onsuccess = () => done(r.result == null ? null : r.result);
+        r.onerror = () => done(null);
+        tx.onabort = () => done(null);
+      });
+    } catch (_) { return null; }
   }
-  return { set, get };
+  // v2.80.0: 巨大な値は書き溜めて間引く（保存のたびに15MB書くのをやめる）
+  let _pend = null, _timer = null;
+  function setSoon(key, value, ms) {
+    _pend = { key, value };
+    if (_timer) return;
+    _timer = setTimeout(() => {
+      _timer = null;
+      const p = _pend; _pend = null;
+      if (p) set(p.key, p.value);
+    }, ms || 20000);
+  }
+  function flush() {
+    if (_timer) { clearTimeout(_timer); _timer = null; }
+    const p = _pend; _pend = null;
+    return p ? set(p.key, p.value) : Promise.resolve(true);
+  }
+  return { set, get, setSoon, flush };
 })();
 // ===== Leaflet 遅延ロード（地図を開いた時だけ・v2.51.0）=====
 window._loadLeaflet = function () {
@@ -732,7 +759,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.79.0';
+const APP_VERSION = '2.80.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3727,7 +3754,7 @@ function IshimonZukan() {
     _markLocalSaved('ishimon-collection-v3', Date.now());
     const isEmpty = !Array.isArray(c) || c.length === 0 ||
       c.every(m => typeof m?.id === 'string' && m.id.startsWith('demo-'));
-    try { if (window._idb) window._idb.set('ishimon-collection-v3', JSON.stringify(c)); } catch (_) {} // 画像入りの正本はIndexedDB
+    try { if (window._idb) window._idb.setSoon('ishimon-collection-v3', JSON.stringify(c)); } catch (_) {} // 画像入りの正本はIndexedDB(間引き書き込み)
     if (isEmpty || !window._currentUid || !window._firebase) return;
     try {
       if (window._fsDiffMode) await _fsSaveCollectionDiff(c); // 配列のまま渡す＝parseなし
@@ -3746,7 +3773,7 @@ function IshimonZukan() {
     try {
       localStorage.setItem('ishimon-player-v3', playerJson);
       _lsSetCollection(collectionData);
-      try { if (window._idb) window._idb.set('ishimon-collection-v3', collectionJson); } catch (_) {}
+      try { if (window._idb) window._idb.set('ishimon-collection-v3', collectionJson).catch(() => {}); } catch (_) {}
     } catch (_) {}
     const withTimeout = (promise, ms) => Promise.race([
       promise,
@@ -3858,6 +3885,7 @@ function IshimonZukan() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
+        try { if (window._idb) window._idb.flush(); } catch (_) {} // v2.80.0: 溜めた分を書き出す
         try {
           _lsSetCollection(collection);
           localStorage.setItem('ishimon-player-v3', JSON.stringify(player));
