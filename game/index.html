@@ -4614,7 +4614,7 @@ function IshimonZukan() {
       });
       delete mon.typeHints; delete mon.stoneness;
       // v2.79.0: 色違い抽選（1/50）。画像生成より前に決めること
-      if (Math.random() < 0.1) mon.shiny = true;
+      if (Math.random() < 1.0) mon.shiny = true; // ⚠️テスト中：確認後 0.02 に戻すこと
 
       // not_stone チェック — 削除（2026-05-25）
       // 「何を石モン化するかはユーザーに委ねる」設計思想のため、判定そのものを廃止。
