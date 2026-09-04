@@ -732,7 +732,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.76.0';
+const APP_VERSION = '2.77.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1314,47 +1314,90 @@ const analyzeImageColor = async (imageDataUrl) => {
   });
 };
 
-// 色からタイプを推測
-// 色からタイプを推測（ベース）+ 運要素を加える
-const guessTypeFromColor = ({ r, g, b }) => {
-  // 30%の確率で完全ランダム選択（全7タイプ均等チャンス）
-  if (Math.random() < 0.30) {
-    const allTypes = ['火', '水', '土', '電気', '空', 'ドラゴン', '精霊'];
-    return allTypes[Math.floor(Math.random() * allTypes.length)];
-  }
+// ===== v2.77.0: タイプ決定（色 × 質感 × 時間帯 × 運のハイブリッド）=====
+//   旧実装は色だけで1つに決めていた。石の色は灰茶に集中していて情報量が少なく、
+//   土が29体まで偏る原因になっていたため、色は「0.4票」に格下げした。
+const TYPE_KEYS = ['火', '水', '土', '電気', '空', 'ドラゴン', '精霊'];
 
-  // 5%の確率でレアタイプ（ドラゴンor精霊）出現
-  if (Math.random() < 0.05) {
-    return Math.random() < 0.5 ? 'ドラゴン' : '精霊';
-  }
-
-  // それ以外は色ベースで判定（条件を緩めに）
-  // 各色チャンネルの相対値で判定
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const brightness = (r + g + b) / 3;
-  const saturation = max - min;
-
-  // 鮮やかな色はそのタイプに（彩度高めの場合）
-  if (saturation > 50) {
-    if (r === max && r > g + 20 && r > b + 20) return '火'; // 赤系
-    if (b === max && b > r + 20 && b > g + 20) return '水'; // 青系
-    if (r > 150 && g > 150 && b < g - 20) return '電気'; // 黄系
-    if (b === max && g > 100 && Math.abs(r - g) < 30) return '空'; // 水色系
-    if (r > 100 && b > 100 && g < r - 20 && g < b - 20) return 'ドラゴン'; // 紫系
-    if (r > 180 && g < r - 30 && b > 150) return '精霊'; // ピンク系
-  }
-
-  // 暗い・グレー系の判定: 明るさで分ける
-  if (brightness < 80) return Math.random() < 0.5 ? 'ドラゴン' : '土'; // 暗い石はドラゴンの可能性
-  if (brightness > 200 && saturation < 30) return Math.random() < 0.5 ? '精霊' : '空'; // 白い石は精霊の可能性
-
-  // 茶系・グレー系のデフォルト → 土に運要素混ぜる
-  // 60%土、残り40%はランダム他タイプ
-  if (Math.random() < 0.6) return '土';
-  const otherTypes = ['火', '水', '電気', '空', 'ドラゴン', '精霊'];
-  return otherTypes[Math.floor(Math.random() * otherTypes.length)];
+// 色から各タイプへの素点（0〜10）
+const colorTypeScores = ({ r, g, b }) => {
+  const s = { '火': 0, '水': 0, '土': 0, '電気': 0, '空': 0, 'ドラゴン': 0, '精霊': 0 };
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const brightness = (r + g + b) / 3, sat = max - min;
+  if (r === max && r > g + 15 && r > b + 15) s['火'] += 6 + Math.min(4, sat / 25);
+  if (b === max && b > r + 15 && b > g + 10) s['水'] += 6 + Math.min(4, sat / 25);
+  if (r > 140 && g > 130 && b < g - 25) s['電気'] += 6 + Math.min(4, sat / 25);
+  if (b === max && g > 110 && Math.abs(r - g) < 40) s['空'] += 5;
+  if (r > 90 && b > 90 && g < r - 20 && g < b - 20) s['ドラゴン'] += 6;
+  if (r > 170 && b > 150 && g < r - 25) s['精霊'] += 5;
+  if (brightness > 195 && sat < 35) { s['精霊'] += 3; s['空'] += 3; }
+  if (brightness < 75) { s['ドラゴン'] += 3; s['土'] += 2; }
+  if (sat < 45) s['土'] += 4; // 灰茶。ただし満点にはしない
+  return s;
 };
+
+// 時間帯ボーナス（端末のローカル時刻。0〜5時は加点なし）
+const timeTypeBonus = (h) => {
+  if (h >= 5 && h < 10) return { '空': 3, '水': 2 };
+  if (h >= 10 && h < 16) return { '土': 2, '火': 2 };
+  if (h >= 16 && h < 19) return { '火': 3, '電気': 2 };
+  if (h >= 19) return { 'ドラゴン': 3, '精霊': 3 };
+  return {};
+};
+
+const decideType = ({ hints = null, stoneness = 10, color = null, recent = [] } = {}) => {
+  const score = {};
+  TYPE_KEYS.forEach(t => { score[t] = 0; });
+
+  // (1) Visionの採点（質感・形が主役）
+  let hasHints = false;
+  if (hints && typeof hints === 'object') {
+    const vals = TYPE_KEYS.map(t => Number(hints[t]) || 0);
+    const spread = Math.max.apply(null, vals) - Math.min.apply(null, vals);
+    if (spread < 2) return TYPE_KEYS[Math.floor(Math.random() * TYPE_KEYS.length)]; // 判断できていない→正直にサイコロ
+    hasHints = true;
+    TYPE_KEYS.forEach((t, i) => { score[t] += vals[i]; });
+  }
+
+  // (2) 色（Visionの採点があれば0.4票、なければ主役）
+  if (color) {
+    const cs = colorTypeScores(color);
+    const w = hasHints ? 0.4 : 1.2;
+    TYPE_KEYS.forEach(t => { score[t] += (cs[t] || 0) * w; });
+  }
+
+  // (3) 時間帯（石らしくないものほど効きを弱める）
+  const tb = timeTypeBonus(new Date().getHours());
+  const stoneW = Math.max(0, Math.min(10, Number(stoneness) || 0)) / 10;
+  TYPE_KEYS.forEach(t => { score[t] += (tb[t] || 0) * stoneW; });
+
+  // (4) 毎回のゆらぎ
+  TYPE_KEYS.forEach(t => { score[t] += Math.random() * 3; });
+
+  // (5) 偏りペナルティ（直近20体で4体を超えた分を減点・最大-6）
+  const counts = {};
+  (recent || []).slice(-20).forEach(t => { if (t) counts[t] = (counts[t] || 0) + 1; });
+  TYPE_KEYS.forEach(t => {
+    const over = Math.max(0, (counts[t] || 0) - 4);
+    score[t] -= Math.min(6, over * 1.5);
+  });
+
+  // (6) 気まぐれ枠（どう見ても普通の石なのにドラゴン、が起きる余地）
+  if (Math.random() < 0.08) return TYPE_KEYS[Math.floor(Math.random() * TYPE_KEYS.length)];
+
+  // (7) 最高点を選ばず、スコアの二乗を重みに抽選（2番手3番手にも目がある）
+  const weights = TYPE_KEYS.map(t => Math.pow(Math.max(0.1, score[t]), 2));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < TYPE_KEYS.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return TYPE_KEYS[i];
+  }
+  return '土';
+};
+
+// 旧APIの互換ラッパー（フォールバック経路から呼ばれる）
+const guessTypeFromColor = (color) => decideType({ color, recent: window._recentTypes || [] });
 
 // フォールバック: ランダムな石モンを生成
 const fallbackMon = (color, difficulty = 'normal') => {
@@ -4324,7 +4367,8 @@ function IshimonZukan() {
 以下のJSONのみ返してください（コードブロック・説明不要）:
 {
   "name": "カタカナ4-6文字のオリジナル名",
-  "type": "火|水|土|電気|空|ドラゴン|精霊 のいずれか1つ",
+  "typeHints": { "火": 0から10, "水": 0から10, "土": 0から10, "電気": 0から10, "空": 0から10, "ドラゴン": 0から10, "精霊": 0から10 },
+  "stoneness": 0から10の整数,
   "stage": 1,
   "rarity": 1から5の整数,
   "baseStats": { "hp": 30から150, "kogeki": 20から120, "bougyo": 20から120, "speed": 20から120 },
@@ -4347,6 +4391,14 @@ function IshimonZukan() {
 - 質感+擬音: ザラザラ→ザルガン / キラキラ→キラフィア
 - タイプを語感に反映: 火→フレイ/バーン系 / 水→アクア/マル系 / 電気→ボルト/ライ系
 - 避けること: イワン・イワゴン・ガンロック・ロックン など月並みな名前
+
+【typeHintsの付け方】
+- 判断は色2割、質感・形・模様・光沢・重量感が8割。灰色や茶色というだけで土を高くしないこと。
+- ざらざらして重い・角のとれた塊→土 / つやと透明感・濡れた質感→水 / 丸く軽く淡い→空
+- 縞模様・気泡・焼けた質感→火 / 金属光沢・鋭い粒→電気 / 角張って鋭い・鱗のような模様→ドラゴン
+- きらきらした粒子・半透明の結晶→精霊
+- 迷ったら複数に中くらいの点でよい。ただし全部を同じ点にはしないこと。
+- stoneness: 明らかに石なら10、石らしさが薄いもの(葉・布・食べ物・画面など)は0〜3。
 
 【ガイド】
 - 形が独特・色珍しい・特徴的→レア度4-5 / 普通の小石→レア度1-2
@@ -4396,6 +4448,18 @@ function IshimonZukan() {
       if (!jsonStr) throw new Error('JSON not found in response');
       const mon = JSON.parse(jsonStr);
       if (window._gmark) window._gmark('解析');
+
+      // v2.77.0: タイプはVisionに決めさせず、採点だけ受け取ってアプリ側で決める
+      window._recentTypes = collection.slice(-20).map(m => m && m.type).filter(Boolean);
+      let _monColor = null;
+      try { _monColor = await analyzeImageColor(imageDataUrl); } catch (_) {}
+      mon.type = decideType({
+        hints: mon.typeHints || null,
+        stoneness: typeof mon.stoneness === 'number' ? mon.stoneness : 10,
+        color: _monColor,
+        recent: window._recentTypes,
+      });
+      delete mon.typeHints; delete mon.stoneness;
 
       // not_stone チェック — 削除（2026-05-25）
       // 「何を石モン化するかはユーザーに委ねる」設計思想のため、判定そのものを廃止。
@@ -4492,6 +4556,7 @@ function IshimonZukan() {
       console.error('generateMon error:', err);
       try {
         setLoadingMsg('もうすこし お待ちください...');
+        window._recentTypes = collection.slice(-20).map(m => m && m.type).filter(Boolean);
         const color = await analyzeImageColor(imageDataUrl);
         const mon = fallbackMon(color, settings.difficulty);
         setLoadingMsg('AIで キャラを 描いています...');
