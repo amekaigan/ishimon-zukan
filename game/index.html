@@ -824,7 +824,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.81.3';
+const APP_VERSION = '2.82.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1277,9 +1277,11 @@ const buildMonPrompt = (mon, options = {}) => {
       'water turtle, smooth wet blue shell, glistening water droplets, aqua blue body',
     ],
     '精霊': [ // "spirit"は魔法少女を呼ぶので使わない。確実に出る体型で形を立てる
-      'floating glowing wisp, translucent pale lavender body, no legs, soft sparkle aura',
-      'glowing pale lavender cat, translucent glowing fur, soft sparkle aura, floating tiny lights',
-      'crystal golem, body of translucent pale lavender crystal, soft sparkle aura, floating tiny lights',
+      // v2.82.0: translucentが3姿とも支配して同じ絵になっていたので撤去。
+      //   色語は crystal/gem の直前を避ける（保護ルールに誤爆して色違いが効かないため）。
+      'floating glowing wisp, wispy flowing tail, no legs, pale lavender glow, soft sparkle aura',
+      'glowing cat, soft pale lavender fur, glowing tail tip, floating tiny lights, soft sparkle aura',
+      'crystal golem, faceted pale lavender body, soft inner glow, floating tiny lights, soft sparkle aura',
     ],
   };
   // レア度ダイヤル：基本シルエット固定・装飾だけ盛る（短く）
@@ -1302,6 +1304,7 @@ const buildMonPrompt = (mon, options = {}) => {
   if (mon.shiny) {
     creature = creature
       .replace(SHINY_COLOR_RE, '')
+      .replace(/\btranslucent\s*/g, '') // v2.82.0: 色を抜いた後にtranslucentが残ると形がぼやける
       .replace(/,\s*body\s*(?=,|$)/g, '')
       .replace(/\s*,\s*,/g, ',')
       .replace(/\s{2,}/g, ' ')
