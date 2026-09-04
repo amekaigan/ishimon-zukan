@@ -759,7 +759,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.80.0';
+const APP_VERSION = '2.80.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -4717,49 +4717,6 @@ function IshimonZukan() {
     setSelected(prev => (prev && prev.id === mon.id) ? { ...prev, imagePending: true, imageForce: true } : prev);
     setToast('🥚 AIが 描きはじめたよ！ できるまで まってね');
     setTimeout(() => setToast(''), 4000);
-    return;
-    window._genQuotaHit = false;
-    warmUpIshimon(); // v2.71.0: 眠っているAIを先に起こす（コールドスタート対策）
-    // v2.71.0: 全画面で待たせるのをやめ「裏で描く」方式へ。絵の上に進行表示が出る。
-    setEvolvingImageId(mon.id);
-    setToast('✨ AIが 描きはじめたよ！ できたら 図鑑に出るよ');
-    setTimeout(() => setToast(''), 3500);
-    let timedOut = false;
-    const timeoutId = setTimeout(() => {
-      timedOut = true;
-      setEvolvingImageId(null);
-      setError('AIが 混んでいるみたい。少し時間をおいて もう一度ためしてね');
-    }, 210000);
-    try {
-      const prompt = buildMonPrompt(mon);
-      // 強制的に新しいseedで生成（既存キャッシュは新画像で上書き）
-      const aiImage = await generateAiImage(prompt, Date.now() % 1000000);
-      if (timedOut) return; // タイムアウト後は無視
-      clearTimeout(timeoutId);
-      if (aiImage) {
-        if (window._currentUid !== window.OWNER_UID) bumpGenCountToday();
-        await saveCachedImage(mon, aiImage); // キャッシュも更新
-        // v2.18.1: 関数型updateで最新のcollection(メモ等)を壊さず画像だけ差し替え
-        let saved = null;
-        setCollection(prev => { saved = prev.map(c => c.id === mon.id ? { ...c, imageDataUrl: aiImage } : c); return saved; });
-        if (saved) await saveCollection(saved);
-        setSelected(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
-        setNewMon(prev => (prev && prev.id === mon.id) ? { ...prev, imageDataUrl: aiImage } : prev);
-        // v2.34.0: コールドで遅れて本物が出た石モンを収集（捕獲時はダミーで送らなかった分）
-        setToast('🎨 あたらしい すがたが できたよ！');
-        setTimeout(() => setToast(''), 3000);
-        if (mon.needsImageRegen) collectDevSample({ ...mon, imageDataUrl: aiImage, needsImageRegen: false });
-      } else if (window._genQuotaHit) {
-        setShowQuotaOver(true);
-      } else {
-        setError('AI生成に失敗しました。少し時間をおいて もう一度ためしてね');
-      }
-    } catch (e) {
-      clearTimeout(timeoutId);
-      if (!timedOut) setError('AI生成エラー');
-    } finally {
-      if (!timedOut) setEvolvingImageId(null);
-    }
   };
 
   // 機能追加(v2.11.0): 石モン所有上限関連のヘルパー
