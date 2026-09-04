@@ -824,7 +824,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.81.0';
+const APP_VERSION = '2.81.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -3658,11 +3658,16 @@ function IshimonZukan() {
             else if (_cached) { _m.imageDataUrl = _cached; }
           } catch (_) {}
         };
-        if (!_idbCol) {
-          for (let _i = 0; _i < migratedCollection.length; _i += 10) {
-            await Promise.all(migratedCollection.slice(_i, _i + 10).map(_rehydrate));
+        // v2.81.1: _idbColフラグに関わらず_rehydrateを走らせる。
+        //   差分方式・旧キーfallback・localStorageどの経路でロードしても
+        //   aiimg:キャッシュからの画像埋め戻しが必要なため。
+        {
+          const _rehydrateTarget = _idbCol ? _idbCol : migratedCollection;
+          for (let _i = 0; _i < _rehydrateTarget.length; _i += 10) {
+            await Promise.all(_rehydrateTarget.slice(_i, _i + 10).map(_rehydrate));
           }
-          setCollection(migratedCollection);
+          if (!_idbCol) setCollection(migratedCollection);
+          else setCollection([..._idbCol]); // 画像埋め戻し後に再セット
         }
         if (settingsR?.value) {
           try { setSettings(prev => ({ ...prev, ...JSON.parse(settingsR.value) })); }
