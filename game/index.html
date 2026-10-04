@@ -211,6 +211,44 @@
     0%   { transform: translateX(-140%) skewX(-18deg); }
     100% { transform: translateX(320%) skewX(-18deg); }
   }
+  /* v2.90.0: 演出フェーズ1。transform/opacityのみ・一度きり再生。
+     im-pop=誕生時のポンッ / im-burst=背後の光 / im-shine=キラッ / im-rise=下からふわっ / im-in=図鑑の順番表示 */
+  @keyframes imPop {
+    0%   { opacity: 0; transform: scale(0.6); }
+    55%  { opacity: 1; transform: scale(1.06); }
+    78%  { transform: scale(0.98); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes imBurst {
+    0%   { opacity: 0; transform: scale(0.5); }
+    35%  { opacity: 0.85; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1.35); }
+  }
+  @keyframes imShine {
+    0%   { opacity: 0; transform: translateX(-160%) skewX(-18deg); }
+    15%  { opacity: 1; }
+    100% { opacity: 0; transform: translateX(360%) skewX(-18deg); }
+  }
+  @keyframes imRise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes imFade { from { opacity: 0; } to { opacity: 1; } }
+  .im-pop   { animation: imPop 0.62s cubic-bezier(0.22, 0.8, 0.36, 1) both; }
+  .im-burst { animation: imBurst 0.8s ease-out both; }
+  .im-shine { animation: imShine 0.7s ease-in-out both; }
+  .im-rise  { animation: imRise 0.35s ease-out both; }
+  /* 図鑑カードは active:scale-95 と共存させるため backwards（終了後はtransformを手放す） */
+  .im-in    { animation: imRise 0.32s ease-out backwards; }
+  /* 動きを減らす：OS設定 or アプリ設定「アニメーション軽減」 */
+  @media (prefers-reduced-motion: reduce) {
+    .im-pop, .im-rise { animation-name: imFade !important; animation-duration: 0.25s !important; }
+    .im-burst, .im-shine { display: none !important; }
+    .im-in { animation: none !important; }
+  }
+  .im-reduced .im-pop, .im-reduced .im-rise { animation-name: imFade !important; animation-duration: 0.25s !important; }
+  .im-reduced .im-burst, .im-reduced .im-shine { display: none !important; }
+  .im-reduced .im-in { animation: none !important; }
 </style>
 
 <!-- window.storage: Firestore対応版（ログイン前はlocalStorage、ログイン後はFirestore） -->
@@ -852,7 +890,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.89.0';
+const APP_VERSION = '2.90.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1767,6 +1805,16 @@ const RarityFrame = ({ rarity, radius = 13 }) => {
   );
 };
 
+// v2.90.0: 誕生演出の経過時間。MonCardはApp内定義で再描画のたびに作り直されるため、
+//   開始時刻をidごとに控えて「途中から」再生する（作り直しで演出が頭から繰り返さない）。
+const _birthAnimT0 = {};
+const getBirthElapsed = (key) => {
+  if (!key) return null;
+  if (!_birthAnimT0[key]) _birthAnimT0[key] = Date.now();
+  const el = Date.now() - _birthAnimT0[key];
+  return el < 1600 ? el : null;
+};
+
 // 層(タイプの格): 1=自然 / 2=幻想 / 3=天(エンシェント)。視覚ルールの基準。
 const TYPE_LAYER = {
   '火': 1, '水': 1, '土': 1, '電気': 1, '空': 1, '氷': 1,
@@ -2425,6 +2473,10 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
     const [editingGroupName, setEditingGroupName] = useState('');
     // 機能追加(v2.11.1): 容量カーテンの開閉状態
     const [capacityCurtainOpen, setCapacityCurtainOpen] = useState(false);
+    // v2.90.0: 図鑑を開いた時だけカードを順番にふわっと出す。
+    //   詳細から戻った時（カードタップで _zukanSkipIntro が立つ）は出さない。
+    const zukanIntroRef = useRef(!window._zukanSkipIntro);
+    useEffect(() => { window._zukanSkipIntro = false; }, []);
 
     const groups = player.monGroups || [];
 
@@ -2736,18 +2788,19 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
         ) : (
           <div className="grid gap-2"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', maxWidth: '1200px', margin: '0 auto' }}>
-            {sorted.slice(0, collectionVisible).map((m) => {
+            {sorted.slice(0, collectionVisible).map((m, i) => {
               const t = TYPES[m.type] || TYPES['土'];
               const r = getRarityLabel(m.rarity);
               const monGroup = groups.find(g => g.id === m.groupId);
+              const introOn = zukanIntroRef.current && i < 12; // 最初の12枚だけ・目が疲れない程度に
               const longPressProps = makeLongPressHandlers({
-                onClick: () => { window._zukanScrollY = window.scrollY; setSelected(m); },
+                onClick: () => { window._zukanScrollY = window.scrollY; window._zukanSkipIntro = true; setSelected(m); },
                 onLongPress: () => setLongPressMon(m),
               });
               return (
                 <button key={m.id} {...longPressProps}
-                  className="rounded-2xl overflow-hidden active:scale-95 transition-transform relative"
-                  style={{ background: `linear-gradient(180deg, ${t.light}, ${t.bg})`, border: `2px solid ${r.color}`, boxShadow: `0 3px 0 ${t.dark}`, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}>
+                  className={`rounded-2xl overflow-hidden active:scale-95 transition-transform relative${introOn ? ' im-in' : ''}`}
+                  style={{ background: `linear-gradient(180deg, ${t.light}, ${t.bg})`, border: `2px solid ${r.color}`, boxShadow: `0 3px 0 ${t.dark}`, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', animationDelay: introOn ? `${i * 40}ms` : undefined }}>
                   {/* v2.89.0: 一覧は★5の光の帯のみ。radiusは 16px - ボーダー2px */}
                   <RarityFrame rarity={m.rarity} radius={14} />
                   <div className="relative">
@@ -8431,9 +8484,12 @@ function IshimonZukan() {
     setEditingMemoId(null);
   };
 
-        const MonCard = ({ mon, onClose, onNav }) => {
+        const MonCard = ({ mon, onClose, onNav, isNew }) => {
     const t = TYPES[mon.type] || TYPES['土'];
     const r = getRarityLabel(mon.rarity);
+    // v2.90.0: 誕生演出（新しく生まれた時だけ・最初の1.6秒）
+    const bEl = isNew ? getBirthElapsed(mon.id || mon.name) : null;
+    const bAnim = (cls, ms) => (bEl === null ? {} : { className: cls, style: { animationDelay: `${ms - bEl}ms` } });
     const stage = STAGES[mon.stage] || STAGES[1];
     const canEvolve = mon.evolveTo && mon.stage < 3;
     const evolveCost = canEvolve ? (EVOLVE_COST[mon.rarity] || EVOLVE_COST[4]) : 0;
@@ -8511,10 +8567,21 @@ function IshimonZukan() {
 
               {/* ヒーロー：画像・名前・統一ピル */}
           {mon.imageDataUrl ? (
-            <div className="relative mb-3">
+            <div className={`relative mb-3 ${bAnim('im-pop', 200).className || ''}`} style={bAnim('im-pop', 200).style}>
+              {/* v2.90.0: 誕生時だけ、背後からレア度色の光がふわっと広がる */}
+              {bEl !== null && (
+                <div className="absolute pointer-events-none rounded-full im-burst"
+                  style={{ inset: '-12%', background: `radial-gradient(circle, ${r.color}cc 0%, ${r.color}00 65%)`, animationDelay: `${200 - bEl}ms` }} />
+              )}
               {/* v2.89.0: 枠は白のまま。レア度は背後の光の強さで出す（★1=弱 → ★5=強） */}
               <div className="absolute inset-0 rounded-2xl blur-xl" style={{ background: r.glow, opacity: 0.35 + (mon.rarity || 1) * 0.12 }} />
               <img src={mon.imageDataUrl} className="relative w-full rounded-2xl" style={{ aspectRatio: '1/1', objectFit: 'contain', background: 'rgba(0,0,0,0.15)', border: '2px solid white', opacity: (evolvingImageId === mon.id || mon.imagePending) ? 0.12 : 1 }} />
+              {/* v2.90.0: 誕生時に1回だけ光が走る */}
+              {bEl !== null && !(evolvingImageId === mon.id || mon.imagePending) && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: 16 }}>
+                  <div className="im-shine" style={{ position: 'absolute', top: '-20%', bottom: '-20%', width: '34%', background: 'linear-gradient(100deg, transparent, rgba(255,255,255,0.7), transparent)', animationDelay: `${750 - bEl}ms` }} />
+                </div>
+              )}
               {!(evolvingImageId === mon.id || mon.imagePending) && (
                 <RarityFrame rarity={mon.rarity} radius={16} />
               )}
@@ -8533,14 +8600,14 @@ function IshimonZukan() {
               <span className="text-7xl">{t.emoji}</span>
             </div>
           )}
-              <div className="text-center mb-2">
+              <div className={`text-center mb-2 ${bAnim('im-rise', 480).className || ''}`} style={bAnim('im-rise', 480).style}>
                 {/* v2.89.0: ★5だけ名前を金色に。バッジを足さずに格を示す */}
                 <h2 className="text-4xl font-black tracking-wider"
                   style={mon.rarity >= 5
                     ? { background: 'linear-gradient(180deg, #FFF6C2 0%, #FFD700 45%, #E0A100 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.6))' }
                     : { color: '#fff', textShadow: '0 4px 12px rgba(0,0,0,0.6)' }}>{mon.name}</h2>
               </div>
-              <div className="flex flex-wrap justify-center items-center gap-1.5 mb-3 opacity-90">
+              <div className={`flex flex-wrap justify-center items-center gap-1.5 mb-3 opacity-90 ${bAnim('im-rise', 600).className || ''}`} style={bAnim('im-rise', 600).style}>
                 <span className={pillCls} style={{ background: r.color }}>
                   <span className="text-[10px]">{'★'.repeat(mon.rarity)}</span>{r.label}
                 </span>
@@ -10667,7 +10734,7 @@ function IshimonZukan() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden"
+   <div className={`min-h-screen relative overflow-hidden${settings.animationReduced ? ' im-reduced' : ''}`}
       style={{
         background: view === 'battle' ? 'transparent' : 'linear-gradient(180deg, #FF6B35 0%, #C71F8E 50%, #5A1A78 100%)',
         fontFamily: 'M PLUS Rounded 1c, sans-serif',
@@ -10716,7 +10783,7 @@ function IshimonZukan() {
           setSelected(collection[j]);
         }) : null} />}
       {showShareCard && <ShareCardModal mon={showShareCard} onClose={() => setShowShareCard(null)} />}
-      {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} onClose={() => { setNewMon(null); setPreviewImage(null); monScrollRef.current = 0; }} />}
+      {newMon && !isLoading && !showEvolveAnim && <MonCard mon={newMon} isNew onClose={() => { setNewMon(null); setPreviewImage(null); monScrollRef.current = 0; }} />}
       {/* v2.18.0: リビール時の白フラッシュ(石モン誕生の演出) */}
       {revealFlash && (
         <>
