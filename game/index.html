@@ -890,7 +890,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.90.1';
+const APP_VERSION = '2.90.2';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8464,6 +8464,7 @@ function IshimonZukan() {
   const memoEditRef = useRef(null);
   const monScrollRef = useRef(0); // v2.21.1: 詳細画面が作り直されてもスクロール位置を保つ
   const monTabRef = useRef({ id: null, tab: 'status' }); // v2.90.1: 詳細のタブも作り直しで戻らないよう保持
+  const monMemoEditRef = useRef(null); // v2.90.2: メモ編集中の石モンid（App全体を再描画させないためrefで持つ）
   // v2.68.0: 詳細を閉じたら図鑑の元の位置へ戻す。
   //   MonCardが body.overflow='hidden' を掛けた瞬間にiOSがページ先頭へ飛ぶため、
   //   開いた時点の scrollY を控えておき、overflow解除が効いた後のフレームで復元する。
@@ -8482,7 +8483,7 @@ function IshimonZukan() {
     });
     setSelected(prev => (prev && prev.id === monId) ? { ...prev, memo: text } : prev);
     setNewMon(prev => (prev && prev.id === monId) ? { ...prev, memo: text } : prev);
-    setEditingMemoId(null);
+    monMemoEditRef.current = null; // v2.90.2: 保存後は編集欄を閉じた状態で作り直される
   };
 
         const MonCard = ({ mon, onClose, onNav, isNew }) => {
@@ -8524,6 +8525,10 @@ function IshimonZukan() {
       //   別の石モンに切り替えた時だけ「ステータス」から始める。
       const [detailTab, _setDetailTab] = useState(monTabRef.current.id === mon.id ? monTabRef.current.tab : 'status');
       const setDetailTab = (k) => { monTabRef.current = { id: mon.id, tab: k }; _setDetailTab(k); };
+      // v2.90.2: メモ編集の開閉はMonCardの中だけで完結させる。
+      //   以前はApp側のstateで、編集/キャンセルのたびに詳細画面ごと（大きな画像も）作り直していた。
+      const [memoEditing, _setMemoEditing] = useState(monMemoEditRef.current === mon.id);
+      const setMemoEditing = (on) => { monMemoEditRef.current = on ? mon.id : null; _setMemoEditing(on); };
       useEffect(() => {
         const _prevOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
@@ -8780,7 +8785,7 @@ function IshimonZukan() {
                   </div>
                 )}
                 {/* v2.21.0: 思い出メモ(表示・編集・追加) */}
-                {editingMemoId === mon.id ? (
+                {memoEditing ? (
                   <div className="mt-1">
                     <div className="flex items-center gap-1.5 mb-1 text-gray-500">
                       <span className="text-xs leading-3">📝</span>
@@ -8791,10 +8796,15 @@ function IshimonZukan() {
                       className="w-full rounded-xl px-3 py-2 text-sm font-bold text-gray-800 resize-none"
                       style={{ background: '#fff', border: '1px solid #E8C98A', outline: 'none' }} />
                     <div className="flex gap-2 mt-1.5">
-                      <button onClick={() => saveMonMemo(mon.id)}
+                      <button onClick={() => {
+                          // v2.90.2: 先にキーボードを閉じてから保存（入力中の欄を消すのと保存処理を同時に走らせない）
+                          const id = mon.id;
+                          try { memoEditRef.current && memoEditRef.current.blur(); } catch (_) {}
+                          setTimeout(() => saveMonMemo(id), 60);
+                        }}
                         className="px-4 py-1.5 rounded-full text-xs font-black text-white active:scale-95 transition-transform"
                         style={{ background: '#E8A33D' }}>保存</button>
-                      <button onClick={() => setEditingMemoId(null)}
+                      <button onClick={() => setMemoEditing(false)}
                         className="px-4 py-1.5 rounded-full text-xs font-bold text-gray-500 active:scale-95 transition-transform"
                         style={{ background: '#EEEEEE' }}>キャンセル</button>
                     </div>
@@ -8803,11 +8813,11 @@ function IshimonZukan() {
                   <div className="flex items-start gap-1.5 text-gray-700">
                     <span className="text-xs leading-3">📝</span>
                     <span style={{ whiteSpace: 'pre-wrap' }}>{mon.memo}</span>
-                    <button onClick={() => setEditingMemoId(mon.id)}
+                    <button onClick={() => setMemoEditing(true)}
                       className="ml-1 shrink-0 text-[11px] font-bold text-amber-600 active:scale-95">✏️編集</button>
                   </div>
                 ) : (
-                  <button onClick={() => setEditingMemoId(mon.id)}
+                  <button onClick={() => setMemoEditing(true)}
                     className="flex items-center gap-1 text-[12px] font-bold text-amber-600 active:scale-95 transition-transform">
                     <span>📝</span><span>思い出メモを追加</span>
                   </button>
@@ -11041,9 +11051,16 @@ function IshimonZukan() {
         </div>
       )}
 
-      {toast && (
+      {toast && !toast.startsWith('⏱') && (
         <div className="fixed bottom-4 left-4 right-4 rounded-2xl p-3 text-white font-bold text-center z-[71]"
           style={{ background: '#16A34A', border: '3px solid white', boxShadow: '0 4px 0 #0B5C26' }}>
+          {toast}
+        </div>
+      )}
+      {/* v2.90.2: 計測表示（オーナーのみ）は画面上部の小さな帯に。下のボタンと重ねない・タップを邪魔しない */}
+      {toast && toast.startsWith('⏱') && (
+        <div className="fixed left-3 right-3 rounded-xl px-3 py-1.5 text-white text-[11px] font-bold text-center z-[71] pointer-events-none"
+          style={{ top: 'calc(env(safe-area-inset-top) + 44px)', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.25)' }}>
           {toast}
         </div>
       )}
