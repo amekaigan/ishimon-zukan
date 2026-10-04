@@ -890,7 +890,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.90.0';
+const APP_VERSION = '2.90.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -8463,6 +8463,7 @@ function IshimonZukan() {
   const [editingMemoId, setEditingMemoId] = useState(null);
   const memoEditRef = useRef(null);
   const monScrollRef = useRef(0); // v2.21.1: 詳細画面が作り直されてもスクロール位置を保つ
+  const monTabRef = useRef({ id: null, tab: 'status' }); // v2.90.1: 詳細のタブも作り直しで戻らないよう保持
   // v2.68.0: 詳細を閉じたら図鑑の元の位置へ戻す。
   //   MonCardが body.overflow='hidden' を掛けた瞬間にiOSがページ先頭へ飛ぶため、
   //   開いた時点の scrollY を控えておき、overflow解除が効いた後のフレームで復元する。
@@ -8518,7 +8519,11 @@ function IshimonZukan() {
     const expNeeded = expForNextLevel(lv);
     const expRatio = lv >= MAX_LEVEL ? 1 : (mon.exp || 0) / expNeeded;
 
-      const [detailTab, setDetailTab] = useState('status');
+      // v2.90.1: MonCardはApp再描画で作り直されるため、タブはApp側のrefに控える。
+      //   (メモ編集のsetEditingMemoIdで作り直され「ステータス」に戻っていた)
+      //   別の石モンに切り替えた時だけ「ステータス」から始める。
+      const [detailTab, _setDetailTab] = useState(monTabRef.current.id === mon.id ? monTabRef.current.tab : 'status');
+      const setDetailTab = (k) => { monTabRef.current = { id: mon.id, tab: k }; _setDetailTab(k); };
       useEffect(() => {
         const _prevOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
