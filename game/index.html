@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.96.0';
+const APP_VERSION = '2.96.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2044,13 +2044,14 @@ const EQUIPMENT = {
 };
 
 // v2.91.0: 装備アイコン。画像が読めなければ絵文字に戻る（トップレベル定義＝再マウントしない）
+//   v2.96.1: WebP(同画質で約4分の1)を優先。読めない端末はPNG → 絵文字の順に戻る
 function EquipIcon({ eq, size = 36, className = '' }) {
-  const [failed, setFailed] = React.useState(false);
+  const [stage, setStage] = React.useState(0); // 0=webp 1=png 2=絵文字
   if (!eq) return <span className={className}>➖</span>;
-  if (!eq.img || failed) return <span className={className} style={{ fontSize: Math.round(size * 0.85), lineHeight: 1 }}>{eq.emoji}</span>;
+  if (!eq.img || stage >= 2) return <span className={className} style={{ fontSize: Math.round(size * 0.85), lineHeight: 1 }}>{eq.emoji}</span>;
   return (
-    <img src={`items/${eq.img}.png`} alt={eq.name} width={size} height={size} loading="lazy" decoding="async"
-      onError={() => setFailed(true)} className={className}
+    <img src={`items/${eq.img}.${stage === 0 ? 'webp' : 'png'}`} alt={eq.name} width={size} height={size} loading="lazy" decoding="async"
+      onError={() => setStage(v => v + 1)} className={className}
       style={{ width: size, height: size, objectFit: 'contain', display: 'inline-block', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.45))' }} />
   );
 }
