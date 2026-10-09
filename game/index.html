@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.95.0';
+const APP_VERSION = '2.96.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2055,6 +2055,90 @@ function EquipIcon({ eq, size = 36, className = '' }) {
   );
 }
 
+// ===== v2.96.0: 一覧用サムネイル =====
+//   生成画像(1枚1.5MB前後・1024px級)を一覧の小さな枠にそのまま出すと、表示中の枚数ぶん
+//   大きな画像をメモリに展開する（120体超で落ちる主因）。一覧は256pxの縮小版を使う。
+//   縮小版は端末(IndexedDB)に保存し、作るのは1体につき最初の1回だけ・1枚ずつ順番に。
+//   キーは「id + 画像の長さ」＝描き直し・進化で絵が変わったら自動で作り直す。
+const THUMB_SIZE = 256;
+const _thumbMem = new Map();
+const _thumbKey = (m) => (m && m.id && m.imageDataUrl) ? `${m.id}:${m.imageDataUrl.length}` : null;
+let _thumbDbP = null;
+const _thumbDb = () => {
+  if (!_thumbDbP) _thumbDbP = new Promise((res) => {
+    try {
+      const r = indexedDB.open('ishimon-thumbs', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('t');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => res(null);
+    } catch (_) { res(null); }
+  });
+  return _thumbDbP;
+};
+const _thumbGet = async (k) => {
+  const db = await _thumbDb(); if (!db) return null;
+  return new Promise((res) => { try { const q = db.transaction('t', 'readonly').objectStore('t').get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); } catch (_) { res(null); } });
+};
+const _thumbPut = async (k, v) => {
+  const db = await _thumbDb(); if (!db) return;
+  try { db.transaction('t', 'readwrite').objectStore('t').put(v, k); } catch (_) {}
+};
+const _makeThumb = (src) => new Promise((res) => {
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const sc = Math.min(1, THUMB_SIZE / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      const w = Math.max(1, Math.round((img.naturalWidth || 1) * sc)), h = Math.max(1, Math.round((img.naturalHeight || 1) * sc));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const out = c.toDataURL('image/jpeg', 0.82);
+      c.width = c.height = 0; img.src = '';
+      res(out);
+    } catch (_) { res(null); }
+  };
+  img.onerror = () => res(null);
+  img.src = src;
+});
+// 1枚ずつ順番に作る（同時に何枚も大きな画像を展開しない）
+const _thumbQueue = [];
+const _thumbWaiters = new Map();
+let _thumbBusy = false;
+const _runThumbQueue = async () => {
+  if (_thumbBusy) return;
+  _thumbBusy = true;
+  while (_thumbQueue.length) {
+    const { k, src } = _thumbQueue.shift();
+    let t = _thumbMem.get(k) || await _thumbGet(k);
+    if (!t) { t = await _makeThumb(src); if (t) _thumbPut(k, t); }
+    if (t) _thumbMem.set(k, t);
+    (_thumbWaiters.get(k) || []).forEach(fn => { try { fn(t); } catch (_) {} });
+    _thumbWaiters.delete(k);
+    await new Promise(r => setTimeout(r, 0));
+  }
+  _thumbBusy = false;
+};
+const requestThumb = (m, cb) => {
+  const k = _thumbKey(m); if (!k) return;
+  if (_thumbMem.has(k)) { cb(_thumbMem.get(k)); return; }
+  if (!_thumbWaiters.has(k)) { _thumbWaiters.set(k, []); _thumbQueue.push({ k, src: m.imageDataUrl }); }
+  _thumbWaiters.get(k).push(cb);
+  _runThumbQueue();
+};
+// 一覧の小さな石モン画像。縮小版ができるまでは薄い下地だけを出す（大きな画像は展開しない）
+function MonThumb({ mon, className = '', style }) {
+  const k = _thumbKey(mon);
+  const [src, setSrc] = React.useState(() => (k && _thumbMem.get(k)) || null);
+  React.useEffect(() => {
+    if (!k) return;
+    if (_thumbMem.has(k)) { setSrc(_thumbMem.get(k)); return; }
+    let alive = true;
+    requestThumb(mon, (t) => { if (alive) setSrc(t || mon.imageDataUrl); });
+    return () => { alive = false; };
+  }, [k]);
+  if (!src) return <div className={className} style={{ ...(style || {}), background: 'rgba(0,0,0,0.18)' }} />;
+  return <img src={src} alt="" decoding="async" className={className} style={style} />;
+}
+
 // v2.92.0: アイテム詳細。大きな絵と説明。トップレベル定義（App内で作り直さない）
 const ITEM_STAT_ROWS = [['kogeki', 'こうげき', '#FF6B35'], ['bougyo', 'ぼうぎょ', '#3DA5F5'], ['hp', 'HP', '#52B788'], ['speed', 'すばやさ', '#FFC42B']];
 function ItemDetailSheet({ eq, owned, equippedBy, onClose, onOpenMon }) {
@@ -2932,7 +3016,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
                         <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : m.imageBirth ? 'もうすぐ誕生' : 'しんかちゅう'}</span>
                       </div>
                     ) : m.imageDataUrl ? (
-                      <img src={m.imageDataUrl} loading="lazy" decoding="async" className="w-full h-24 object-cover" />
+                      <MonThumb mon={m} className="w-full h-24 object-cover" />
                     ) : (
                       <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}><span className="text-4xl">{t.emoji}</span></div>
                     )}
@@ -3199,7 +3283,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
                           <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : m.imageBirth ? 'もうすぐ誕生' : 'しんかちゅう'}</span>
                         </div>
                       ) : m.imageDataUrl ? (
-                        <img src={m.imageDataUrl} loading="lazy" decoding="async" className="w-full h-24 object-cover" />
+                        <MonThumb mon={m} className="w-full h-24 object-cover" />
                       ) : (
                         <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}>
                           <span className="text-4xl">{t.emoji}</span>
@@ -7243,7 +7327,7 @@ function IshimonZukan() {
                     </div>
                   )}
                   {m.imageDataUrl ? (
-                    <img src={m.imageDataUrl} className="w-14 h-14 rounded-xl object-cover" style={{ border: '2px solid white' }} />
+                    <MonThumb mon={m} className="w-14 h-14 rounded-xl object-cover" style={{ border: '2px solid white' }} />
                   ) : (
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: '2px solid white' }}>
                       <span className="text-3xl">{t.emoji}</span>
@@ -7593,7 +7677,7 @@ function IshimonZukan() {
           {/* 上部：石モンプレビュー */}
           <div className="flex items-center gap-3 p-4" style={{ borderBottom: '2px solid rgba(255,255,255,0.2)' }}>
             {mon.imageDataUrl ? (
-              <img src={mon.imageDataUrl} className="w-16 h-16 rounded-xl object-cover" style={{ border: `2px solid ${r.color}` }} />
+              <MonThumb mon={mon} className="w-16 h-16 rounded-xl object-cover" style={{ border: `2px solid ${r.color}` }} />
             ) : (
               <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: `2px solid ${r.color}` }}>
                 <span className="text-3xl">{t.emoji}</span>
@@ -9207,7 +9291,7 @@ function IshimonZukan() {
                   {i < 3 ? (<div className="text-3xl">{medals[i]}</div>) : (<div className="text-2xl font-black text-white" style={{ textShadow: `0 2px 0 ${t.dark}` }}>{i + 1}</div>)}
                 </div>
                 {m.imageDataUrl ? (
-                  <img src={m.imageDataUrl} className="w-16 h-16 rounded-xl object-cover" style={{ border: '3px solid white' }} />
+                  <MonThumb mon={m} className="w-16 h-16 rounded-xl object-cover" style={{ border: '3px solid white' }} />
                 ) : (
                   <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: '3px solid white' }}><span className="text-3xl">{t.emoji}</span></div>
                 )}
@@ -10579,7 +10663,7 @@ function IshimonZukan() {
                                   <div key={m.id} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.35)', border: `1px solid ${accent}55` }}>
                                     <div className="flex items-center gap-2 mb-2">
                                       <div className="text-white/40 font-black text-xs flex-shrink-0">{safePage * PER_PAGE + idx + 1}</div>
-                                      {m.imageDataUrl && <img src={m.imageDataUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
+                                      {m.imageDataUrl && <MonThumb mon={m} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
                                       <div className="flex-1 min-w-0">
                                         <div className="text-white font-black text-sm truncate">{m.name}</div>
                                         <div className="text-white/60 text-[10px]">{m.type} ★{m.rarity} seed: <span className="font-mono" style={{ color: accent }}>{m.imageSeed}</span></div>
