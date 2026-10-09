@@ -890,7 +890,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.90.2';
+const APP_VERSION = '2.91.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2000,23 +2000,45 @@ const MON_CAPACITY_EXPANSION_UNIT = 10;     // 1回の拡張で増える数
 const MON_CAPACITY_EXPANSION_COST = 300;    // 拡張1回のきらめき石コスト（v2.11.1で30→300に変更）
 
 // ===== 装備データ =====
+// v2.91.0: 剣6・盾7・お守り5に拡充。既存のidは変えない（持ち物・装備中データを守る）。
+//   img = game/items/{img}.png。画像が無い/読めない時は emoji を表示する。
+//   secret: true = ショップ・ガチャに出さない・売れない（虹のお守り＝新規プレイヤーへの贈り物）
 const EQUIPMENT = {
   // 剣 (こうげき+)
-  sword_1:  { id: 'sword_1',  type: 'sword',   name: '木の剣',     emoji: '🗡️', boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1 },
-  sword_2:  { id: 'sword_2',  type: 'sword',   name: '鉄の剣',   emoji: '⚔️', boost: { kogeki: 12 }, price: 150, rarity: 2, unlock: 3 },
-  sword_3:  { id: 'sword_3',  type: 'sword',   name: '炎の剣', emoji: '🔥', boost: { kogeki: 22 }, price: 400, rarity: 3, unlock: 6 },
-  sword_4:  { id: 'sword_4',  type: 'sword',   name: '竜の剣', emoji: '🐲', boost: { kogeki: 35 }, price: 900, rarity: 5, unlock: 12 },
+  sword_1:      { id: 'sword_1',      type: 'sword',  name: '木の剣', emoji: '🗡️', img: 'sword_wood',   boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1 },
+  sword_stone:  { id: 'sword_stone',  type: 'sword',  name: '石の剣', emoji: '🪨', img: 'sword_stone',  boost: { kogeki: 8 },  price: 90,  rarity: 1, unlock: 2 },
+  sword_2:      { id: 'sword_2',      type: 'sword',  name: '鉄の剣', emoji: '⚔️', img: 'sword_iron',   boost: { kogeki: 12 }, price: 150, rarity: 2, unlock: 3 },
+  sword_3:      { id: 'sword_3',      type: 'sword',  name: '炎の剣', emoji: '🔥', img: 'sword_fire',   boost: { kogeki: 22 }, price: 400, rarity: 3, unlock: 6 },
+  sword_shadow: { id: 'sword_shadow', type: 'sword',  name: '影の剣', emoji: '🌑', img: 'sword_shadow', boost: { kogeki: 28 }, price: 650, rarity: 4, unlock: 9 },
+  sword_4:      { id: 'sword_4',      type: 'sword',  name: '竜の剣', emoji: '🐲', img: 'sword_dragon', boost: { kogeki: 35 }, price: 900, rarity: 5, unlock: 12 },
   // 盾 (ぼうぎょ+)
-  shield_1: { id: 'shield_1', type: 'shield',  name: '木の盾',     emoji: '🛡️', boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1 },
-  shield_2: { id: 'shield_2', type: 'shield',  name: '鉄の盾',   emoji: '🛡️', boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3 },
-  shield_3: { id: 'shield_3', type: 'shield',  name: '水の盾',   emoji: '💎', boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6 },
-  shield_4: { id: 'shield_4', type: 'shield',  name: '聖なる盾', emoji: '✨', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12 },
+  shield_1:      { id: 'shield_1',      type: 'shield', name: '木の盾', emoji: '🛡️', img: 'shield_wood',   boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1 },
+  shield_stone:  { id: 'shield_stone',  type: 'shield', name: '石の盾', emoji: '🪨', img: 'shield_stone',  boost: { bougyo: 8 },  price: 90,  rarity: 1, unlock: 2 },
+  shield_2:      { id: 'shield_2',      type: 'shield', name: '鉄の盾', emoji: '🛡️', img: 'shield_iron',   boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3 },
+  shield_3:      { id: 'shield_3',      type: 'shield', name: '水の盾', emoji: '💧', img: 'shield_water',  boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6 },
+  shield_fire:   { id: 'shield_fire',   type: 'shield', name: '炎の盾', emoji: '🔥', img: 'shield_fire',   boost: { bougyo: 25 }, price: 500, rarity: 3, unlock: 7 },
+  shield_shadow: { id: 'shield_shadow', type: 'shield', name: '影の盾', emoji: '🌑', img: 'shield_shadow', boost: { bougyo: 29 }, price: 650, rarity: 4, unlock: 9 },
+  shield_4:      { id: 'shield_4',      type: 'shield', name: '竜の盾', emoji: '🐲', img: 'shield_dragon', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12 },
   // お守り (HP+ / すばやさ+)
-  charm_1:  { id: 'charm_1',  type: 'charm',   name: 'はっぱの お守り', emoji: '🍀', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1 },
-  charm_2:  { id: 'charm_2',  type: 'charm',   name: 'ほしの お守り',   emoji: '⭐', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4 },
-  charm_3:  { id: 'charm_3',  type: 'charm',   name: 'つきの お守り',   emoji: '🌙', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7 },
-  charm_4:  { id: 'charm_4',  type: 'charm',   name: 'たいようの お守り', emoji: '☀️', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14 },
+  charm_1:  { id: 'charm_1',  type: 'charm',   name: 'はっぱの お守り', emoji: '🍀', img: 'charm_leaf', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1 },
+  charm_2:  { id: 'charm_2',  type: 'charm',   name: 'ほしの お守り',   emoji: '⭐', img: 'charm_star', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4 },
+  charm_3:  { id: 'charm_3',  type: 'charm',   name: 'つきの お守り',   emoji: '🌙', img: 'charm_moon', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7 },
+  charm_4:  { id: 'charm_4',  type: 'charm',   name: 'たいようの お守り', emoji: '☀️', img: 'charm_sun', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14 },
+  // シークレット：はじめて遊ぶ人への贈り物。全ステータスが少しずつ上がる
+  charm_rainbow: { id: 'charm_rainbow', type: 'charm', name: 'にじの お守り', emoji: '🌈', img: 'charm_rainbow', boost: { hp: 30, kogeki: 4, bougyo: 4, speed: 12 }, price: 0, rarity: 5, unlock: 1, secret: true },
 };
+
+// v2.91.0: 装備アイコン。画像が読めなければ絵文字に戻る（トップレベル定義＝再マウントしない）
+function EquipIcon({ eq, size = 36, className = '' }) {
+  const [failed, setFailed] = React.useState(false);
+  if (!eq) return <span className={className}>➖</span>;
+  if (!eq.img || failed) return <span className={className} style={{ fontSize: Math.round(size * 0.85), lineHeight: 1 }}>{eq.emoji}</span>;
+  return (
+    <img src={`items/${eq.img}.png`} alt={eq.name} width={size} height={size} loading="lazy" decoding="async"
+      onError={() => setFailed(true)} className={className}
+      style={{ width: size, height: size, objectFit: 'contain', display: 'inline-block', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.45))' }} />
+  );
+}
 
 const EQUIP_SLOTS = ['sword', 'shield', 'charm'];
 const EQUIP_LABELS = { sword: '剣', shield: '盾', charm: 'お守り' };
@@ -2117,7 +2139,7 @@ const gachaRoll = (guaranteeRare = false, difficulty = 'normal') => {
   const isEquip = rarity === 1 ? Math.random() < 0.3 : Math.random() < 0.5;
 
   if (isEquip) {
-    const pool = Object.values(EQUIPMENT).filter(e => e.rarity === rarity);
+    const pool = Object.values(EQUIPMENT).filter(e => e.rarity === rarity && !e.secret);
     const eq = pool.length ? pool[Math.floor(Math.random() * pool.length)] : Object.values(EQUIPMENT)[0];
     return { kind: 'equip', rarity, data: eq };
   } else {
@@ -3856,9 +3878,11 @@ function IshimonZukan() {
             name: '',
             level: 1, exp: 0, gems: 30,
             stoneFragments: 50,
-            inventory: ['sword_1', 'shield_1', 'charm_1'],
+            // v2.91.0: はじめて遊ぶ人（未ログインの新規）だけ、虹のお守りをプレゼント。
+            //   ログイン済みで端末データが空の場合（機種変更など）は既存ユーザーの可能性があるので渡さない。
+            inventory: authResult.uid ? ['sword_1', 'shield_1', 'charm_1'] : ['sword_1', 'shield_1', 'charm_1', 'charm_rainbow'],
             inventorySlots: 20,
-            inventoryNew: [],
+            inventoryNew: authResult.uid ? [] : ['charm_rainbow'],
             lastLogin: todayKey(), streak: 1,
             gachaCards: 5,
             missions: { date: todayKey(), list: getTodayMissions(todayKey()), progress: {}, claimed: {}, allClaimed: false },
@@ -5205,6 +5229,7 @@ function IshimonZukan() {
 
   // ===== 装備売却 =====
   const sellEquip = async (eq) => {
+    if (eq.secret) { setError('この お守りは 売れないよ'); return; } // v2.91.0: 贈り物は売れない
     const owned = invCount(player.inventory, eq.id);
     if (owned <= 0) return;
     const equipped = collection.filter(m => m.equipped && EQUIP_SLOTS.some(slot => m.equipped[slot] === eq.id)).length;
@@ -5617,7 +5642,7 @@ function IshimonZukan() {
     const [mode, setMode] = useState('buy');   // 'buy' | 'sell'
     const [tab, setTab] = useState('sword');
     if (!showShop) return null;
-    const items = Object.values(EQUIPMENT).filter(e => e.type === tab);
+    const items = Object.values(EQUIPMENT).filter(e => e.type === tab && !e.secret); // v2.91.0: シークレットは並べない
     const equippedCount = (id) => collection.filter(m => m.equipped && EQUIP_SLOTS.some(s => m.equipped[s] === id)).length;
     const sellList = items.filter(eq => invCount(player.inventory, eq.id) > 0);
     return (
@@ -5679,7 +5704,7 @@ function IshimonZukan() {
                   <div key={eq.id} className="rounded-2xl p-3"
                     style={{ background: 'rgba(255,255,255,0.1)', border: `2px solid ${r.color}` }}>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="text-3xl">{eq.emoji}</div>
+                      <EquipIcon eq={eq} size={44} className="flex-shrink-0" />
                       <div className="flex-1">
                         <div className="text-white font-black flex items-center gap-1.5">
                           {eq.name}
@@ -5854,7 +5879,7 @@ function IshimonZukan() {
                     <div key={eq.id} className="rounded-2xl p-3"
                       style={{ background: 'rgba(255,255,255,0.1)', border: `2px solid ${r.color}` }}>
                       <div className="flex items-center gap-2">
-                        <div className="text-3xl flex-shrink-0">{eq.emoji}</div>
+                        <EquipIcon eq={eq} size={44} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-white font-black text-sm">{eq.name}</span>
@@ -6213,7 +6238,7 @@ function IshimonZukan() {
                           <img src={res.data.imageDataUrl} alt={res.data.name}
                             className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
-                          <div className="text-2xl z-10">{t ? t.emoji : (EQUIPMENT[res.data.id]?.emoji || '⚔️')}</div>
+                          <div className="text-2xl z-10">{t ? t.emoji : (EQUIPMENT[res.data.id] ? <EquipIcon eq={EQUIPMENT[res.data.id]} size={48} /> : '⚔️')}</div>
                         )}
                         <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 z-10"
                           style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
@@ -6346,7 +6371,7 @@ function IshimonZukan() {
                     className="rounded-2xl p-2.5 text-center active:scale-95 transition-transform"
                     style={{ background: isActive ? 'rgba(255,215,0,0.25)' : (e ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.3)'), border: isActive ? '2.5px solid #FFD700' : (e ? '2px solid rgba(255,255,255,0.3)' : '2px dashed rgba(255,255,255,0.22)') }}>
                     <div className="text-[11px] font-black text-yellow-200 mb-0.5">{EQUIP_LABELS[slot]}</div>
-                    <div className="text-3xl leading-none">{e ? e.emoji : '➖'}</div>
+                    <div className="text-3xl leading-none flex justify-center">{e ? <EquipIcon eq={e} size={40} /> : '➖'}</div>
                     <div className="text-[11px] font-bold text-white truncate mt-1">{e ? e.name : '空き'}</div>
                     {e && <div className="text-[10px] font-black text-green-300 leading-tight mt-0.5">{boostText(e.boost)}</div>}
                   </button>
@@ -6375,11 +6400,11 @@ function IshimonZukan() {
                   const free = total - (equippedCounts[e.id] || 0);   // 誰も装備していない予備の数
                   const canEquip = !isEq && free > 0;
                   const lockedByOthers = !isEq && free <= 0;          // 予備ゼロ＝他の石モンが全部装備中
-                  const sellable = free > 0;
+                  const sellable = free > 0 && !e.secret; // v2.91.0: 贈り物は売れない
                   return (
                     <div key={e.id} className="flex items-center gap-2 p-2 rounded-xl"
                       style={{ opacity: lockedByOthers ? 0.5 : 1, background: isEq ? 'rgba(255,215,0,0.25)' : (lockedByOthers ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.08)'), border: isEq ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.15)' }}>
-                      <span className="text-xl">{e.emoji}</span>
+                      <EquipIcon eq={e} size={32} className="flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-bold text-sm truncate flex items-center gap-1">
                           {e.name}
