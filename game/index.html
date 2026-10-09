@@ -249,6 +249,10 @@
   .im-reduced .im-pop, .im-reduced .im-rise { animation-name: imFade !important; animation-duration: 0.25s !important; }
   .im-reduced .im-burst, .im-reduced .im-shine { display: none !important; }
   .im-reduced .im-in { animation: none !important; }
+  /* v2.92.0: アイテム詳細の★5背景（ゆっくり回る光） */
+  .im-rays { animation: ishimon-spin 40s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .im-rays { animation: none !important; } }
+  .im-reduced .im-rays { animation: none !important; }
 </style>
 
 <!-- window.storage: Firestore対応版（ログイン前はlocalStorage、ログイン後はFirestore） -->
@@ -890,7 +894,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.91.0';
+const APP_VERSION = '2.92.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2005,27 +2009,27 @@ const MON_CAPACITY_EXPANSION_COST = 300;    // 拡張1回のきらめき石コ�
 //   secret: true = ショップ・ガチャに出さない・売れない（虹のお守り＝新規プレイヤーへの贈り物）
 const EQUIPMENT = {
   // 剣 (こうげき+)
-  sword_1:      { id: 'sword_1',      type: 'sword',  name: '木の剣', emoji: '🗡️', img: 'sword_wood',   boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1 },
-  sword_stone:  { id: 'sword_stone',  type: 'sword',  name: '石の剣', emoji: '🪨', img: 'sword_stone',  boost: { kogeki: 8 },  price: 90,  rarity: 1, unlock: 2 },
-  sword_2:      { id: 'sword_2',      type: 'sword',  name: '鉄の剣', emoji: '⚔️', img: 'sword_iron',   boost: { kogeki: 12 }, price: 150, rarity: 2, unlock: 3 },
-  sword_3:      { id: 'sword_3',      type: 'sword',  name: '炎の剣', emoji: '🔥', img: 'sword_fire',   boost: { kogeki: 22 }, price: 400, rarity: 3, unlock: 6 },
-  sword_shadow: { id: 'sword_shadow', type: 'sword',  name: '影の剣', emoji: '🌑', img: 'sword_shadow', boost: { kogeki: 28 }, price: 650, rarity: 4, unlock: 9 },
-  sword_4:      { id: 'sword_4',      type: 'sword',  name: '竜の剣', emoji: '🐲', img: 'sword_dragon', boost: { kogeki: 35 }, price: 900, rarity: 5, unlock: 12 },
+  sword_1:      { id: 'sword_1',      type: 'sword',  name: '木の剣', emoji: '🗡️', img: 'sword_wood',   boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1, desc: '森の木を けずって 作った、はじめての剣。かるくて ふりやすい。' },
+  sword_stone:  { id: 'sword_stone',  type: 'sword',  name: '石の剣', emoji: '🪨', img: 'sword_stone',  boost: { kogeki: 8 },  price: 90,  rarity: 1, unlock: 2, desc: 'かたい岩から 切り出した剣。おもいけど、当たると つよい。' },
+  sword_2:      { id: 'sword_2',      type: 'sword',  name: '鉄の剣', emoji: '⚔️', img: 'sword_iron',   boost: { kogeki: 12 }, price: 150, rarity: 2, unlock: 3, desc: 'かじやが きたえた 鉄の剣。赤い宝石が ゆうきを くれる。' },
+  sword_3:      { id: 'sword_3',      type: 'sword',  name: '炎の剣', emoji: '🔥', img: 'sword_fire',   boost: { kogeki: 22 }, price: 400, rarity: 3, unlock: 6, desc: '刃が いつも もえている剣。ふるたびに 火の粉が とびちる。' },
+  sword_shadow: { id: 'sword_shadow', type: 'sword',  name: '影の剣', emoji: '🌑', img: 'sword_shadow', boost: { kogeki: 28 }, price: 650, rarity: 4, unlock: 9, desc: '夜の 影から 生まれた剣。むらさきの炎が しずかに ゆれる。' },
+  sword_4:      { id: 'sword_4',      type: 'sword',  name: '竜の剣', emoji: '🐲', img: 'sword_dragon', boost: { kogeki: 35 }, price: 900, rarity: 5, unlock: 12, desc: '竜のうろこで できた 伝説の剣。もつと 竜の力が 宿るという。' },
   // 盾 (ぼうぎょ+)
-  shield_1:      { id: 'shield_1',      type: 'shield', name: '木の盾', emoji: '🛡️', img: 'shield_wood',   boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1 },
-  shield_stone:  { id: 'shield_stone',  type: 'shield', name: '石の盾', emoji: '🪨', img: 'shield_stone',  boost: { bougyo: 8 },  price: 90,  rarity: 1, unlock: 2 },
-  shield_2:      { id: 'shield_2',      type: 'shield', name: '鉄の盾', emoji: '🛡️', img: 'shield_iron',   boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3 },
-  shield_3:      { id: 'shield_3',      type: 'shield', name: '水の盾', emoji: '💧', img: 'shield_water',  boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6 },
-  shield_fire:   { id: 'shield_fire',   type: 'shield', name: '炎の盾', emoji: '🔥', img: 'shield_fire',   boost: { bougyo: 25 }, price: 500, rarity: 3, unlock: 7 },
-  shield_shadow: { id: 'shield_shadow', type: 'shield', name: '影の盾', emoji: '🌑', img: 'shield_shadow', boost: { bougyo: 29 }, price: 650, rarity: 4, unlock: 9 },
-  shield_4:      { id: 'shield_4',      type: 'shield', name: '竜の盾', emoji: '🐲', img: 'shield_dragon', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12 },
+  shield_1:      { id: 'shield_1',      type: 'shield', name: '木の盾', emoji: '🛡️', img: 'shield_wood',   boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1, desc: 'ツタが まきついた 木の盾。森が 持ち主を まもってくれる。' },
+  shield_stone:  { id: 'shield_stone',  type: 'shield', name: '石の盾', emoji: '🪨', img: 'shield_stone',  boost: { bougyo: 8 },  price: 90,  rarity: 1, unlock: 2, desc: '石を 組み上げた がんじょうな盾。ちょっとやそっとでは こわれない。' },
+  shield_2:      { id: 'shield_2',      type: 'shield', name: '鉄の盾', emoji: '🛡️', img: 'shield_iron',   boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3, desc: '十字の ほきょうが入った 鉄の盾。たよれる まもりの きほん。' },
+  shield_3:      { id: 'shield_3',      type: 'shield', name: '水の盾', emoji: '💧', img: 'shield_water',  boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6, desc: '水の力で こうげきを うけながす盾。しずくが ふしぎに 光る。' },
+  shield_fire:   { id: 'shield_fire',   type: 'shield', name: '炎の盾', emoji: '🔥', img: 'shield_fire',   boost: { bougyo: 25 }, price: 500, rarity: 3, unlock: 7, desc: '炎を まとった盾。ちかづく てきを あつさで おしかえす。' },
+  shield_shadow: { id: 'shield_shadow', type: 'shield', name: '影の盾', emoji: '🌑', img: 'shield_shadow', boost: { bougyo: 29 }, price: 650, rarity: 4, unlock: 9, desc: '影の うずを ひめた盾。こうげきを 闇に すいこむという。' },
+  shield_4:      { id: 'shield_4',      type: 'shield', name: '竜の盾', emoji: '🐲', img: 'shield_dragon', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12, desc: '金の竜が きざまれた 伝説の盾。どんな こうげきも はね返す。' },
   // お守り (HP+ / すばやさ+)
-  charm_1:  { id: 'charm_1',  type: 'charm',   name: 'はっぱの お守り', emoji: '🍀', img: 'charm_leaf', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1 },
-  charm_2:  { id: 'charm_2',  type: 'charm',   name: 'ほしの お守り',   emoji: '⭐', img: 'charm_star', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4 },
-  charm_3:  { id: 'charm_3',  type: 'charm',   name: 'つきの お守り',   emoji: '🌙', img: 'charm_moon', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7 },
-  charm_4:  { id: 'charm_4',  type: 'charm',   name: 'たいようの お守り', emoji: '☀️', img: 'charm_sun', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14 },
+  charm_1:  { id: 'charm_1',  type: 'charm',   name: 'はっぱの お守り', emoji: '🍀', img: 'charm_leaf', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1, desc: '森の はっぱを とじこめた お守り。体が すこし 元気になる。' },
+  charm_2:  { id: 'charm_2',  type: 'charm',   name: 'ほしの お守り',   emoji: '⭐', img: 'charm_star', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4, desc: 'ながれ星の かけらで 作った お守り。足が かるくなる。' },
+  charm_3:  { id: 'charm_3',  type: 'charm',   name: 'つきの お守り',   emoji: '🌙', img: 'charm_moon', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7, desc: '月の光を あつめた お守り。夜の 力が 体を まもる。' },
+  charm_4:  { id: 'charm_4',  type: 'charm',   name: 'たいようの お守り', emoji: '☀️', img: 'charm_sun', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14, desc: '太陽の 炎が 宿る お守り。体じゅうに 力が あふれる。' },
   // シークレット：はじめて遊ぶ人への贈り物。全ステータスが少しずつ上がる
-  charm_rainbow: { id: 'charm_rainbow', type: 'charm', name: 'にじの お守り', emoji: '🌈', img: 'charm_rainbow', boost: { hp: 30, kogeki: 4, bougyo: 4, speed: 12 }, price: 0, rarity: 5, unlock: 1, secret: true },
+  charm_rainbow: { id: 'charm_rainbow', type: 'charm', name: 'にじの お守り', emoji: '🌈', img: 'charm_rainbow', boost: { hp: 30, kogeki: 4, bougyo: 4, speed: 12 }, price: 0, rarity: 5, unlock: 1, secret: true, desc: 'はじめて 石モン図鑑を ひらいた人だけが もらえる、なないろの お守り。ぜんぶの力が 少しずつ 上がる。' },
 };
 
 // v2.91.0: 装備アイコン。画像が読めなければ絵文字に戻る（トップレベル定義＝再マウントしない）
@@ -2037,6 +2041,91 @@ function EquipIcon({ eq, size = 36, className = '' }) {
     <img src={`items/${eq.img}.png`} alt={eq.name} width={size} height={size} loading="lazy" decoding="async"
       onError={() => setFailed(true)} className={className}
       style={{ width: size, height: size, objectFit: 'contain', display: 'inline-block', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.45))' }} />
+  );
+}
+
+// v2.92.0: アイテム詳細。大きな絵と説明。トップレベル定義（App内で作り直さない）
+const ITEM_STAT_ROWS = [['kogeki', 'こうげき', '#FF6B35'], ['bougyo', 'ぼうぎょ', '#3DA5F5'], ['hp', 'HP', '#52B788'], ['speed', 'すばやさ', '#FFC42B']];
+function ItemDetailSheet({ eq, owned, equippedBy, onClose, onOpenMon }) {
+  if (!eq) return null;
+  const r = getRarityLabel(eq.rarity);
+  const legend = eq.rarity >= 5;
+  return (
+    <div className="fixed inset-0 z-[65] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.82)' }} onClick={onClose}>
+      <div className="w-full max-w-sm rounded-3xl overflow-hidden relative" onClick={e => e.stopPropagation()}
+        style={{ background: '#1b1426', border: `3px solid ${r.color}`, boxShadow: `0 0 36px ${r.glow}88` }}>
+        {/* 絵のエリア：レア度色の光。★5はゆっくり回る光の筋 */}
+        <div className="relative flex items-center justify-center overflow-hidden" style={{ height: 250, background: `radial-gradient(circle at 50% 50%, ${r.color}55 0%, ${r.glow}22 45%, transparent 72%)` }}>
+          {legend && (
+            <div className="absolute pointer-events-none" style={{ width: 460, height: 460, left: '50%', top: '50%', marginLeft: -230, marginTop: -230 }}>
+              <div className="im-rays" style={{ width: '100%', height: '100%',
+                background: `repeating-conic-gradient(from 0deg, ${r.color}33 0deg 6deg, transparent 6deg 20deg)`,
+                WebkitMaskImage: 'radial-gradient(circle, #000 10%, transparent 60%)', maskImage: 'radial-gradient(circle, #000 10%, transparent 60%)' }} />
+            </div>
+          )}
+          <div className="im-pop relative"><EquipIcon eq={eq} size={200} /></div>
+          {eq.secret && (
+            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-black"
+              style={{ background: 'linear-gradient(90deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF,#C77DFF)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.5)', border: '1.5px solid #fff' }}>シークレット</div>
+          )}
+          <button onClick={onClose} aria-label="とじる"
+            className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white font-black active:scale-90 transition-transform"
+            style={{ background: 'rgba(0,0,0,0.5)', border: '1.5px solid rgba(255,255,255,0.4)' }}>✕</button>
+        </div>
+
+        <div className="px-4 pb-4 pt-1">
+          <div className="text-center mb-2 im-rise" style={{ animationDelay: '120ms' }}>
+            <div className="text-2xl font-black tracking-wider"
+              style={legend
+                ? { background: 'linear-gradient(180deg, #FFF6C2 0%, #FFD700 45%, #E0A100 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
+                : { color: '#fff' }}>{eq.name}</div>
+            <div className="flex justify-center items-center gap-1.5 mt-1">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-black text-white" style={{ background: r.color }}>
+                <span className="text-[10px]">{'★'.repeat(eq.rarity)}</span>{r.label}
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-black text-white" style={{ background: 'rgba(255,255,255,0.15)' }}>{EQUIP_LABELS[eq.type]}</span>
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-black text-yellow-300" style={{ background: 'rgba(0,0,0,0.4)' }}>もっている数 {owned}</span>
+            </div>
+          </div>
+
+          {eq.desc && (
+            <div className="rounded-2xl px-3 py-2.5 mb-3 im-rise" style={{ background: 'rgba(255,255,255,0.95)', animationDelay: '200ms' }}>
+              <p className="text-[13px] font-bold text-gray-800 leading-relaxed">{eq.desc}</p>
+            </div>
+          )}
+
+          <div className={`grid ${ITEM_STAT_ROWS.filter(([k]) => eq.boost && eq.boost[k]).length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5 mb-3 im-rise`} style={{ animationDelay: '260ms' }}>
+            {ITEM_STAT_ROWS.filter(([k]) => eq.boost && eq.boost[k]).map(([k, label, color]) => (
+              <div key={k} className="rounded-xl px-3 py-2 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.08)', border: `1.5px solid ${color}88` }}>
+                <span className="text-[11px] font-black text-white/80">{label}</span>
+                <span className="text-lg font-black" style={{ color }}>+{eq.boost[k]}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl p-2.5" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            <div className="text-[10px] font-black text-green-300 mb-1.5">✓ そうびしている石モン</div>
+            {equippedBy && equippedBy.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {equippedBy.map(m => {
+                  const t = TYPES[m.type] || TYPES['土'];
+                  return (
+                    <button key={m.id} onClick={() => onOpenMon && onOpenMon(m)}
+                      className="flex items-center gap-1 rounded-full px-2 py-1 active:scale-95 transition-transform"
+                      style={{ background: `linear-gradient(135deg, ${t.bg}, ${t.dark})`, border: '1px solid rgba(255,255,255,0.4)' }}>
+                      <span className="text-xs">{t.emoji}</span>
+                      <span className="text-[11px] font-black text-white">{m.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-[11px] font-bold text-white/55">まだ だれも そうびしていないよ。石モンの「そうび」から つけられるよ</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -3627,6 +3716,8 @@ function IshimonZukan() {
   const [showMissions, setShowMissions] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  const [itemDetailId, setItemDetailId] = useState(null); // v2.92.0: アイテム詳細で開いている装備id
+  const invTabRef = useRef('all'); // v2.92.0: アイテム画面のタブ（作り直しでも「すべて」に戻らないよう保持）
   const [showProfile, setShowProfile] = useState(false);
   const [showEquip, setShowEquip] = useState(null);
   const [equipTab, setEquipTab] = useState('sword'); // 装備画面のタブ（App側に保持＝再描画で戻らない）
@@ -5758,7 +5849,8 @@ function IshimonZukan() {
   // ===========================================
   const InventoryModal = () => {
     // v2.68.0: フックは条件分岐より前（React #310対策）。閉じ判定は全フックの後・return直前へ移動。
-    const [tab, setTab] = useState('all');
+    const [tab, _setTab] = useState(invTabRef.current);
+    const setTab = (k) => { invTabRef.current = k; _setTab(k); };
 
     // 各装備を「誰が装備中か」マップ化
     const equippedByMonMap = useMemo(() => {
@@ -5807,8 +5899,9 @@ function IshimonZukan() {
 
     const tabs = [
       { id: 'all', label: 'すべて', emoji: '📦' },
-      { id: 'sword', label: '剣', emoji: '🗡️' },
-      { id: 'charm', label: 'お守り', emoji: '🍀' },
+      { id: 'sword', label: '剣', emoji: '🗡️', eq: EQUIPMENT.sword_1 },
+      { id: 'shield', label: '盾', emoji: '🛡️', eq: EQUIPMENT.shield_1 }, // v2.92.0: 盾タブが抜けていた
+      { id: 'charm', label: 'お守り', emoji: '🍀', eq: EQUIPMENT.charm_1 },
     ];
 
     if (!showInventory) return null;
@@ -5830,7 +5923,7 @@ function IshimonZukan() {
               </div>
             </div>
 
-            <CloseButton onClick={() => { setShowInventory(false); document.body.style.overflow=''; }} />
+            <CloseButton onClick={() => { setShowInventory(false); setItemDetailId(null); document.body.style.overflow=''; }} />
 
             {/* タブ */}
             <div className="grid grid-cols-4 gap-1 mb-3">
@@ -5843,7 +5936,7 @@ function IshimonZukan() {
                       background: active ? 'linear-gradient(135deg, #FFE066, #FFD700)' : 'rgba(0,0,0,0.3)',
                       border: active ? '2px solid white' : '2px solid rgba(255,255,255,0.2)',
                     }}>
-                    <div className="text-base leading-none">{tb.emoji}</div>
+                    <div className="text-base leading-none flex justify-center" style={{ height: 22, alignItems: 'center' }}>{tb.eq ? <EquipIcon eq={tb.eq} size={22} /> : tb.emoji}</div>
                     <div className="text-[10px] mt-0.5">{tb.label}</div>
                     {newCounts[tb.id] > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-[9px] font-black leading-none px-1 py-0.5"
@@ -5878,8 +5971,9 @@ function IshimonZukan() {
                   return (
                     <div key={eq.id} className="rounded-2xl p-3"
                       style={{ background: 'rgba(255,255,255,0.1)', border: `2px solid ${r.color}` }}>
-                      <div className="flex items-center gap-2">
-                        <EquipIcon eq={eq} size={44} className="flex-shrink-0" />
+                      {/* v2.92.0: タップでアイテム詳細 */}
+                      <button onClick={() => setItemDetailId(eq.id)} className="w-full text-left flex items-center gap-2 active:scale-[0.98] transition-transform">
+                        <EquipIcon eq={eq} size={52} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-white font-black text-sm">{eq.name}</span>
@@ -5898,7 +5992,8 @@ function IshimonZukan() {
                             {eq.boost.speed ? `すばやさ +${eq.boost.speed}` : ''}
                           </div>
                         </div>
-                      </div>
+                        <span className="text-white/50 font-black text-lg flex-shrink-0">›</span>
+                      </button>
                       {equippedBy.length > 0 ? (
                         <div className="mt-2 pt-2 flex items-center gap-1.5 flex-wrap"
                           style={{ borderTop: '1px dashed rgba(255,255,255,0.25)' }}>
@@ -11014,6 +11109,13 @@ function IshimonZukan() {
       <MissionsModal />
       <ShopModal />
       <InventoryModal />
+      {showInventory && itemDetailId && EQUIPMENT[itemDetailId] && (
+        <ItemDetailSheet eq={EQUIPMENT[itemDetailId]}
+          owned={invCount(player.inventory, itemDetailId)}
+          equippedBy={collection.filter(m => m.equipped && EQUIP_SLOTS.some(sl => m.equipped[sl] === itemDetailId))}
+          onClose={() => setItemDetailId(null)}
+          onOpenMon={(m) => { setItemDetailId(null); setShowInventory(false); setSelected(m); }} />
+      )}
       <ProfileModal />
       <EquipModal />
       {showQuotaOver && (
