@@ -894,7 +894,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.92.0';
+const APP_VERSION = '2.92.1';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2009,27 +2009,27 @@ const MON_CAPACITY_EXPANSION_COST = 300;    // 拡張1回のきらめき石コ�
 //   secret: true = ショップ・ガチャに出さない・売れない（虹のお守り＝新規プレイヤーへの贈り物）
 const EQUIPMENT = {
   // 剣 (こうげき+)
-  sword_1:      { id: 'sword_1',      type: 'sword',  name: '木の剣', emoji: '🗡️', img: 'sword_wood',   boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1, desc: '森の木を けずって 作った、はじめての剣。かるくて ふりやすい。' },
-  sword_stone:  { id: 'sword_stone',  type: 'sword',  name: '石の剣', emoji: '🪨', img: 'sword_stone',  boost: { kogeki: 8 },  price: 90,  rarity: 1, unlock: 2, desc: 'かたい岩から 切り出した剣。おもいけど、当たると つよい。' },
-  sword_2:      { id: 'sword_2',      type: 'sword',  name: '鉄の剣', emoji: '⚔️', img: 'sword_iron',   boost: { kogeki: 12 }, price: 150, rarity: 2, unlock: 3, desc: 'かじやが きたえた 鉄の剣。赤い宝石が ゆうきを くれる。' },
-  sword_3:      { id: 'sword_3',      type: 'sword',  name: '炎の剣', emoji: '🔥', img: 'sword_fire',   boost: { kogeki: 22 }, price: 400, rarity: 3, unlock: 6, desc: '刃が いつも もえている剣。ふるたびに 火の粉が とびちる。' },
-  sword_shadow: { id: 'sword_shadow', type: 'sword',  name: '影の剣', emoji: '🌑', img: 'sword_shadow', boost: { kogeki: 28 }, price: 650, rarity: 4, unlock: 9, desc: '夜の 影から 生まれた剣。むらさきの炎が しずかに ゆれる。' },
-  sword_4:      { id: 'sword_4',      type: 'sword',  name: '竜の剣', emoji: '🐲', img: 'sword_dragon', boost: { kogeki: 35 }, price: 900, rarity: 5, unlock: 12, desc: '竜のうろこで できた 伝説の剣。もつと 竜の力が 宿るという。' },
+  sword_1:      { id: 'sword_1',      type: 'sword',  name: '木の剣', emoji: '🗡️', img: 'sword_wood',   boost: { kogeki: 5 },  price: 50,  rarity: 1, unlock: 1, desc: '森の木を削って作った、はじめての剣。軽くて振りやすい。' },
+  sword_stone:  { id: 'sword_stone',  type: 'sword',  name: '石の剣', emoji: '🪨', img: 'sword_stone',  boost: { kogeki: 8 },  price: 90,  rarity: 1, unlock: 2, desc: '硬い岩から切り出した剣。重いが、当たれば強い。' },
+  sword_2:      { id: 'sword_2',      type: 'sword',  name: '鉄の剣', emoji: '⚔️', img: 'sword_iron',   boost: { kogeki: 12 }, price: 150, rarity: 2, unlock: 3, desc: '鍛冶屋が鍛え上げた鉄の剣。赤い宝石が勇気をくれる。' },
+  sword_3:      { id: 'sword_3',      type: 'sword',  name: '炎の剣', emoji: '🔥', img: 'sword_fire',   boost: { kogeki: 22 }, price: 400, rarity: 3, unlock: 6, desc: '刃が常に燃えている剣。振るたびに火の粉が飛び散る。' },
+  sword_shadow: { id: 'sword_shadow', type: 'sword',  name: '影の剣', emoji: '🌑', img: 'sword_shadow', boost: { kogeki: 28 }, price: 650, rarity: 4, unlock: 9, desc: '夜の影から生まれた剣。紫の炎が静かに揺れている。' },
+  sword_4:      { id: 'sword_4',      type: 'sword',  name: '竜の剣', emoji: '🐲', img: 'sword_dragon', boost: { kogeki: 35 }, price: 900, rarity: 5, unlock: 12, desc: '竜の鱗で鍛えた伝説の剣。手にした者には竜の力が宿るという。' },
   // 盾 (ぼうぎょ+)
-  shield_1:      { id: 'shield_1',      type: 'shield', name: '木の盾', emoji: '🛡️', img: 'shield_wood',   boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1, desc: 'ツタが まきついた 木の盾。森が 持ち主を まもってくれる。' },
-  shield_stone:  { id: 'shield_stone',  type: 'shield', name: '石の盾', emoji: '🪨', img: 'shield_stone',  boost: { bougyo: 8 },  price: 90,  rarity: 1, unlock: 2, desc: '石を 組み上げた がんじょうな盾。ちょっとやそっとでは こわれない。' },
-  shield_2:      { id: 'shield_2',      type: 'shield', name: '鉄の盾', emoji: '🛡️', img: 'shield_iron',   boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3, desc: '十字の ほきょうが入った 鉄の盾。たよれる まもりの きほん。' },
-  shield_3:      { id: 'shield_3',      type: 'shield', name: '水の盾', emoji: '💧', img: 'shield_water',  boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6, desc: '水の力で こうげきを うけながす盾。しずくが ふしぎに 光る。' },
-  shield_fire:   { id: 'shield_fire',   type: 'shield', name: '炎の盾', emoji: '🔥', img: 'shield_fire',   boost: { bougyo: 25 }, price: 500, rarity: 3, unlock: 7, desc: '炎を まとった盾。ちかづく てきを あつさで おしかえす。' },
-  shield_shadow: { id: 'shield_shadow', type: 'shield', name: '影の盾', emoji: '🌑', img: 'shield_shadow', boost: { bougyo: 29 }, price: 650, rarity: 4, unlock: 9, desc: '影の うずを ひめた盾。こうげきを 闇に すいこむという。' },
-  shield_4:      { id: 'shield_4',      type: 'shield', name: '竜の盾', emoji: '🐲', img: 'shield_dragon', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12, desc: '金の竜が きざまれた 伝説の盾。どんな こうげきも はね返す。' },
+  shield_1:      { id: 'shield_1',      type: 'shield', name: '木の盾', emoji: '🛡️', img: 'shield_wood',   boost: { bougyo: 5 },  price: 50,  rarity: 1, unlock: 1, desc: '蔦が巻きついた木の盾。森が持ち主を守ってくれる。' },
+  shield_stone:  { id: 'shield_stone',  type: 'shield', name: '石の盾', emoji: '🪨', img: 'shield_stone',  boost: { bougyo: 8 },  price: 90,  rarity: 1, unlock: 2, desc: '石を組み上げた頑丈な盾。少々の攻撃では壊れない。' },
+  shield_2:      { id: 'shield_2',      type: 'shield', name: '鉄の盾', emoji: '🛡️', img: 'shield_iron',   boost: { bougyo: 12 }, price: 150, rarity: 2, unlock: 3, desc: '十字の補強が入った鉄の盾。頼れる守りの基本。' },
+  shield_3:      { id: 'shield_3',      type: 'shield', name: '水の盾', emoji: '💧', img: 'shield_water',  boost: { bougyo: 22 }, price: 400, rarity: 3, unlock: 6, desc: '水の力で攻撃を受け流す盾。中央の雫が不思議に光る。' },
+  shield_fire:   { id: 'shield_fire',   type: 'shield', name: '炎の盾', emoji: '🔥', img: 'shield_fire',   boost: { bougyo: 25 }, price: 500, rarity: 3, unlock: 7, desc: '炎をまとった盾。近づく敵を熱で押し返す。' },
+  shield_shadow: { id: 'shield_shadow', type: 'shield', name: '影の盾', emoji: '🌑', img: 'shield_shadow', boost: { bougyo: 29 }, price: 650, rarity: 4, unlock: 9, desc: '影の渦を秘めた盾。攻撃を闇に吸い込むという。' },
+  shield_4:      { id: 'shield_4',      type: 'shield', name: '竜の盾', emoji: '🐲', img: 'shield_dragon', boost: { bougyo: 35 }, price: 900, rarity: 5, unlock: 12, desc: '金の竜が刻まれた伝説の盾。どんな攻撃も跳ね返す。' },
   // お守り (HP+ / すばやさ+)
-  charm_1:  { id: 'charm_1',  type: 'charm',   name: 'はっぱの お守り', emoji: '🍀', img: 'charm_leaf', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1, desc: '森の はっぱを とじこめた お守り。体が すこし 元気になる。' },
-  charm_2:  { id: 'charm_2',  type: 'charm',   name: 'ほしの お守り',   emoji: '⭐', img: 'charm_star', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4, desc: 'ながれ星の かけらで 作った お守り。足が かるくなる。' },
-  charm_3:  { id: 'charm_3',  type: 'charm',   name: 'つきの お守り',   emoji: '🌙', img: 'charm_moon', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7, desc: '月の光を あつめた お守り。夜の 力が 体を まもる。' },
-  charm_4:  { id: 'charm_4',  type: 'charm',   name: 'たいようの お守り', emoji: '☀️', img: 'charm_sun', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14, desc: '太陽の 炎が 宿る お守り。体じゅうに 力が あふれる。' },
+  charm_1:  { id: 'charm_1',  type: 'charm',   name: '葉っぱのお守り', emoji: '🍀', img: 'charm_leaf', boost: { hp: 10, speed: 3 }, price: 50,  rarity: 1, unlock: 1, desc: '森の葉っぱを閉じ込めたお守り。体が少し元気になる。' },
+  charm_2:  { id: 'charm_2',  type: 'charm',   name: '星のお守り',   emoji: '⭐', img: 'charm_star', boost: { hp: 20, speed: 8 }, price: 200, rarity: 2, unlock: 4, desc: '流れ星のかけらで作ったお守り。足取りが軽くなる。' },
+  charm_3:  { id: 'charm_3',  type: 'charm',   name: '月のお守り',   emoji: '🌙', img: 'charm_moon', boost: { hp: 35, speed: 15 }, price: 500, rarity: 3, unlock: 7, desc: '月の光を集めたお守り。夜の力が体を守る。' },
+  charm_4:  { id: 'charm_4',  type: 'charm',   name: '太陽のお守り', emoji: '☀️', img: 'charm_sun', boost: { hp: 55, speed: 25 }, price: 1000, rarity: 5, unlock: 14, desc: '太陽の炎が宿るお守り。体中に力があふれる。' },
   // シークレット：はじめて遊ぶ人への贈り物。全ステータスが少しずつ上がる
-  charm_rainbow: { id: 'charm_rainbow', type: 'charm', name: 'にじの お守り', emoji: '🌈', img: 'charm_rainbow', boost: { hp: 30, kogeki: 4, bougyo: 4, speed: 12 }, price: 0, rarity: 5, unlock: 1, secret: true, desc: 'はじめて 石モン図鑑を ひらいた人だけが もらえる、なないろの お守り。ぜんぶの力が 少しずつ 上がる。' },
+  charm_rainbow: { id: 'charm_rainbow', type: 'charm', name: '虹のお守り', emoji: '🌈', img: 'charm_rainbow', boost: { hp: 30, kogeki: 4, bougyo: 4, speed: 12 }, price: 0, rarity: 5, unlock: 1, secret: true, desc: '初めて石モン図鑑を開いた人だけがもらえる、七色のお守り。すべての力が少しずつ上がる。' },
 };
 
 // v2.91.0: 装備アイコン。画像が読めなければ絵文字に戻る（トップレベル定義＝再マウントしない）
@@ -2084,7 +2084,7 @@ function ItemDetailSheet({ eq, owned, equippedBy, onClose, onOpenMon }) {
                 <span className="text-[10px]">{'★'.repeat(eq.rarity)}</span>{r.label}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-black text-white" style={{ background: 'rgba(255,255,255,0.15)' }}>{EQUIP_LABELS[eq.type]}</span>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-black text-yellow-300" style={{ background: 'rgba(0,0,0,0.4)' }}>もっている数 {owned}</span>
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-black text-yellow-300" style={{ background: 'rgba(0,0,0,0.4)' }}>所持数 {owned}</span>
             </div>
           </div>
 
@@ -2104,7 +2104,7 @@ function ItemDetailSheet({ eq, owned, equippedBy, onClose, onOpenMon }) {
           </div>
 
           <div className="rounded-2xl p-2.5" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)' }}>
-            <div className="text-[10px] font-black text-green-300 mb-1.5">✓ そうびしている石モン</div>
+            <div className="text-[10px] font-black text-green-300 mb-1.5">✓ 装備中の石モン</div>
             {equippedBy && equippedBy.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {equippedBy.map(m => {
@@ -2120,7 +2120,7 @@ function ItemDetailSheet({ eq, owned, equippedBy, onClose, onOpenMon }) {
                 })}
               </div>
             ) : (
-              <div className="text-[11px] font-bold text-white/55">まだ だれも そうびしていないよ。石モンの「そうび」から つけられるよ</div>
+              <div className="text-[11px] font-bold text-white/55">まだ誰も装備していません。石モン詳細の「そうび」タブから装備できます</div>
             )}
           </div>
         </div>
@@ -5320,7 +5320,7 @@ function IshimonZukan() {
 
   // ===== 装備売却 =====
   const sellEquip = async (eq) => {
-    if (eq.secret) { setError('この お守りは 売れないよ'); return; } // v2.91.0: 贈り物は売れない
+    if (eq.secret) { setError('このお守りは売れません'); return; } // v2.91.0: 贈り物は売れない
     const owned = invCount(player.inventory, eq.id);
     if (owned <= 0) return;
     const equipped = collection.filter(m => m.equipped && EQUIP_SLOTS.some(slot => m.equipped[slot] === eq.id)).length;
