@@ -83,10 +83,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="石モン図鑑">
 <meta property="og:locale" content="ja_JP">
-<!-- html-to-image (シェアカード生成用) -->
-<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
-<!-- JSZip (v2候補一括ダウンロード用) -->
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- v2.95.0: html-to-image は未使用（シェアカードはCanvas版）のため削除。
+     JSZip はオーナー用の一括ダウンロードでだけ使うので、押した時に読み込む。 -->
 <!-- シェアカード描画 (Canvas API版) -->
 <script src="share-card.js?v=6"></script>
 <!-- Twitter Card -->
@@ -100,7 +98,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+<!-- v2.95.0: Babel は起動時に読まない。初回（または更新直後）だけ下のローダーが読み込んで変換し、
+     変換結果を端末に保存。2回目以降は保存済みのJSをそのまま実行する。ピン留め @7.25.6 はローダー内に記載 -->
 <!-- Firebase SDK (CDN) -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -847,7 +846,7 @@ window._loadLeaflet = function () {
 };
 </script>
 
-<script type="text/babel" data-presets="react">
+<script type="text/x-ishimon-jsx" id="ishimon-app-src">
 
 const { useState, useEffect, useRef, useMemo, useCallback, Fragment } = React;
 
@@ -894,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.94.0';
+const APP_VERSION = '2.95.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1818,6 +1817,18 @@ const getBirthElapsed = (key) => {
   const el = Date.now() - _birthAnimT0[key];
   return el < 1600 ? el : null;
 };
+
+// v2.95.0: ホーム等の背景のキラキラ。起動時に1回だけ位置を決める
+const BG_SPARKLES = Array.from({ length: 30 }, () => ({
+  ch: ['✨', '⭐', '💫'][Math.floor(Math.random() * 3)],
+  style: {
+    top: Math.random() * 100 + '%', left: Math.random() * 100 + '%',
+    fontSize: (Math.random() * 14 + 10) + 'px',
+    opacity: Math.random() * 0.5 + 0.2,
+    animation: `float ${Math.random() * 4 + 3}s ease-in-out infinite`,
+    animationDelay: Math.random() * 3 + 's',
+  },
+}));
 
 // 層(タイプの格): 1=自然 / 2=幻想 / 3=天(エンシェント)。視覚ルールの基準。
 const TYPE_LAYER = {
@@ -7946,6 +7957,9 @@ function IshimonZukan() {
     const downloadV2Picks = async () => {
       const picked = rows.filter(r => picks[r._id] ?? r.v2pick);
       if (picked.length === 0) { alert('⭐候補がありません'); return; }
+      if (!window.JSZip) { // v2.95.0: 使う時だけ読み込む
+        await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+      }
       const zip = new window.JSZip();
       let count = 0;
       for (const r of picked) {
@@ -10896,14 +10910,9 @@ function IshimonZukan() {
       `}</style>
       {view !== 'battle' && !settings.animationReduced && (
         <div className="absolute inset-0 pointer-events-none">
-          {[...Array(30)].map((_, i) => (
-            <div key={i} className="absolute" style={{
-              top: Math.random() * 100 + '%', left: Math.random() * 100 + '%',
-              fontSize: (Math.random() * 14 + 10) + 'px',
-              opacity: Math.random() * 0.5 + 0.2,
-              animation: `float ${Math.random() * 4 + 3}s ease-in-out infinite`,
-              animationDelay: Math.random() * 3 + 's',
-            }}>{['✨', '⭐', '💫'][Math.floor(Math.random() * 3)]}</div>
+          {/* v2.95.0: 位置は起動時に1回だけ決める（以前は画面が更新されるたびに30個すべて作り直していた） */}
+          {BG_SPARKLES.map((p, i) => (
+            <div key={i} className="absolute" style={p.style}>{p.ch}</div>
           ))}
         </div>
       )}
@@ -11219,6 +11228,35 @@ function IshimonZukan() {
 
 
 ReactDOM.render(React.createElement(IshimonZukan), document.getElementById("root"));
+</script>
+<script>
+// v2.95.0: 起動ローダー。JSXの変換結果を IndexedDB に保存し、2回目以降は
+//   Babel本体(約2.9MB)の読込と変換(iPhoneで数秒)を丸ごと省く。
+//   キーはソース全文のハッシュ＝コードが1文字でも変われば自動で変換し直す（古い結果は使われない）。
+(function(){
+  var BABEL_URL = 'https://unpkg.com/@babel/standalone@7.25.6/babel.min.js'; // @latest 禁止（ピン留め厳守）
+  var DB = 'ishimon-boot', STORE = 'compiled';
+  function hash(s){ var x = 2166136261; for (var i = 0; i < s.length; i++){ x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); } return (x >>> 0).toString(36) + '-' + s.length; }
+  function openDb(){ return new Promise(function(res, rej){ try { var r = indexedDB.open(DB, 1); r.onupgradeneeded = function(){ r.result.createObjectStore(STORE); }; r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); }; } catch(e){ rej(e); } }); }
+  function idbGet(k){ return openDb().then(function(db){ return new Promise(function(res){ try { var q = db.transaction(STORE, 'readonly').objectStore(STORE).get(k); q.onsuccess = function(){ res(q.result || null); }; q.onerror = function(){ res(null); }; } catch(e){ res(null); } }); }).catch(function(){ return null; }); }
+  function idbReplace(k, v){ return openDb().then(function(db){ return new Promise(function(res){ try { var tx = db.transaction(STORE, 'readwrite'); var st = tx.objectStore(STORE); st.clear(); st.put(v, k); tx.oncomplete = res; tx.onerror = res; } catch(e){ res(); } }); }).catch(function(){}); }
+  function loadBabel(){ return new Promise(function(res, rej){ if (window.Babel) return res(); var s = document.createElement('script'); s.src = BABEL_URL; s.onload = function(){ res(); }; s.onerror = function(){ rej(new Error('Babel読込失敗')); }; document.head.appendChild(s); }); }
+  function run(code){ var s = document.createElement('script'); s.textContent = code; document.body.appendChild(s); }
+  function boot(){
+    var src = document.getElementById('ishimon-app-src').textContent;
+    var key = hash(src);
+    idbGet(key).then(function(code){
+      if (code) { window.__bootMode = 'cache'; run(code); return; }
+      return loadBabel().then(function(){
+        var out = window.Babel.transform(src, { presets: ['react'] }).code;
+        window.__bootMode = 'compiled';
+        run(out);
+        idbReplace(key, out); // 古い版の変換結果は消して1つだけ保持
+      });
+    }).catch(function(e){ setTimeout(function(){ throw e; }, 0); }); // 起動エラー表示に乗せる
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
 </script>
 </body>
 <script>
