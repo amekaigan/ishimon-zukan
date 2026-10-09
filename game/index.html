@@ -894,7 +894,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.92.1';
+const APP_VERSION = '2.93.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -5753,7 +5753,7 @@ function IshimonZukan() {
               </div>
             </div>
 
-            <CloseButton onClick={() => { setShowShop(false); document.body.style.overflow=''; }} />
+            <CloseButton onClick={() => { setShowShop(false); setItemDetailId(null); document.body.style.overflow=''; }} />
 
             {/* 買う / 売る 切替 */}
             <div className="flex gap-1 p-1 rounded-2xl mb-3" style={{ background: 'rgba(0,0,0,0.3)' }}>
@@ -5794,22 +5794,19 @@ function IshimonZukan() {
                 return (
                   <div key={eq.id} className="rounded-2xl p-3"
                     style={{ background: 'rgba(255,255,255,0.1)', border: `2px solid ${r.color}` }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <EquipIcon eq={eq} size={44} className="flex-shrink-0" />
+                    {/* v2.93.0: タップでアイテム詳細（アイテム画面と同じ詳細を開く） */}
+                    <button onClick={() => setItemDetailId(eq.id)} className="w-full text-left flex items-center gap-2 mb-2 active:scale-[0.98] transition-transform">
+                      <EquipIcon eq={eq} size={52} className="flex-shrink-0" />
                       <div className="flex-1">
                         <div className="text-white font-black flex items-center gap-1.5">
                           {eq.name}
                           {owned > 0 && <span className="text-[10px] font-black text-yellow-300 bg-black/40 rounded-full px-1.5 py-0.5">所持 {owned}</span>}
                         </div>
                         <div className="text-xs font-bold" style={{ color: r.color }}>{'★'.repeat(eq.rarity)} {r.label}</div>
-                        <div className="text-xs text-white/80 font-bold">
-                          {eq.boost.kogeki && `こうげき +${eq.boost.kogeki}`}
-                          {eq.boost.bougyo && `ぼうぎょ +${eq.boost.bougyo}`}
-                          {eq.boost.hp && `HP +${eq.boost.hp}`}
-                          {eq.boost.speed && `すばやさ +${eq.boost.speed}`}
-                        </div>
+                        <div className="text-xs text-white/80 font-bold">{boostText(eq.boost)}</div>
                       </div>
-                    </div>
+                      <span className="text-white/50 font-black text-lg flex-shrink-0">›</span>
+                    </button>
                     {mode === 'buy' ? (
                       locked ? (
                         <div className="text-center text-yellow-300 font-bold text-xs">プレイヤー Lv.{eq.unlock} で 解放</div>
@@ -11109,12 +11106,12 @@ function IshimonZukan() {
       <MissionsModal />
       <ShopModal />
       <InventoryModal />
-      {showInventory && itemDetailId && EQUIPMENT[itemDetailId] && (
+      {(showInventory || showShop) && itemDetailId && EQUIPMENT[itemDetailId] && (
         <ItemDetailSheet eq={EQUIPMENT[itemDetailId]}
           owned={invCount(player.inventory, itemDetailId)}
           equippedBy={collection.filter(m => m.equipped && EQUIP_SLOTS.some(sl => m.equipped[sl] === itemDetailId))}
           onClose={() => setItemDetailId(null)}
-          onOpenMon={(m) => { setItemDetailId(null); setShowInventory(false); setSelected(m); }} />
+          onOpenMon={(m) => { setItemDetailId(null); setShowInventory(false); setShowShop(false); setSelected(m); }} />
       )}
       <ProfileModal />
       <EquipModal />
