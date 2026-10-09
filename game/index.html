@@ -894,7 +894,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.93.0';
+const APP_VERSION = '2.94.0';
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -2918,7 +2918,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
                     {m.imagePending ? (
                       <div className="w-full h-24 flex flex-col items-center justify-center gap-0.5" style={{ background: `${t.dark}66` }}>
                         <span className="text-3xl">{m.imageForce ? '🎨' : '🥚'}</span>
-                        <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : 'しんかちゅう'}</span>
+                        <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : m.imageBirth ? 'もうすぐ誕生' : 'しんかちゅう'}</span>
                       </div>
                     ) : m.imageDataUrl ? (
                       <img src={m.imageDataUrl} loading="lazy" decoding="async" className="w-full h-24 object-cover" />
@@ -3185,7 +3185,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
                       {m.imagePending ? (
                         <div className="w-full h-24 flex flex-col items-center justify-center gap-0.5" style={{ background: `${t.dark}66` }}>
                           <span className="text-3xl">{m.imageForce ? '🎨' : '🥚'}</span>
-                          <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : 'しんかちゅう'}</span>
+                          <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : m.imageBirth ? 'もうすぐ誕生' : 'しんかちゅう'}</span>
                         </div>
                       ) : m.imageDataUrl ? (
                         <img src={m.imageDataUrl} loading="lazy" decoding="async" className="w-full h-24 object-cover" />
@@ -3718,6 +3718,7 @@ function IshimonZukan() {
   const [showInventory, setShowInventory] = useState(false);
   const [itemDetailId, setItemDetailId] = useState(null); // v2.92.0: アイテム詳細で開いている装備id
   const invTabRef = useRef('all'); // v2.92.0: アイテム画面のタブ（作り直しでも「すべて」に戻らないよう保持）
+  const shopTabRef = useRef({ tab: 'sword', mode: 'buy' }); // v2.94.0: ショップも同様（詳細を閉じると剣タブに戻っていた）
   const [showProfile, setShowProfile] = useState(false);
   const [showEquip, setShowEquip] = useState(null);
   const [equipTab, setEquipTab] = useState('sword'); // 装備画面のタブ（App側に保持＝再描画で戻らない）
@@ -4127,7 +4128,8 @@ function IshimonZukan() {
     if (!mon || !mon.id) return;
     window._imgJobs = window._imgJobs || {};
     if (window._imgJobs[mon.id]) return; // 二重起動を防ぐ
-    if (window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) return; // 枠切れは明日に持ち越し
+    // 枠切れは明日に持ち越し。v2.94.0: ガチャ生まれ(imageBirth)はガチャ代に含まれるので撮影の1日枠を使わない
+    if (!mon.imageBirth && window._currentUid !== window.OWNER_UID && genRemainingToday() <= 0) return;
     window._imgJobs[mon.id] = true;
     warmUpIshimon();
     let got = null;
@@ -4143,10 +4145,10 @@ function IshimonZukan() {
       }
       if (r && r.image) {
         got = r;
-        if (!r.fromCache && window._currentUid !== window.OWNER_UID) bumpGenCountToday();
+        if (!r.fromCache && !mon.imageBirth && window._currentUid !== window.OWNER_UID) bumpGenCountToday();
         // v2.76.0: 進化は時間が来るまで姿を隠す（絵はできていても imagePending のまま保持）
         const hidden = !!(mon.revealAt && Date.now() < mon.revealAt);
-        const patch = { imageDataUrl: r.image, imagePending: hidden, imageReady: hidden, imageForce: false };
+        const patch = { imageDataUrl: r.image, imagePending: hidden, imageReady: hidden, imageForce: false, imageBirth: false };
         const finalMon = { ...mon, ...patch };
         setCollection(prev => {
           const next = prev.map(c => c.id === finalMon.id ? { ...c, ...patch } : c);
@@ -4169,6 +4171,18 @@ function IshimonZukan() {
 
   useEffect(() => {
     const now = Date.now();
+    // (0) v2.94.0: 旧方式で絵が描かれないまま残ったガチャ石モンを、たまごに戻して描き直す（キャッシュがあれば生成しない）
+    if (!initialLoading) {
+      const stuck = collection.filter(m => m && typeof m.id === 'string' && m.id.startsWith('gacha-') && !m.imageDataUrl && !m.imagePending);
+      if (stuck.length > 0) {
+        setCollection(prev => {
+          const next = prev.map(c => stuck.some(s => s.id === c.id) ? { ...c, imagePending: true, imageBirth: true, imagePendingAt: now } : c);
+          saveCollection(next).catch(() => {});
+          return next;
+        });
+        return;
+      }
+    }
     // (1) 時間が来た進化 → 姿をあらわす
     const due = collection.filter(m => m && m.imagePending && m.imageReady && now >= (m.revealAt || 0));
     if (due.length > 0) {
@@ -4194,7 +4208,7 @@ function IshimonZukan() {
     const delay = Math.max(1000, Math.min(...waiting.map(m => m.revealAt)) - now);
     const t2 = setTimeout(() => setPendingTick(v => v + 1), Math.min(delay, 60000));
     return () => clearTimeout(t2);
-  }, [collection, pendingTick]);
+  }, [collection, pendingTick, initialLoading]);
 
   // アプリを閉じる・バックグラウンド時に強制保存（iOS対応）
   useEffect(() => {
@@ -4426,24 +4440,16 @@ function IshimonZukan() {
       }
     }));
 
-    // 2. キャッシュ未ヒットのものをキュー投入（並列で投入、内部で順次処理）
-    const uncached = monResults.filter(r => !r.data.imageDataUrl);
-    uncached.forEach((monResult) => {
-      // キューに投入。完了次第表示が更新される（数分〜数十分かかる可能性）
-      getOrGenerateMonImage(monResult.data).then(({ image }) => {
-        if (image) {
-          monResult.data.imageDataUrl = image;
-          setGachaResults(prev => prev.map(r =>
-            r.kind === 'mon' && r.data.id === monResult.data.id
-              ? { ...r, data: { ...r.data, imageDataUrl: image } }
-              : r
-          ));
-          // collectionも更新（コレクション画面で見たときに反映）
-          setCollection(prev => prev.map(c =>
-            c.id === monResult.data.id ? { ...c, imageDataUrl: image } : c
-          ));
-        }
-      });
+    // 2. v2.94.0: キャッシュ未ヒットの石モンは「たまご」として図鑑に入れ、絵は runPendingImageJob が1体ずつ描く。
+    //   旧方式はガチャ側で直接生成していたため、①できた絵が保存されない ②アプリを閉じると続きが描かれない
+    //   ③10体同時にキューへ積むので途中で止まる、の3つで「仮アイコンのまま」になっていた。
+    //   たまご方式ならフラグが保存されるので、閉じても次回起動で続きから描く。
+    monResults.forEach((monResult) => {
+      if (!monResult.data.imageDataUrl) {
+        monResult.data.imagePending = true;
+        monResult.data.imageBirth = true; // ガチャ生まれ（表示文言用・撮影の1日枠を使わない）
+        monResult.data.imagePendingAt = Date.now();
+      }
     });
 
     // 1枚ずつ順番にめくるアニメ（0.5秒おき）
@@ -5730,8 +5736,10 @@ function IshimonZukan() {
   // ===========================================
     const ShopModal = () => {
     // v2.68.0: フックは条件分岐より前。早期returnの後ろにあると開閉でフック数が変わりReact #310（白画面）。
-    const [mode, setMode] = useState('buy');   // 'buy' | 'sell'
-    const [tab, setTab] = useState('sword');
+    const [mode, _setMode] = useState(shopTabRef.current.mode);   // 'buy' | 'sell'
+    const [tab, _setTab] = useState(shopTabRef.current.tab);
+    const setMode = (m) => { shopTabRef.current.mode = m; _setMode(m); };
+    const setTab = (t) => { shopTabRef.current.tab = t; _setTab(t); };
     if (!showShop) return null;
     const items = Object.values(EQUIPMENT).filter(e => e.type === tab && !e.secret); // v2.91.0: シークレットは並べない
     const equippedCount = (id) => collection.filter(m => m.equipped && EQUIP_SLOTS.some(s => m.equipped[s] === id)).length;
@@ -6326,8 +6334,8 @@ function IshimonZukan() {
                             style={{ background: `radial-gradient(circle, ${rc.bg}40 0%, transparent 70%)`, animation: 'pulse 1s ease-in-out infinite' }} />
                         )}
                         {/* AI画像があれば表示、なければ絵文字 */}
-                        {res.kind === 'mon' && res.data.imageDataUrl ? (
-                          <img src={res.data.imageDataUrl} alt={res.data.name}
+                        {res.kind === 'mon' && (res.data.imageDataUrl || collection.find(c => c.id === res.data.id)?.imageDataUrl) ? (
+                          <img src={res.data.imageDataUrl || collection.find(c => c.id === res.data.id)?.imageDataUrl} alt={res.data.name}
                             className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
                           <div className="text-2xl z-10">{t ? t.emoji : (EQUIPMENT[res.data.id] ? <EquipIcon eq={EQUIPMENT[res.data.id]} size={48} /> : '⚔️')}</div>
@@ -8716,15 +8724,25 @@ function IshimonZukan() {
                 <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-2"
                   style={{ background: 'rgba(0,0,0,0.72)', border: '2px solid #FFD700' }}>
                   <div className="text-6xl" style={{ animation: mon.imageForce ? 'none' : 'eggwob 1.6s ease-in-out infinite' }}>{mon.imageForce ? '🎨' : '🥚'}</div>
-                  <div className="text-white font-black text-sm">{mon.imageForce ? '新しい絵を描いています…' : '🥚 進化中…'}</div>
+                  <div className="text-white font-black text-sm">{mon.imageForce ? '新しい絵を描いています…' : mon.imageBirth ? '🥚 もうすぐ生まれます…' : '🥚 進化中…'}</div>
                   <PendingCountdown until={mon.imageForce ? null : mon.revealAt} />
                   <style>{`@keyframes eggwob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }`}</style>
                 </div>
               )}
             </div>
           ) : (
-            <div className="w-full rounded-2xl flex items-center justify-center mb-3" style={{ aspectRatio: '1/1', background: `${t.dark}66`, border: '2px solid white' }}>
-              <span className="text-7xl">{t.emoji}</span>
+            <div className="w-full rounded-2xl flex flex-col items-center justify-center gap-2 mb-3" style={{ aspectRatio: '1/1', background: `${t.dark}66`, border: '2px solid white' }}>
+              {mon.imagePending ? (
+                <>
+                  {/* v2.94.0: ガチャ生まれで絵がまだの時はたまご表示 */}
+                  <div className="text-7xl" style={{ animation: 'eggwob 1.6s ease-in-out infinite' }}>🥚</div>
+                  <div className="text-white font-black text-sm">もうすぐ生まれます…</div>
+                  <div className="text-white/60 text-[11px] font-bold">アプリを閉じても、次に開いた時に続きから描きます</div>
+                  <style>{`@keyframes eggwob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }`}</style>
+                </>
+              ) : (
+                <span className="text-7xl">{t.emoji}</span>
+              )}
             </div>
           )}
               <div className={`text-center mb-2 ${bAnim('im-rise', 480).className || ''}`} style={bAnim('im-rise', 480).style}>
