@@ -64,10 +64,63 @@
     <p>「この石、なんだろう？」と思ったら、色と手ざわりを手がかりに探してみてください。夏休みの<strong>自由研究</strong>にも使えます。</p>
   </div>
 
-  <div class="divider"></div>
+  <p class="zukan-count">いま 22 種類</p>
 
-  <section>
-    <h2>河原で見つかる石</h2>
+  <nav class="cat-nav" aria-label="石の種類">
+    <a href="#igneous">火成岩</a><a href="#sedimentary">堆積岩</a><a href="#metamorphic">変成岩</a><a href="#mineral">鉱物</a>
+  </nav>
+
+  <!-- ZUKAN-LIST:BEGIN（tools/zukan/build.py が作る） -->
+  <section id="igneous">
+    <h2>火成岩<span class="cat-desc">マグマや火山からできた石</span></h2>
+    <div class="stone-grid">
+      <a class="stone-card" href="/zukan/granite.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">花崗岩</div>
+          <div class="sc-desc">白・黒・ピンクのつぶが混ざった石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/andesite.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">安山岩</div>
+          <div class="sc-desc">灰色の地に白いつぶ。火山の石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/basalt.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">玄武岩</div>
+          <div class="sc-desc">黒くて重い、溶岩の石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/rhyolite.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">流紋岩</div>
+          <div class="sc-desc">流れ模様のある白っぽい火山の石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/obsidian.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">黒曜石</div>
+          <div class="sc-desc">ガラスのような黒い石。天然のガラス</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/pumice.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">軽石</div>
+          <div class="sc-desc">水に浮く、穴だらけの石</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section id="sedimentary">
+    <h2>堆積岩<span class="cat-desc">積もって固まった石</span></h2>
     <div class="stone-grid">
       <a class="stone-card" href="/zukan/chert.html">
         <div class="sc-thumb">🪨</div>
@@ -76,6 +129,81 @@
           <div class="sc-desc">赤や緑でつるっとした、とてもかたい石</div>
         </div>
       </a>
+      <a class="stone-card" href="/zukan/tuff.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">凝灰岩</div>
+          <div class="sc-desc">火山灰が固まった、やわらかい石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/sandstone.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">砂岩</div>
+          <div class="sc-desc">砂が固まった、ざらざらの石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/mudstone.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">泥岩</div>
+          <div class="sc-desc">泥が固まった、すべすべの石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/conglomerate.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">礫岩</div>
+          <div class="sc-desc">小石がつまったまま固まった石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/limestone.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">石灰岩</div>
+          <div class="sc-desc">サンゴや貝からできた、酢で泡が出る石</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section id="metamorphic">
+    <h2>変成岩<span class="cat-desc">熱や力で生まれ変わった石</span></h2>
+    <div class="stone-grid">
+      <a class="stone-card" href="/zukan/slate.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">粘板岩</div>
+          <div class="sc-desc">うすい板のように割れる、黒い石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/schist.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">結晶片岩</div>
+          <div class="sc-desc">緑や銀色に光る、うすくはがれる石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/serpentinite.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">蛇紋岩</div>
+          <div class="sc-desc">ヘビの皮のような、ぬるっとした石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/marble.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">大理石</div>
+          <div class="sc-desc">石灰岩が生まれ変わった、白い石</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section id="mineral">
+    <h2>鉱物<span class="cat-desc">石をつくっている粒</span></h2>
+    <div class="stone-grid">
       <a class="stone-card" href="/zukan/quartz.html">
         <div class="sc-thumb">🪨</div>
         <div class="sc-body">
@@ -83,25 +211,44 @@
           <div class="sc-desc">河原や海岸の、白くてツヤのある石</div>
         </div>
       </a>
-      <div class="stone-card soon">
+      <a class="stone-card" href="/zukan/feldspar.html">
         <div class="sc-thumb">🪨</div>
         <div class="sc-body">
-          <div class="sc-name">花崗岩</div>
-          <div class="sc-desc">準備中</div>
+          <div class="sc-name">長石</div>
+          <div class="sc-desc">花崗岩の白やピンクのつぶ</div>
         </div>
-      </div>
-      <div class="stone-card soon">
+      </a>
+      <a class="stone-card" href="/zukan/mica.html">
         <div class="sc-thumb">🪨</div>
         <div class="sc-body">
-          <div class="sc-name">砂岩</div>
-          <div class="sc-desc">準備中</div>
+          <div class="sc-name">雲母</div>
+          <div class="sc-desc">うすくはがれる、キラキラの鉱物</div>
         </div>
-      </div>
-    </div>
-    <div class="prose">
-      <p>これから、安山岩・玄武岩・石灰岩・黒曜石・蛇紋岩・ヒスイなどを順番に追加していきます。</p>
+      </a>
+      <a class="stone-card" href="/zukan/agate.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">めのう</div>
+          <div class="sc-desc">しま模様が美しい、半透明の石</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/jade.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">ヒスイ</div>
+          <div class="sc-desc">日本の国石。糸魚川の海岸で拾える</div>
+        </div>
+      </a>
+      <a class="stone-card" href="/zukan/magnetite.html">
+        <div class="sc-thumb">🪨</div>
+        <div class="sc-body">
+          <div class="sc-name">磁鉄鉱（砂鉄）</div>
+          <div class="sc-desc">磁石にくっつく黒いつぶ（砂鉄）</div>
+        </div>
+      </a>
     </div>
   </section>
+  <!-- ZUKAN-LIST:END -->
 
   <div class="cta-wrap">
     <a href="/game/" class="cta-btn">▶ 拾った石を石モンにする</a>

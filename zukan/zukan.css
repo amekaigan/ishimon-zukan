@@ -315,3 +315,35 @@ h2,
   background: linear-gradient(135deg, rgba(199,31,142,0.10), rgba(90,26,120,0.08));
 }
 .stone-card.soon .sc-thumb { background: #f3f3f3; color: #ccc; }
+
+/* ---------- 一覧ページ：種類の見出しと目次 ---------- */
+.zukan-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5A1A78;
+  margin: 24px 0 12px;
+}
+.cat-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 36px;
+}
+.cat-nav a {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5A1A78;
+  text-decoration: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(90,26,120,0.06);
+  border: 1.5px solid rgba(90,26,120,0.18);
+}
+section[id] { scroll-margin-top: 16px; margin-bottom: 36px; }
+.cat-desc {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: #888;
+  margin-top: 2px;
+}
