@@ -3,6 +3,27 @@
    common.css の後に読み込む
    ============================================= */
 
+/* ---------- フォント：端末の標準ゴシック体（読み込みなし） ---------- */
+body,
+.cta-btn {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", "Yu Gothic Medium", "Yu Gothic", YuGothic, Meiryo, sans-serif;
+}
+body { line-height: 1.8; }
+.prose p { line-height: 1.95; }
+h1.article-title,
+h2,
+.prose strong,
+.prose a,
+.section-label-tag,
+.cta-btn,
+.story-nav a,
+.breadcrumb,
+.article-meta,
+.cta-sub,
+.footer-nav a,
+.meta-footer { font-weight: 700; }
+
 /* ---------- ページ冒頭：石の写真＋ひとこと ---------- */
 .stone-hero {
   margin: 0 0 28px;
@@ -25,7 +46,7 @@
 }
 .stone-lead {
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 700;
   color: #2a0a4a;
   line-height: 1.9;
   background: rgba(90,26,120,0.05);
@@ -53,7 +74,7 @@
 .stone-data th {
   width: 7.5em;
   color: #5A1A78;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
 }
 .stone-data td { color: #444; }
@@ -63,7 +84,7 @@
 .zukan-section h2 { margin-bottom: 18px; }
 .zukan-section h3 {
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 700;
   color: #2a0a4a;
   margin: 24px 0 10px;
 }
@@ -97,13 +118,13 @@
   background: #52B788;
   color: #fff;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 700;
   text-align: center;
   line-height: 20px;
 }
 .check-list li b {
   color: #2a0a4a;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 /* ---------- 似ている石との比較 ---------- */
@@ -124,11 +145,11 @@
 .compare-table thead th {
   background: rgba(90,26,120,0.06);
   color: #5A1A78;
-  font-weight: 900;
+  font-weight: 700;
 }
 .compare-table tbody th {
   color: #2a0a4a;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -142,7 +163,7 @@
 }
 .caution-box .caution-title {
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
   color: #c2410c;
   margin-bottom: 6px;
 }
@@ -163,14 +184,14 @@
 }
 .ishimon-card .ic-label {
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.14em;
   color: #FFD700;
   margin-bottom: 6px;
 }
 .ishimon-card .ic-title {
   font-size: 19px;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.5;
   margin-bottom: 16px;
 }
@@ -222,7 +243,7 @@
 .related-links span {
   display: inline-block;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
   text-decoration: none;
   padding: 8px 14px;
   border-radius: 999px;
@@ -270,7 +291,7 @@
 .stone-card .sc-body { padding: 10px 12px 12px; }
 .stone-card .sc-name {
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 700;
   color: #2a0a4a;
 }
 .stone-card .sc-desc {
