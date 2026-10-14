@@ -3,12 +3,6 @@
    common.css の後に読み込む
    ============================================= */
 
-/* ---------- フォント：端末の標準ゴシック体（読み込みなし） ---------- */
-body,
-.cta-btn {
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN",
-    "Noto Sans JP", "Yu Gothic Medium", "Yu Gothic", YuGothic, Meiryo, sans-serif;
-}
 body { line-height: 1.8; }
 .prose p { line-height: 1.95; }
 h1.article-title,

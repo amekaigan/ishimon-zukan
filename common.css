@@ -7,7 +7,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-family:-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic Medium", "Yu Gothic", YuGothic, Meiryo, sans-serif;
   background: linear-gradient(180deg, #1a0a3a 0%, #3a1a6a 40%, #C71F8E 80%, #FF6B35 100%);
   background-attachment: fixed;
   color: #333;
@@ -56,7 +56,7 @@ body {
   background: rgba(90,26,120,0.08);
   color: #5A1A78;
   font-size: 11px;
-  font-weight: 900;
+  font-weight:700;
   letter-spacing: 0.12em;
   padding: 5px 14px;
   border-radius: 6px;
@@ -70,7 +70,7 @@ body {
 h1.article-title,
 .article-title {
   font-size: 26px;
-  font-weight: 900;
+  font-weight:700;
   color: #2a0a4a;
   line-height: 1.4;
   margin-bottom: 12px;
@@ -82,7 +82,7 @@ h1.article-title,
 
 h2 {
   font-size: 22px;
-  font-weight: 900;
+  font-weight:700;
   color: #2a0a4a;
   margin-bottom: 20px;
   line-height: 1.5;
@@ -117,11 +117,11 @@ h2 {
 .prose p:last-child { margin-bottom: 0; }
 .prose strong {
   color: #C71F8E;
-  font-weight: 900;
+  font-weight:700;
 }
 .prose a {
   color: #C71F8E;
-  font-weight: 900;
+  font-weight:700;
   text-decoration: none;
   border-bottom: 1.5px solid rgba(199,31,142,0.3);
   padding-bottom: 1px;
@@ -131,7 +131,7 @@ h2 {
 }
 .prose .quote {
   font-size: 19px;
-  font-weight: 900;
+  font-weight:700;
   color: #2a0a4a;
   text-align: center;
   padding: 24px 16px;
@@ -175,7 +175,7 @@ h2 {
 .sign {
   text-align: right;
   font-size: 13px;
-  font-weight: 900;
+  font-weight:700;
   color: #bbb;
   margin-top: 32px;
   padding-top: 16px;
@@ -193,9 +193,9 @@ h2 {
   display: inline-block;
   background: linear-gradient(135deg, #FF6B35, #C71F8E, #5A1A78);
   color: #fff;
-  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-family:-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic Medium", "Yu Gothic", YuGothic, Meiryo, sans-serif;
   font-size: 16px;
-  font-weight: 900;
+  font-weight:700;
   text-decoration: none;
   padding: 16px 40px;
   border-radius: 999px;
@@ -235,7 +235,7 @@ h2 {
   padding: 16px;
   text-decoration: none;
   font-size: 12px;
-  font-weight: 900;
+  font-weight:700;
   color: #5A1A78;
   transition: background 0.2s;
 }
