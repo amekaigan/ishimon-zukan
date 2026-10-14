@@ -2,10 +2,10 @@
 """石の図鑑ページを stones.py から作る。
 
 使い方（リポジトリのルートで）:
-    python3 tools/zukan/build.py
+    python3 tools/stones/build.py
 
-- /zukan/<id>.html を STONES ぶん作る（上書き）
-- /zukan/index.html の一覧を、種類別に作り直す
+- /stones/<id>.html を STONES ぶん作る（上書き）
+- /stones/index.html の一覧を、種類別に作り直す
 - sitemap.xml と sitemap.html の図鑑の部分を作り直す
 手書きページ（chert・quartz）は上書きしない。
 """
@@ -35,7 +35,7 @@ def esc(t):
 
 def link_or_text(sid, label=None):
     label = label or ALL[sid]["name"]
-    return f'<a href="/zukan/{sid}.html">{label}</a>'
+    return f'<a href="/stones/{sid}.html">{label}</a>'
 
 
 def caution_box(c):
@@ -59,7 +59,7 @@ def paras(ps):
 def page(s):
     sid, name, yomi = s["id"], s["name"], s["yomi"]
     cat_label = CAT[s["cat"]][0]
-    url = f"{SITE}/zukan/{sid}.html"
+    url = f"{SITE}/stones/{sid}.html"
     og_title = f"{s['title'].split('｜')[0]} | 石の図鑑 - 石モン図鑑"
     full_title = f"{s['title']} | 石の図鑑 - 石モン図鑑"
     h1_name = name if name == yomi else f"{name}（{yomi}）"
@@ -84,7 +84,7 @@ def page(s):
                 "@type": "BreadcrumbList",
                 "itemListElement": [
                     {"@type": "ListItem", "position": 1, "name": "ホーム", "item": SITE + "/"},
-                    {"@type": "ListItem", "position": 2, "name": "石の図鑑", "item": f"{SITE}/zukan/"},
+                    {"@type": "ListItem", "position": 2, "name": "石の図鑑", "item": f"{SITE}/stones/"},
                     {"@type": "ListItem", "position": 3, "name": name, "item": url},
                 ],
             },
@@ -156,14 +156,14 @@ def page(s):
 </script>
 
 <link rel="stylesheet" href="/common.css">
-<link rel="stylesheet" href="/zukan/zukan.css">
+<link rel="stylesheet" href="/stones/stones.css">
 </head>
 <body>
 <div class="container">
 
   <nav class="breadcrumb">
     <a href="/">ホーム</a> &rsaquo;
-    <a href="/zukan/">石の図鑑</a> &rsaquo;
+    <a href="/stones/">石の図鑑</a> &rsaquo;
     {name}
   </nav>
 
@@ -173,9 +173,9 @@ def page(s):
     <div class="article-meta">石モン図鑑 / {DATE_JA}</div>
   </header>
 
-  <!-- 写真（標本が届いたら戻す）：/images/zukan/{sid}.webp 4:3
+  <!-- 写真（標本が届いたら戻す）：/images/stones/{sid}.webp 4:3
   <figure class="stone-hero">
-    <img src="/images/zukan/{sid}.webp" alt="{name}の標本" width="1200" height="900">
+    <img src="/images/stones/{sid}.webp" alt="{name}の標本" width="1200" height="900">
     <figcaption>{name}の標本（石モン図鑑 撮影）</figcaption>
   </figure>
   -->
@@ -256,11 +256,11 @@ def page(s):
   </section>
 
   <div class="story-nav">
-    <a href="/zukan/">
+    <a href="/stones/">
       <div class="nav-label">← 一覧へ</div>
       石の図鑑
     </a>
-    <a href="/zukan/{nav_next}.html">
+    <a href="/stones/{nav_next}.html">
       <div class="nav-label">つぎに読む</div>
       {ALL[nav_next]['name']}
     </a>
@@ -269,7 +269,7 @@ def page(s):
   <nav class="footer-nav">
     <a href="/">ホーム</a>
     <span class="sep">·</span>
-    <a href="/zukan/">石の図鑑</a>
+    <a href="/stones/">石の図鑑</a>
     <span class="sep">·</span>
     <a href="/about.html">石モン図鑑とは</a>
     <span class="sep">·</span>
@@ -296,7 +296,7 @@ def ordered_ids():
 
 
 def build_index():
-    p = os.path.join(ROOT, "zukan", "index.html")
+    p = os.path.join(ROOT, "stones", "index.html")
     src = open(p, encoding="utf-8").read()
     groups = ordered_ids()
     blocks = []
@@ -304,7 +304,7 @@ def build_index():
         cards = []
         for sid in groups[k]:
             st = ALL[sid]
-            cards.append(f"""      <a class="stone-card" href="/zukan/{sid}.html">
+            cards.append(f"""      <a class="stone-card" href="/stones/{sid}.html">
         <div class="sc-thumb">🪨</div>
         <div class="sc-body">
           <div class="sc-name">{st['name']}</div>
@@ -317,7 +317,7 @@ def build_index():
 {chr(10).join(cards)}
     </div>
   </section>""")
-    body = "<!-- ZUKAN-LIST:BEGIN（tools/zukan/build.py が作る） -->\n" + "\n\n".join(blocks) + "\n  <!-- ZUKAN-LIST:END -->"
+    body = "<!-- ZUKAN-LIST:BEGIN（tools/stones/build.py が作る） -->\n" + "\n\n".join(blocks) + "\n  <!-- ZUKAN-LIST:END -->"
     if "<!-- ZUKAN-LIST:BEGIN" in src:
         src = re.sub(r"<!-- ZUKAN-LIST:BEGIN.*?<!-- ZUKAN-LIST:END -->", lambda m: body, src, flags=re.S)
     else:
@@ -335,30 +335,30 @@ def build_sitemaps():
     # sitemap.xml
     p = os.path.join(ROOT, "sitemap.xml")
     src = open(p, encoding="utf-8").read()
-    src = re.sub(r"\s*<url>\s*<loc>https://ishimonzukan.com/zukan/[^<]+\.html</loc>.*?</url>", "", src, flags=re.S)
+    src = re.sub(r"\s*<url>\s*<loc>https://ishimonzukan.com/stones/[^<]+\.html</loc>.*?</url>", "", src, flags=re.S)
     urls = "".join(f"""
   <url>
-    <loc>{SITE}/zukan/{i}.html</loc>
+    <loc>{SITE}/stones/{i}.html</loc>
     <lastmod>{DATE}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>""" for i in ids)
-    anchor = f"<loc>{SITE}/zukan/</loc>"
+    anchor = f"<loc>{SITE}/stones/</loc>"
     a = src.index(anchor)
     b = src.index("</url>", a) + len("</url>")
     src = src[:b] + urls + src[b:]
-    src = re.sub(r"(<loc>https://ishimonzukan.com/zukan/</loc>\s*<lastmod>)[^<]+", r"\g<1>" + DATE, src)
+    src = re.sub(r"(<loc>https://ishimonzukan.com/stones/</loc>\s*<lastmod>)[^<]+", r"\g<1>" + DATE, src)
     open(p, "w", encoding="utf-8").write(src)
     # sitemap.html
     p = os.path.join(ROOT, "sitemap.html")
     src = open(p, encoding="utf-8").read()
     items = ["""      <li>
-        <div class="link-row"><a class="page-link" href="/zukan/">石の図鑑 一覧</a></div>
+        <div class="link-row"><a class="page-link" href="/stones/">石の図鑑 一覧</a></div>
         <p class="link-description">河原や海岸で拾える石を、1種類ずつ紹介。</p>
       </li>"""]
     for i in ids:
         items.append(f"""      <li>
-        <div class="link-row"><a class="page-link" href="/zukan/{i}.html">{ALL[i]['name']}</a></div>
+        <div class="link-row"><a class="page-link" href="/stones/{i}.html">{ALL[i]['name']}</a></div>
         <p class="link-description">{ALL[i]['card']}</p>
       </li>""")
     sec = """  <!-- 石の図鑑 -->
@@ -374,7 +374,7 @@ def build_sitemaps():
 
 def main():
     for s in STONES:
-        open(os.path.join(ROOT, "zukan", f"{s['id']}.html"), "w", encoding="utf-8").write(page(s))
+        open(os.path.join(ROOT, "stones", f"{s['id']}.html"), "w", encoding="utf-8").write(page(s))
     build_index()
     build_sitemaps()
     print(f"built {len(STONES)} pages + index + sitemaps")
