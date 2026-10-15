@@ -8,6 +8,7 @@
 - /stones/index.html の一覧を、種類別に作り直す
 - sitemap.xml と sitemap.html の図鑑の部分を作り直す
 手書きページ（chert・quartz）は上書きしない。
+日付は石ごとに stones.py の date="YYYY-MM-DD" で持てる（ない石は DATE）。
 """
 import html
 import json
@@ -20,9 +21,17 @@ sys.path.insert(0, os.path.dirname(__file__))
 from stones import CATEGORIES, HANDMADE, RIVER_CAUTION, STONES  # noqa: E402
 
 DATE = "2026-10-14"
-DATE_JA = "2026年10月14日"
 SITE = "https://ishimonzukan.com"
 CAT = {k: (label, desc) for k, label, desc in CATEGORIES}
+
+
+def stone_date(s):
+    return s.get("date", DATE)
+
+
+def date_ja(d):
+    y, m, dd = d.split("-")
+    return f"{int(y)}年{int(m)}月{int(dd)}日"
 
 ALL = {k: dict(v, id=k) for k, v in HANDMADE.items()}
 for s in STONES:
@@ -63,6 +72,7 @@ def page(s):
     og_title = f"{s['title'].split('｜')[0]} | 石の図鑑 - 石モン図鑑"
     full_title = f"{s['title']} | 石の図鑑 - 石モン図鑑"
     h1_name = name if name == yomi else f"{name}（{yomi}）"
+    d = stone_date(s)
 
     ld = {
         "@context": "https://schema.org",
@@ -72,8 +82,8 @@ def page(s):
                 "headline": s["title"].split("｜")[0],
                 "description": s["desc"],
                 "image": f"{SITE}/ogp_ishimon.png",
-                "datePublished": DATE,
-                "dateModified": DATE,
+                "datePublished": d,
+                "dateModified": d,
                 "inLanguage": "ja",
                 "author": {"@type": "Organization", "name": "石モン図鑑", "url": SITE + "/"},
                 "publisher": {"@type": "Organization", "name": "石モン図鑑", "url": SITE + "/",
@@ -170,7 +180,7 @@ def page(s):
   <header class="article-header">
     <div class="section-label-tag">🪨 石の図鑑 — {cat_label}</div>
     <h1 class="article-title">{h1_name}<br><span style="font-size:0.62em">{s['subtitle']}</span></h1>
-    <div class="article-meta">石モン図鑑 / {DATE_JA}</div>
+    <div class="article-meta">石モン図鑑 / {date_ja(d)}</div>
   </header>
 
   <!-- 写真（標本が届いたら戻す）：/images/stones/{sid}.webp 4:3
@@ -339,15 +349,16 @@ def build_sitemaps():
     urls = "".join(f"""
   <url>
     <loc>{SITE}/stones/{i}.html</loc>
-    <lastmod>{DATE}</lastmod>
+    <lastmod>{stone_date(ALL[i])}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>""" for i in ids)
+    newest = max(stone_date(ALL[i]) for i in ids)
     anchor = f"<loc>{SITE}/stones/</loc>"
     a = src.index(anchor)
     b = src.index("</url>", a) + len("</url>")
     src = src[:b] + urls + src[b:]
-    src = re.sub(r"(<loc>https://ishimonzukan.com/stones/</loc>\s*<lastmod>)[^<]+", r"\g<1>" + DATE, src)
+    src = re.sub(r"(<loc>https://ishimonzukan.com/stones/</loc>\s*<lastmod>)[^<]+", r"\g<1>" + newest, src)
     open(p, "w", encoding="utf-8").write(src)
     # sitemap.html
     p = os.path.join(ROOT, "sitemap.html")
