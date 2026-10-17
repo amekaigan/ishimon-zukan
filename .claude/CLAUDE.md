@@ -41,7 +41,7 @@ Claude Codeが起動時に自動で読むファイル。`.claude/` に置くの�
 全サイトの状況は「サイト進行ボード」で共有する：https://claude.ai/artifact/L6VBB41iVJqRdGobi937B7
 
 - 書き込みは ArtifactData ツールで、このURLの `items` コレクションに行う（ページを作り直さない）。
-- 1件1ドキュメント。項目：`site`（石モン図鑑／asiatopro／あかいうま／保険ノート／かぞクロ／成分比較）、
+- 1件1ドキュメント。項目：`site`（石モン図鑑／asiatopro／あかいうま／保険ノート／かぞクロ／クラベル）、
   `title`、`tier`（A／B／C）、`status`、`note`（任意）、`updatedAt`（ISO形式の日時）。
 - `status` の意味：`doing` 進行中／`review` 確認待ち（B）／`ask` 相談（C）／`ok` ユーザーがOK済み・反映待ち／
   `hold` 見送り／`done` 完了（Aの報告もここ）。
