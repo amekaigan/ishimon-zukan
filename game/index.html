@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.96.1';
+const APP_VERSION = '2.97.0'; // v2.97.0: 属性アイコンをオリジナルSVGに（第1弾）
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1758,6 +1758,32 @@ const TYPES = {
   '光':     { emoji: '🌟', bg: '#FFD86B', light: '#FFF6D0', dark: '#B8860B', name: 'シャイン', hidden: true },
   '闇':     { emoji: '🌙', bg: '#3A2A6A', light: '#6A5A9A', dark: '#1A1040', name: 'シャドウ', hidden: true },
   '古':     { emoji: '🦴', bg: '#B5803A', light: '#E8C68A', dark: '#5A3A1A', name: 'エンシェント', hidden: true },
+};
+
+// ===== オリジナルSVGアイコン =====
+// キーは置き換えたい絵文字そのもの。ここに無い絵文字は今まで通り絵文字で表示される
+// 形式: '絵文字': ['輪郭の色', [['パス', '塗り色'], ...]]  ※塗り色 'none' は線だけ
+const ISHI_ICONS = {
+  '🔥': ['#8A2A10', [['M32 5C37 17 50 23 50 40C50 52 42 59 32 59C22 59 14 52 14 40C14 31 19 26 22 17C25 25 28 27 30 29C30 20 29 13 32 5Z', '#FF6B35'], ['M32 31C36 38 42 42 42 48C42 54 38 57 32 57C26 57 22 54 22 48C22 42 28 39 32 31Z', '#FFD23F']]],
+  '💧': ['#0D4C8C', [['M32 5C40 20 50 30 50 42C50 52 42 59 32 59C22 59 14 52 14 42C14 30 24 20 32 5Z', '#3DA5F5'], ['M22 40C22 34 25 30 27 28C26 33 26 38 28 44C26 46 22 45 22 40Z', '#D9F0FF']]],
+  '🪨': ['#5A3D15', [['M9 44L16 23L30 11L47 15L57 34L52 52L22 56Z', '#B88550'], ['M16 23L30 11L47 15L28 31Z', '#E2BB87'], ['M28 31L47 15L57 34L52 52L36 54Z', '#9A6C3A']]],
+  '⚡': ['#8A5000', [['M38 4L13 36L29 36L23 60L51 25L35 25L43 4Z', '#FFD23F'], ['M36 9L20 31L30 31', '#FFF3B0']]],
+  '☁️': ['#2F6F65', [['M18 47C9 47 6 39 10 34C12 28 19 27 22 29C24 19 34 15 41 21C46 16 57 21 54 31C61 33 60 47 50 47Z', '#BFE9E2'], ['M20 37C20 33 23 31 26 32', 'none']]],
+  '🐉': ['#3A0868', [['M22 23L15 6L31 20Z', '#E0C8FF'], ['M33 20L36 5L42 22Z', '#E0C8FF'], ['M11 41C11 28 20 20 32 20L45 22L57 31C59 33 58 37 55 37L45 39C43 47 36 53 26 53C17 53 11 48 11 41Z', '#8A44D6'], ['M45 39L36 41L44 33', 'none'], ['M36 24C40 24 43 27 43 30C40 31 36 29 36 24Z', '#FFE066'], ['M53 32L50 33', 'none']]],
+  '✨': ['#8A1E52', [['M30 6C32 24 40 31 57 33C40 35 32 42 30 60C28 42 20 35 4 33C20 31 28 24 30 6Z', '#FF6FB5'], ['M30 18C31 27 34 31 42 33C34 34 31 38 30 47C29 38 26 34 18 33C26 31 29 27 30 18Z', '#FFD6EA'], ['M50 5C51 10 53 12 58 13C53 14 51 16 50 21C49 16 47 14 42 13C47 12 49 10 50 5Z', '#FFE066']]],
+};
+// 使い方: <Emo e="🔥" />  大きさは周りの文字サイズに合わせる（size で倍率変更）
+const Emo = ({ e, size = 1.2, style }) => {
+  const ic = ISHI_ICONS[e];
+  if (!ic) return <>{e}</>;
+  const [line, parts] = ic;
+  return (
+    <svg viewBox="-4 -4 72 72" role="img" aria-label={e}
+      style={{ width: size + 'em', height: size + 'em', display: 'inline-block', verticalAlign: '-0.2em', flexShrink: 0, ...style }}>
+      {parts.map(([d, c], i) => <path key={'b' + i} d={d} fill={c === 'none' ? 'none' : '#fff'} stroke="#fff" strokeWidth="9" strokeLinejoin="round" strokeLinecap="round" />)}
+      {parts.map(([d, c], i) => <path key={'f' + i} d={d} fill={c} stroke={line} strokeWidth="3.2" strokeLinejoin="round" strokeLinecap="round" />)}
+    </svg>
+  );
 };
 
 const TYPE_CHART = {
@@ -7449,7 +7475,7 @@ function IshimonZukan() {
               style={{ background: 'rgba(140,20,20,0.7)', backdropFilter: 'blur(4px)' }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <div className="bg-red-600 rounded px-1.5 py-0.5 text-[9px] font-black text-white leading-none flex-shrink-0">敵</div>
-                <span className="text-sm">{enemyT.emoji}</span>
+                <span className="text-sm"><Emo e={enemyT.emoji} /></span>
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-black text-sm leading-tight truncate">{enemyMon.name}</div>
                   <div className="text-red-200 text-[9px] font-bold">Lv.{enemyMon.level} ・ {enemyT.name}タイプ</div>
@@ -7520,7 +7546,7 @@ function IshimonZukan() {
               style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <div className="bg-yellow-500 rounded px-1.5 py-0.5 text-[9px] font-black text-yellow-900 leading-none flex-shrink-0">あなた</div>
-                <span className="text-sm">{myT.emoji}</span>
+                <span className="text-sm"><Emo e={myT.emoji} /></span>
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-black text-sm leading-tight truncate">{myMon.name}</div>
                   <div className="text-yellow-200 text-[9px] font-bold">Lv.{myMon.level || 1} ・ {myT.name}タイプ</div>
@@ -8236,7 +8262,7 @@ function IshimonZukan() {
                     <span className="text-white font-black text-sm">{mon.name}</span>
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-bold"
                       style={{ background: t.bg, color: 'white' }}>
-                      {t.emoji} {mon.type}
+                      <Emo e={t.emoji} /> {mon.type}
                     </span>
                     <span className="text-yellow-300 font-black">{'★'.repeat(mon.rarity)}</span>
                     <span className="text-white/60 font-bold">だんかい{mon.stage}</span>
@@ -8840,7 +8866,7 @@ function IshimonZukan() {
                   <style>{`@keyframes eggwob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }`}</style>
                 </>
               ) : (
-                <span className="text-7xl">{t.emoji}</span>
+                <span className="text-7xl"><Emo e={t.emoji} /></span>
               )}
             </div>
           )}
@@ -8856,7 +8882,7 @@ function IshimonZukan() {
                   <span className="text-[10px]">{'★'.repeat(mon.rarity)}</span>{r.label}
                 </span>
                 <span className={pillCls} style={{ background: 'rgba(255,255,255,0.14)' }}>
-                  <span className="text-[10px]">{t.emoji}</span>{t.name}
+                  <Emo e={t.emoji} size={1.4} />{t.name}
                 </span>
                 <span className={pillCls} style={{ background: 'rgba(0,0,0,0.35)' }}>
                   <span className="text-[10px]">{stage.emoji}</span>{stage.label}
