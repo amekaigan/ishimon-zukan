@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.102.0'; // v2.102.0: 設定画面と詳細画面（そうび・お気に入り・書き出し・削除）のアイコンをオリジナルSVGに
+const APP_VERSION = '2.103.0'; // v2.103.0: レア度の星・撮影・トロフィー・グッド/バッドをオリジナルSVGに
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -922,8 +922,8 @@ const makeIcon = (emoji, svgKey) => ({ className, strokeWidth, ...props }) =>
         React.createElement(Emo, { e: svgKey, style: /(^|\s)w-/.test(className || '') ? { width: '100%', height: '100%', verticalAlign: 'top' } : undefined }))
     : React.createElement('span', { className: (className || '') + ' inline-flex items-center justify-center', style: { fontSize: '1em', lineHeight: 1 }, ...props }, emoji);
 
-const Camera = makeIcon('📷');
-const Trophy = makeIcon('🏆');
+const Camera = makeIcon('📷', '📷');
+const Trophy = makeIcon('🏆', '🏆');
 const BookOpen = makeIcon('📖');
 const X = makeIcon('✕');
 const Loader2 = makeIcon('⏳');
@@ -1820,6 +1820,16 @@ const ISHI_ICONS = {
   '📁': ['#6E3F00', [['M5 12 L24 12 L30 19 L59 19 L59 55 L5 55Z', '#E8A33A'], ['M5 26 L59 26 L59 55 L5 55Z', '#FFC94A']]],
   '🤍': ['#6A6A86', [['M32 56 C20 46 6 36 6 22 C6 12 14 6 22 6 C27 6 30 9 32 12 C34 9 37 6 42 6 C50 6 58 12 58 22 C58 36 44 46 32 56Z', '#FFFFFF']]],
   '❤️': ['#7A1030', [['M32 56 C20 46 6 36 6 22 C6 12 14 6 22 6 C27 6 30 9 32 12 C34 9 37 6 42 6 C50 6 58 12 58 22 C58 36 44 46 32 56Z', '#FF5A7A'], ['M16 18 C16 14 19 12 22 12', 'none']]],
+  // レア度の星・撮影・勝利・評価（v2.103.0）: r1〜r5=レア度ごとの色の星
+  'r1': ['#4A4E5A', [['M32.0 5.0 L40.8 22.9 L60.5 25.7 L46.3 39.6 L49.6 59.3 L32.0 50.0 L14.4 59.3 L17.7 39.6 L3.5 25.7 L23.2 22.9Z', '#C9CED8']]],
+  'r2': ['#1E6A3A', [['M32.0 5.0 L40.8 22.9 L60.5 25.7 L46.3 39.6 L49.6 59.3 L32.0 50.0 L14.4 59.3 L17.7 39.6 L3.5 25.7 L23.2 22.9Z', '#6CD48A']]],
+  'r3': ['#0D4C8C', [['M32.0 5.0 L40.8 22.9 L60.5 25.7 L46.3 39.6 L49.6 59.3 L32.0 50.0 L14.4 59.3 L17.7 39.6 L3.5 25.7 L23.2 22.9Z', '#5AB0FF']]],
+  'r4': ['#4A1A7A', [['M32.0 5.0 L40.8 22.9 L60.5 25.7 L46.3 39.6 L49.6 59.3 L32.0 50.0 L14.4 59.3 L17.7 39.6 L3.5 25.7 L23.2 22.9Z', '#C77DFF']]],
+  'r5': ['#7A4A00', [['M32.0 5.0 L40.8 22.9 L60.5 25.7 L46.3 39.6 L49.6 59.3 L32.0 50.0 L14.4 59.3 L17.7 39.6 L3.5 25.7 L23.2 22.9Z', '#FFD23F']]],
+  '📷': ['#14306A', [['M6 19 L20 19 L25 11 L39 11 L44 19 L58 19 L58 55 L6 55Z', '#3D6FD6'], ['M32 24 A13 13 0 1 1 31.9 24Z', '#DFF3FF'], ['M32 31 A6 6 0 1 1 31.9 31Z', '#14306A'], ['M47 24 L53 24 L53 29 L47 29Z', '#FFD23F']]],
+  '🏆': ['#6E3F00', [['M17 12 C5 10 5 28 19 30', 'none'], ['M47 12 C59 10 59 28 45 30', 'none'], ['M16 5 L48 5 L48 23 C48 35 40 41 32 41 C24 41 16 35 16 23Z', '#FFC42B'], ['M32.0 13.0 L34.1 18.2 L39.6 18.5 L35.3 22.1 L36.7 27.5 L32.0 24.5 L27.3 27.5 L28.7 22.1 L24.4 18.5 L29.9 18.2Z', '#FFF3B0'], ['M28 41 L36 41 L36 49 L28 49Z', '#E0A100'], ['M18 49 L46 49 L48 59 L16 59Z', '#8A5A2B']]],
+  '👍': ['#6E3F00', [['M7 28 L18 28 L18 59 L7 59Z', '#3DA5F5'], ['M18 30 L28 16 C30 10 31 5 36 5 C41 5 42 12 40 20 L52 20 C57 20 59 25 56 28 C60 31 59 36 55 37 C58 40 57 45 53 46 C55 49 53 54 48 55 L28 57 L18 55Z', '#FFD9B8']]],
+  '👎': ['#6E3F00', [['M7 36 L18 36 L18 5 L7 5Z', '#3DA5F5'], ['M18 34 L28 48 C30 54 31 59 36 59 C41 59 42 52 40 44 L52 44 C57 44 59 39 56 36 C60 33 59 28 55 27 C58 24 57 19 53 18 C55 15 53 10 48 9 L28 7 L18 9Z', '#FFD9B8']]],
   '🔐': ['#6E3F00', [['M20 28 L20 20 C20 6 44 6 44 20 L44 28', 'none'], ['M10 28 L54 28 L54 59 L10 59Z', '#FFC42B'], ['M32 35 A5 5 0 1 1 31.9 35Z', '#6E3F00'], ['M30 42 L34 42 L35 51 L29 51Z', '#6E3F00']]],
 };
 // 使い方: <Emo e="🔥" />  大きさは周りの文字サイズに合わせる（size で倍率変更）
@@ -1833,6 +1843,15 @@ const Emo = ({ e, size = 1.2, style }) => {
       {parts.map(([d, c], i) => <path key={'b' + i} d={d} fill={c === 'none' ? 'none' : '#fff'} stroke="#fff" strokeWidth="9" strokeLinejoin="round" strokeLinecap="round" />)}
       {parts.map(([d, c], i) => <path key={'f' + i} d={d} fill={c} stroke={line} strokeWidth="3.2" strokeLinejoin="round" strokeLinecap="round" />)}
     </svg>
+  );
+};
+// レア度の星を並べる: <Stars n={mon.rarity} />（色はレア度ごと。v2.103.0）
+const Stars = ({ n, size = 1.05 }) => {
+  const k = Math.max(1, Math.min(5, Number(n) || 1));
+  return (
+    <span className="inline-flex items-center" style={{ verticalAlign: '-0.15em' }} aria-label={'★' + k}>
+      {Array.from({ length: k }, (_, i) => <Emo key={i} e={'r' + k} size={size} style={{ verticalAlign: 'baseline', marginLeft: i ? '-0.18em' : 0 }} />)}
+    </span>
   );
 };
 
@@ -2253,7 +2272,7 @@ function ItemDetailSheet({ eq, owned, equippedBy, onClose, onOpenMon }) {
                 : { color: '#fff' }}>{eq.name}</div>
             <div className="flex justify-center items-center gap-1.5 mt-1">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-black text-white" style={{ background: r.color }}>
-                <span className="text-[10px]">{'★'.repeat(eq.rarity)}</span>{r.label}
+                <span className="text-[10px]"><Stars n={eq.rarity} /></span>{r.label}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-black text-white" style={{ background: 'rgba(255,255,255,0.15)' }}>{EQUIP_LABELS[eq.type]}</span>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-black text-yellow-300" style={{ background: 'rgba(0,0,0,0.4)' }}>所持数 {owned}</span>
@@ -3058,7 +3077,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
 
         {collection.length === 0 ? (
           <div className="text-center mt-12 text-white/70 font-bold">
-            <div className="text-6xl mb-3">📷</div>
+            <div className="text-6xl mb-3"><Emo e="📷" /></div>
             まだ石モンがいません！
             <div className="text-[12px] font-bold text-yellow-200/80 mt-2">ホームの「石を撮影する」から<br/>最初の1体を 見つけよう！</div>
           </div>
@@ -3097,7 +3116,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
                     ) : (
                       <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}><span className="text-4xl"><Emo e={t.emoji} /></span></div>
                     )}
-                    <div className="absolute top-1 left-1 bg-white/90 rounded-full px-1.5 py-0.5 text-[10px] font-black" style={{ color: r.color }}>{'★'.repeat(m.rarity)}</div>
+                    <div className="absolute top-1 left-1 bg-white/90 rounded-full px-1.5 py-0.5 text-[10px] font-black" style={{ color: r.color }}><Stars n={m.rarity} /></div>
                     <div className="absolute top-1 right-1 bg-black/60 rounded-full px-1.5 py-0.5 text-[10px] font-black text-yellow-300">Lv.{m.level || 1}</div>
                     {/* お気に入りバッジ */}
                     {m.isFav && (
@@ -3367,7 +3386,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
                         </div>
                       )}
                       <div className="absolute top-1 left-1 bg-white/90 rounded-full px-1.5 py-0.5 text-[9px] font-black" style={{ color: r.color }}>
-                        {'★'.repeat(m.rarity)}
+                        <Stars n={m.rarity} />
                       </div>
                     </div>
                     <div className="p-1.5 bg-white/95">
@@ -3573,7 +3592,7 @@ function PlaceMapView({ collection, setView }) {
         )}
         {completeRegions.length > 0 && (
           <div className="mb-3 rounded-2xl p-3" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,53,0.15))', border: '1.5px solid #FFD700' }}>
-            <div className="text-yellow-200 font-black text-xs mb-1.5">🏆 地方コンプリート！</div>
+            <div className="text-yellow-200 font-black text-xs mb-1.5"><Emo e="🏆" /> 地方コンプリート！</div>
             <div className="flex flex-wrap gap-1.5">
               {completeRegions.map(r => (
                 <span key={r} className="px-2 py-1 rounded-full text-white font-black text-xs" style={{ background: 'linear-gradient(135deg,#FFD700,#FF6B35)' }}>{r} 制覇</span>
@@ -3590,7 +3609,7 @@ function PlaceMapView({ collection, setView }) {
             return (
               <div key={region} className="rounded-2xl p-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1.5px solid ' + (done ? '#FFD700' : 'rgba(255,255,255,0.12)') }}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-white font-black text-sm">{done ? '🏆 ' : ''}{region}</span>
+                  <span className="text-white font-black text-sm">{done ? <><Emo e="🏆" /> </> : ''}{region}</span>
                   <span className="text-cyan-300 font-black text-xs">{got.length}/{list.length}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -5857,7 +5876,7 @@ function IshimonZukan() {
             boxShadow: '0 0 60px rgba(255,215,0,0.6)',
           }}>
           <div className="text-center mb-3">
-            <div className="text-5xl mb-1">🏆</div>
+            <div className="text-5xl mb-1"><Emo e="🏆" /></div>
             <div className="text-yellow-300 text-[10px] font-black tracking-widest">NEW TITLE</div>
             <div className="text-2xl font-black text-white">称号を獲得！</div>
           </div>
@@ -5982,7 +6001,7 @@ function IshimonZukan() {
                           {eq.name}
                           {owned > 0 && <span className="text-[10px] font-black text-yellow-300 bg-black/40 rounded-full px-1.5 py-0.5">所持 {owned}</span>}
                         </div>
-                        <div className="text-xs font-bold" style={{ color: r.color }}>{'★'.repeat(eq.rarity)} {r.label}</div>
+                        <div className="text-xs font-bold" style={{ color: r.color }}><Stars n={eq.rarity} /> {r.label}</div>
                         <div className="text-xs text-white/80 font-bold">{boostText(eq.boost)}</div>
                       </div>
                       <span className="text-white/50 font-black text-lg flex-shrink-0">›</span>
@@ -6161,7 +6180,7 @@ function IshimonZukan() {
                             <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full text-white"
                               style={{ background: 'rgba(0,0,0,0.4)' }}>{slotLabel}</span>
                           </div>
-                          <div className="text-xs font-bold" style={{ color: r.color }}>{'★'.repeat(eq.rarity)} {r.label}</div>
+                          <div className="text-xs font-bold" style={{ color: r.color }}><Stars n={eq.rarity} /> {r.label}</div>
                           <div className="text-xs text-white/80 font-bold mt-0.5">
                             {eq.boost.kogeki ? `こうげき +${eq.boost.kogeki} ` : ''}
                             {eq.boost.bougyo ? `ぼうぎょ +${eq.boost.bougyo} ` : ''}
@@ -6519,7 +6538,7 @@ function IshimonZukan() {
                               {res.data.name}
                             </div>
                             <div className="text-[8px] font-black" style={{ color: rc.bg }}>
-                              {'★'.repeat(res.rarity)}
+                              <Stars n={res.rarity} />
                             </div>
                             {res.rarity >= 4 && (
                               <div className="text-[8px] font-black text-yellow-300">{rc.label}</div>
@@ -7684,7 +7703,7 @@ function IshimonZukan() {
         <div className="min-h-full flex items-start justify-center pt-6" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
           <div className="w-full max-w-sm rounded-3xl p-5 text-center"
             style={{ background: 'linear-gradient(180deg, #2a1a3a 0%, #1a0a05 100%)', border: `3px solid ${titleColor}`, boxShadow: `0 0 50px ${titleColor}80` }}>
-            <div className="text-5xl mb-2">{isWin ? '🏆' : isDraw ? '🤝' : '💔'}</div>
+            <div className="text-5xl mb-2">{isWin ? <Emo e="🏆" /> : isDraw ? '🤝' : '💔'}</div>
             <div className="text-4xl font-black mb-3" style={{ color: titleColor, textShadow: `0 0 20px ${titleColor}` }}>{titleText}</div>
             <div className="bg-white/10 rounded-2xl p-3 mb-3" style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
               <div className="text-yellow-300 text-[10px] font-black tracking-widest mb-1">経験値</div>
@@ -7762,7 +7781,7 @@ function IshimonZukan() {
             )}
             <div className="flex-1 min-w-0">
               <div className="text-white font-black text-base truncate" style={{ textShadow: '0 2px 0 rgba(0,0,0,0.3)' }}>{mon.name}</div>
-              <div className="text-white/80 text-xs font-bold">{'★'.repeat(mon.rarity)} / Lv.{mon.level || 1}</div>
+              <div className="text-white/80 text-xs font-bold"><Stars n={mon.rarity} /> / Lv.{mon.level || 1}</div>
             </div>
           </div>
           {/* メニュー項目 */}
@@ -7833,7 +7852,7 @@ function IshimonZukan() {
           <div className="text-white text-xl font-black mb-2">本当に 削除しますか？</div>
           <div className="text-yellow-300 text-lg font-black mb-1">{mon.name}</div>
           <div className="text-white/70 text-xs font-bold mb-4">
-            {'★'.repeat(mon.rarity)} / Lv.{mon.level || 1}
+            <Stars n={mon.rarity} /> / Lv.{mon.level || 1}
           </div>
           <div className="rounded-2xl px-3 py-3 mb-4"
             style={{ background: 'rgba(199,62,29,0.15)', border: '1.5px solid rgba(199,62,29,0.5)' }}>
@@ -8274,7 +8293,7 @@ function IshimonZukan() {
                 {isOpen ? (
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div>
-                      <div className="text-white/50 text-[9px] font-black mb-1">📷 元写真</div>
+                      <div className="text-white/50 text-[9px] font-black mb-1"><Emo e="📷" /> 元写真</div>
                       {imgs && imgs.orig ? (
                         <img src={imgs.orig} className="w-full aspect-square object-cover rounded-lg"
                           style={{ border: '1px solid rgba(255,255,255,0.2)' }} />
@@ -8314,7 +8333,7 @@ function IshimonZukan() {
                       style={{ background: t.bg, color: 'white' }}>
                       <Emo e={t.emoji} /> {mon.type}
                     </span>
-                    <span className="text-yellow-300 font-black">{'★'.repeat(mon.rarity)}</span>
+                    <span className="text-yellow-300 font-black"><Stars n={mon.rarity} /></span>
                     <span className="text-white/60 font-bold">だんかい{mon.stage}</span>
                     <span className="text-white/60 font-bold">Lv.{mon.level || 1}</span>
                   </div>
@@ -8929,7 +8948,7 @@ function IshimonZukan() {
               </div>
               <div className={`flex flex-wrap justify-center items-center gap-1.5 mb-3 opacity-90 ${bAnim('im-rise', 600).className || ''}`} style={bAnim('im-rise', 600).style}>
                 <span className={pillCls} style={{ background: r.color }}>
-                  <span className="text-[10px]">{'★'.repeat(mon.rarity)}</span>{r.label}
+                  <span className="text-[10px]"><Stars n={mon.rarity} /></span>{r.label}
                 </span>
                 <span className={pillCls} style={{ background: 'rgba(255,255,255,0.14)' }}>
                   <Emo e={t.emoji} size={1.4} />{t.name}
@@ -9027,7 +9046,7 @@ function IshimonZukan() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[13px] font-black" style={{ color: '#9b6dff' }}>{h.name}</span>
                           <span className="text-[10px] font-bold text-gray-500">
-                            {'★'.repeat(h.rarity)} / だんかい{h.stage}
+                            <Stars n={h.rarity} /> / だんかい{h.stage}
                           </span>
                         </div>
                       </div>
@@ -9043,7 +9062,7 @@ function IshimonZukan() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[13px] font-black" style={{ color: '#FF6B35' }}>{mon.name}</span>
                       <span className="text-[10px] font-bold text-gray-500">
-                        {'★'.repeat(mon.rarity)} / だんかい{mon.stage}
+                        <Stars n={mon.rarity} /> / だんかい{mon.stage}
                       </span>
                       <span className="text-[10px] font-black" style={{ color: '#C71F8E' }}>（いま）</span>
                     </div>
@@ -9144,7 +9163,7 @@ function IshimonZukan() {
                 )}
                 {mon.originalPhoto && mon.originalPhoto !== mon.imageDataUrl && (
                   <div className="mt-2">
-                    <div className="text-gray-600 text-[10px] font-bold mb-1.5">📷 出会った時の石</div>
+                    <div className="text-gray-600 text-[10px] font-bold mb-1.5"><Emo e="📷" /> 出会った時の石</div>
                     <div className="w-full rounded-lg overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.15)', aspectRatio: '4/3' }}>
                       <img src={mon.originalPhoto}
                         className="w-full h-full object-cover block" />
@@ -9235,14 +9254,14 @@ function IshimonZukan() {
                       <button onClick={() => setTaste('up')}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl active:scale-95"
                         style={{ background: taste === 'up' ? 'rgba(82,183,136,0.3)' : 'rgba(255,255,255,0.08)', border: `1.5px solid ${taste === 'up' ? '#52B788' : 'rgba(255,255,255,0.2)'}` }}>
-                        <span className="text-lg">👍</span>
+                        <span className="text-lg"><Emo e="👍" /></span>
                         <span className="text-white font-black text-xs">テイストGood</span>
                         {taste === 'up' && <span className="text-[9px] font-bold text-green-300">記録中</span>}
                       </button>
                       <button onClick={() => setTaste('down')}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl active:scale-95"
                         style={{ background: taste === 'down' ? 'rgba(255,107,53,0.3)' : 'rgba(255,255,255,0.08)', border: `1.5px solid ${taste === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.2)'}` }}>
-                        <span className="text-lg">👎</span>
+                        <span className="text-lg"><Emo e="👎" /></span>
                         <span className="text-white font-black text-xs">テイストNG</span>
                         {taste === 'down' && <span className="text-[9px] font-bold text-orange-300">記録中</span>}
                       </button>
@@ -9352,7 +9371,7 @@ function IshimonZukan() {
       <h2 className="text-3xl font-black text-white text-center mb-1" style={{ textShadow: '0 4px 0 rgba(0,0,0,0.3)' }}>ランキング</h2>
       <p className="text-center text-yellow-200 text-sm font-bold mb-6">強い順に表示！</p>
       {ranked.length === 0 ? (
-        <div className="text-center mt-12 text-white/70 font-bold"><div className="text-6xl mb-3">🏆</div>石モンを 集めよう！</div>
+        <div className="text-center mt-12 text-white/70 font-bold"><div className="text-6xl mb-3"><Emo e="🏆" /></div>石モンを 集めよう！</div>
       ) : (
         <div className="space-y-2">
           {ranked.map((m, i) => {
@@ -9376,7 +9395,7 @@ function IshimonZukan() {
                   <div className="flex items-center gap-1">
                     <span className="text-xs"><Emo e={t.emoji} /></span>
                     <span className="text-xs font-black text-yellow-200">Lv.{m.level || 1}</span>
-                    <span className="text-xs font-black text-white">{'★'.repeat(m.rarity)}</span>
+                    <span className="text-xs font-black text-white"><Stars n={m.rarity} /></span>
                   </div>
                   <div className="font-black text-white text-lg leading-tight" style={{ textShadow: `0 2px 0 ${t.dark}` }}>{m.name}</div>
                   <div className="text-xs font-bold text-white/90">総合 {total}</div>
@@ -9435,7 +9454,7 @@ function IshimonZukan() {
                 )}
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
                   style={{ background: '#FFD700', border: '2px solid #1a3a7c', fontSize: '10px' }}>
-                  📷
+                  <Emo e="📷" />
                 </div>
               </label>
               <input id="avatar-upload" type="file" accept="image/*" className="hidden"
@@ -9715,12 +9734,12 @@ function IshimonZukan() {
         {/* ===== 称号 ===== */}
         <div className="mt-4 mb-2">
           <div className="text-yellow-300 text-xs font-black tracking-widest mb-2 px-1">
-            🏆 称号 <span className="text-white/60 font-bold">({(player.titles || []).length} / {TITLES.length})</span>
+            <Emo e="🏆" /> 称号 <span className="text-white/60 font-bold">({(player.titles || []).length} / {TITLES.length})</span>
           </div>
           {(player.titles || []).length === 0 ? (
             <div className="rounded-2xl p-4 text-center"
               style={{ background: 'rgba(0,0,0,0.3)', border: '2px dashed rgba(255,255,255,0.3)' }}>
-              <div className="text-4xl mb-1 opacity-50">🏆</div>
+              <div className="text-4xl mb-1 opacity-50"><Emo e="🏆" /></div>
               <div className="text-white/80 font-black text-sm mb-1">まだ称号がありません</div>
               <div className="text-white/60 text-[11px] font-bold">石モンを集めたり、バトルで勝つと獲得できる！</div>
             </div>
@@ -10680,7 +10699,7 @@ function IshimonZukan() {
                         <div className="text-white font-black text-sm">
                           テイスト分析
                           <span className="text-white/50 font-bold text-[11px] ml-2">
-                            👍{upList.length} / 👎{downList.length}
+                            <Emo e="👍" />{upList.length} / <Emo e="👎" />{downList.length}
                           </span>
                         </div>
                         <div className="text-white/70 text-base" style={{
@@ -10696,12 +10715,12 @@ function IshimonZukan() {
                             <button onClick={() => switchTab('up')}
                               className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
                               style={{ background: tasteTab === 'up' ? 'rgba(82,183,136,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                              👍 Good ({upList.length})
+                              <Emo e="👍" /> Good ({upList.length})
                             </button>
                             <button onClick={() => switchTab('down')}
                               className="flex-1 py-1.5 rounded-lg font-black text-xs active:scale-95"
                               style={{ background: tasteTab === 'down' ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${tasteTab === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                              👎 NG ({downList.length})
+                              <Emo e="👎" /> NG ({downList.length})
                             </button>
                           </div>
                           {list.length === 0 ? (
@@ -10754,12 +10773,12 @@ function IshimonZukan() {
                                       <button onClick={() => changeTaste(m.id, 'up')}
                                         className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
                                         style={{ background: m.taste === 'up' ? 'rgba(82,183,136,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'up' ? '#52B788' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                                        👍 Good
+                                        <Emo e="👍" /> Good
                                       </button>
                                       <button onClick={() => changeTaste(m.id, 'down')}
                                         className="flex-1 py-1.5 rounded-lg font-black text-[11px] active:scale-95"
                                         style={{ background: m.taste === 'down' ? 'rgba(255,107,53,0.3)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${m.taste === 'down' ? '#FF6B35' : 'rgba(255,255,255,0.15)'}`, color: 'white' }}>
-                                        👎 NG
+                                        <Emo e="👎" /> NG
                                       </button>
                                     </div>
                                   </div>
