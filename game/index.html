@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.97.0'; // v2.97.0: 属性アイコンをオリジナルSVGに（第1弾）
+const APP_VERSION = '2.98.0'; // v2.98.0: 属性アイコンのSVG化を全画面に（シェアカード除く）＋隠し4属性を追加
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1771,6 +1771,10 @@ const ISHI_ICONS = {
   '☁️': ['#2F6F65', [['M18 47C9 47 6 39 10 34C12 28 19 27 22 29C24 19 34 15 41 21C46 16 57 21 54 31C61 33 60 47 50 47Z', '#BFE9E2'], ['M20 37C20 33 23 31 26 32', 'none']]],
   '🐉': ['#3A0868', [['M22 23L15 6L31 20Z', '#E0C8FF'], ['M33 20L36 5L42 22Z', '#E0C8FF'], ['M11 41C11 28 20 20 32 20L45 22L57 31C59 33 58 37 55 37L45 39C43 47 36 53 26 53C17 53 11 48 11 41Z', '#8A44D6'], ['M45 39L36 41L44 33', 'none'], ['M36 24C40 24 43 27 43 30C40 31 36 29 36 24Z', '#FFE066'], ['M53 32L50 33', 'none']]],
   '✨': ['#8A1E52', [['M30 6C32 24 40 31 57 33C40 35 32 42 30 60C28 42 20 35 4 33C20 31 28 24 30 6Z', '#FF6FB5'], ['M30 18C31 27 34 31 42 33C34 34 31 38 30 47C29 38 26 34 18 33C26 31 29 27 30 18Z', '#FFD6EA'], ['M50 5C51 10 53 12 58 13C53 14 51 16 50 21C49 16 47 14 42 13C47 12 49 10 50 5Z', '#FFE066']]],
+  '❄️': ['#1F5C8F', [['M32.0 4.0 L38.5 20.7 L56.2 18.0 L45.0 32.0 L56.2 46.0 L38.5 43.3 L32.0 60.0 L25.5 43.3 L7.8 46.0 L19.0 32.0 L7.8 18.0 L25.5 20.7Z', '#BFEFFF'], ['M32 32L32.0 12.0 M32 32L49.3 22.0 M32 32L49.3 42.0 M32 32L32.0 52.0 M32 32L14.7 42.0 M32 32L14.7 22.0', 'none']]],
+  '🌟': ['#8A5A00', [['M32.0 5.0 L39.6 23.5 L59.6 25.0 L44.4 38.0 L49.0 57.5 L32.0 47.0 L15.0 57.5 L19.6 38.0 L4.4 25.0 L24.4 23.5Z', '#FFD23F'], ['M32.0 21.0 L35.5 29.1 L44.4 30.0 L37.7 35.9 L39.6 44.5 L32.0 40.0 L24.4 44.5 L26.3 35.9 L19.6 30.0 L28.5 29.1Z', '#FFF3B0']]],
+  '🌙': ['#2A1E5C', [['M38 6A27 27 0 1 0 59 42A21 21 0 1 1 38 6Z', '#7A68C8'], ['M52.0 7.0 L53.8 12.2 L59.0 14.0 L53.8 15.8 L52.0 21.0 L50.2 15.8 L45.0 14.0 L50.2 12.2Z', '#FFE066']]],
+  '🦴': ['#5A3A1A', [['M21.1 37.3 L37.3 21.1 A7 7 0 1 1 46.6 17.4 A7 7 0 1 1 42.9 26.7 L26.7 42.9 A7 7 0 1 1 17.4 46.6 A7 7 0 1 1 21.1 37.3Z', '#F4E6C8']]],
 };
 // 使い方: <Emo e="🔥" />  大きさは周りの文字サイズに合わせる（size で倍率変更）
 const Emo = ({ e, size = 1.2, style }) => {
@@ -2235,7 +2239,7 @@ function ItemDetailSheet({ eq, owned, equippedBy, onClose, onOpenMon }) {
                     <button key={m.id} onClick={() => onOpenMon && onOpenMon(m)}
                       className="flex items-center gap-1 rounded-full px-2 py-1 active:scale-95 transition-transform"
                       style={{ background: `linear-gradient(135deg, ${t.bg}, ${t.dark})`, border: '1px solid rgba(255,255,255,0.4)' }}>
-                      <span className="text-xs">{t.emoji}</span>
+                      <span className="text-xs"><Emo e={t.emoji} /></span>
                       <span className="text-[11px] font-black text-white">{m.name}</span>
                     </button>
                   );
@@ -3045,7 +3049,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
                     ) : m.imageDataUrl ? (
                       <MonThumb mon={m} className="w-full h-24 object-cover" />
                     ) : (
-                      <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}><span className="text-4xl">{t.emoji}</span></div>
+                      <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}><span className="text-4xl"><Emo e={t.emoji} /></span></div>
                     )}
                     <div className="absolute top-1 left-1 bg-white/90 rounded-full px-1.5 py-0.5 text-[10px] font-black" style={{ color: r.color }}>{'★'.repeat(m.rarity)}</div>
                     <div className="absolute top-1 right-1 bg-black/60 rounded-full px-1.5 py-0.5 text-[10px] font-black text-yellow-300">Lv.{m.level || 1}</div>
@@ -3066,7 +3070,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
                     <div className="flex items-center justify-between mt-1 gap-1">
                       <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-black text-[10px] text-white"
                         style={{ background: `linear-gradient(135deg, ${t.bg}, ${t.dark})`, border: '1.5px solid white', boxShadow: `0 1px 0 ${t.dark}`, textShadow: '0 1px 0 rgba(0,0,0,0.25)' }}>
-                        <span className="text-sm leading-none">{t.emoji}</span>
+                        <span className="text-sm leading-none"><Emo e={t.emoji} /></span>
                         <span className="leading-none">{t.name}</span>
                       </span>
                       {m.evolveTo && m.stage < 3 && <span className="text-[9px] font-black flex-shrink-0" style={{ color: '#FF6B35' }}>進化</span>}
@@ -3313,7 +3317,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
                         <MonThumb mon={m} className="w-full h-24 object-cover" />
                       ) : (
                         <div className="w-full h-24 flex items-center justify-center" style={{ background: `${t.dark}33` }}>
-                          <span className="text-4xl">{t.emoji}</span>
+                          <span className="text-4xl"><Emo e={t.emoji} /></span>
                         </div>
                       )}
                       <div className="absolute top-1 left-1 bg-white/90 rounded-full px-1.5 py-0.5 text-[9px] font-black" style={{ color: r.color }}>
@@ -6131,7 +6135,7 @@ function IshimonZukan() {
                               <button key={m.id} onClick={() => { setShowInventory(false); setSelected(m); }}
                                 className="flex items-center gap-1 rounded-full px-2 py-0.5 active:scale-95"
                                 style={{ background: `linear-gradient(135deg, ${t.bg}, ${t.dark})`, border: '1px solid rgba(255,255,255,0.4)' }}>
-                                <span className="text-xs">{t.emoji}</span>
+                                <span className="text-xs"><Emo e={t.emoji} /></span>
                                 <span className="text-[10px] font-black text-white">{m.name}</span>
                               </button>
                             );
@@ -6460,7 +6464,7 @@ function IshimonZukan() {
                           <img src={res.data.imageDataUrl || collection.find(c => c.id === res.data.id)?.imageDataUrl} alt={res.data.name}
                             className="absolute inset-0 w-full h-full object-cover" />
                         ) : (
-                          <div className="text-2xl z-10">{t ? t.emoji : (EQUIPMENT[res.data.id] ? <EquipIcon eq={EQUIPMENT[res.data.id]} size={48} /> : '⚔️')}</div>
+                          <div className="text-2xl z-10">{t ? <Emo e={t.emoji} /> : (EQUIPMENT[res.data.id] ? <EquipIcon eq={EQUIPMENT[res.data.id]} size={48} /> : '⚔️')}</div>
                         )}
                         <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 z-10"
                           style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
@@ -7357,12 +7361,12 @@ function IshimonZukan() {
                     <MonThumb mon={m} className="w-14 h-14 rounded-xl object-cover" style={{ border: '2px solid white' }} />
                   ) : (
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: '2px solid white' }}>
-                      <span className="text-3xl">{t.emoji}</span>
+                      <span className="text-3xl"><Emo e={t.emoji} /></span>
                     </div>
                   )}
                   <div className="flex-1 text-left">
                     <div className="font-black text-white text-lg leading-tight" style={{ textShadow: `0 2px 0 ${t.dark}` }}>{m.name}</div>
-                    <div className="text-xs font-bold text-white/95">Lv.{m.level || 1} ・ 総合 {total} ・ {t.emoji}{t.name}</div>
+                    <div className="text-xs font-bold text-white/95">Lv.{m.level || 1} ・ 総合 {total} ・ <Emo e={t.emoji} />{t.name}</div>
                   </div>
                   <Swords className="w-5 h-5 text-white flex-shrink-0" />
                 </button>
@@ -7495,7 +7499,7 @@ function IshimonZukan() {
                     className="w-24 h-24 rounded-xl object-cover"
                     style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.7)' }} />
                 ) : (
-                  <div className="text-6xl" style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))' }}>{myT.emoji}</div>
+                  <div className="text-6xl" style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8))' }}><Emo e={myT.emoji} /></div>
                 )}
               </div>
               <div className="px-2 py-0.5 rounded-full text-[10px] font-black text-white"
@@ -7520,7 +7524,7 @@ function IshimonZukan() {
                 ) : (
                   <div className="text-6xl"
                     style={{ filter: 'hue-rotate(160deg) saturate(1.5) drop-shadow(0 8px 16px rgba(180,0,0,0.7))' }}>
-                    {enemyT.emoji}
+                    <Emo e={enemyT.emoji} />
                   </div>
                 )}
               </div>
@@ -7707,7 +7711,7 @@ function IshimonZukan() {
               <MonThumb mon={mon} className="w-16 h-16 rounded-xl object-cover" style={{ border: `2px solid ${r.color}` }} />
             ) : (
               <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: `2px solid ${r.color}` }}>
-                <span className="text-3xl">{t.emoji}</span>
+                <span className="text-3xl"><Emo e={t.emoji} /></span>
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -9320,11 +9324,11 @@ function IshimonZukan() {
                 {m.imageDataUrl ? (
                   <MonThumb mon={m} className="w-16 h-16 rounded-xl object-cover" style={{ border: '3px solid white' }} />
                 ) : (
-                  <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: '3px solid white' }}><span className="text-3xl">{t.emoji}</span></div>
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `${t.dark}66`, border: '3px solid white' }}><span className="text-3xl"><Emo e={t.emoji} /></span></div>
                 )}
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs">{t.emoji}</span>
+                    <span className="text-xs"><Emo e={t.emoji} /></span>
                     <span className="text-xs font-black text-yellow-200">Lv.{m.level || 1}</span>
                     <span className="text-xs font-black text-white">{'★'.repeat(m.rarity)}</span>
                   </div>
@@ -9575,7 +9579,7 @@ function IshimonZukan() {
                                   border: `1px solid ${cnt > 0 ? t.light : 'rgba(255,255,255,0.1)'}`,
                                   opacity: cnt > 0 ? 1 : 0.45,
                                 }}>
-                                <span className="text-base flex-shrink-0">{t.emoji}</span>
+                                <span className="text-base flex-shrink-0"><Emo e={t.emoji} /></span>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between mb-0.5">
                                     <span className="text-white text-[9px] font-bold">{t.name}</span>
@@ -10548,7 +10552,7 @@ function IshimonZukan() {
                       <button key={tk} onClick={() => setTestType(tk)}
                         className="px-2 py-1 rounded-lg text-xs font-black active:scale-95"
                         style={{ background: testType === tk ? 'rgba(255,224,102,0.25)' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${testType === tk ? '#FFD700' : 'rgba(255,255,255,0.15)'}`, color: '#fff' }}>
-                        {TYPES[tk].emoji}{TYPES[tk].name}
+                        <Emo e={TYPES[tk].emoji} />{TYPES[tk].name}
                       </button>
                     ))}
                   </div>
