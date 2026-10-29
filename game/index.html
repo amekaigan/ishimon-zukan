@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.100.0'; // v2.100.0: 段階アイコン（ベイビー・チャンピオン・アルティメット）と生成中のたまごをオリジナルSVGに
+const APP_VERSION = '2.101.0'; // v2.101.0: 通貨（きらめき石・石のかけら）とアイテム・ショップ・買う・売るのアイコンをオリジナルSVGに
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -915,8 +915,12 @@ const FIREBASE_CONFIG = {
 };
 
 // lucide-react のアイコンを絵文字で代替
-const makeIcon = (emoji) => ({ className, strokeWidth, ...props }) =>
-  React.createElement('span', { className: (className || '') + ' inline-flex items-center justify-center', style: { fontSize: '1em', lineHeight: 1 }, ...props }, emoji);
+const makeIcon = (emoji, svgKey) => ({ className, strokeWidth, ...props }) =>
+  svgKey
+    // v2.101.0: svgKeyがあればオリジナルSVG（ISHI_ICONS）で表示。w-4などの大きさ指定があれば枠いっぱいに
+    ? React.createElement('span', { className: (className || '') + ' inline-flex items-center justify-center', style: { lineHeight: 1 }, ...props },
+        React.createElement(Emo, { e: svgKey, style: /(^|\s)w-/.test(className || '') ? { width: '100%', height: '100%', verticalAlign: 'top' } : undefined }))
+    : React.createElement('span', { className: (className || '') + ' inline-flex items-center justify-center', style: { fontSize: '1em', lineHeight: 1 }, ...props }, emoji);
 
 const Camera = makeIcon('📷');
 const Trophy = makeIcon('🏆');
@@ -932,11 +936,11 @@ const Sparkles = makeIcon('✨');
 const ArrowUp = makeIcon('⬆️');
 const Calendar = makeIcon('📅');
 const Gift = makeIcon('🎁');
-const ShoppingBag = makeIcon('🛍️');
+const ShoppingBag = makeIcon('🛍️', 'shop');
 const Check = makeIcon('✓');
 const Star = makeIcon('★');
 const User = makeIcon('👤');
-const Gem = makeIcon('💎');
+const Gem = makeIcon('💎', 'gem');
 const PackageOpen = makeIcon('📦');
 const Plus = makeIcon('+');
 // LogIn removed
@@ -1786,6 +1790,13 @@ const ISHI_ICONS = {
   'baby': ['#6B4F1D', [['M13 40 C13 20 21 6 32 6 C43 6 51 20 51 40Z', '#C9A27A'], ['M25 18.8 A2.2 2.2 0 1 1 24.9 18.8Z', '#6B4F1D'], ['M39 18.8 A2.2 2.2 0 1 1 38.9 18.8Z', '#6B4F1D'], ['M29 27 Q32 30 35 27', 'none'], ['M8 38 L15 32 L21 38 L27 31 L33 38 L39 31 L45 38 L51 32 L56 38 C56 52 46 60 32 60 C18 60 8 52 8 38Z', '#FFF3DA'], ['M20 45 A3 3 0 1 1 19.9 45Z', '#8AD0C0'], ['M42 45 A4 4 0 1 1 41.9 45Z', '#8AD0C0']]],
   'champion': ['#7A4A00', [['M20 36 L11 59 L21 55 L26 62 L33 42Z', '#3DA5F5'], ['M44 36 L53 59 L43 55 L38 62 L31 42Z', '#FF5A7A'], ['M32 4 A21 21 0 1 1 31.9 4Z', '#FFC42B'], ['M32 10 A15 15 0 1 1 31.9 10Z', '#FFD23F'], ['M32.0 14.0 L34.9 22.0 L43.4 22.3 L36.8 27.5 L39.1 35.7 L32.0 31.0 L24.9 35.7 L27.2 27.5 L20.6 22.3 L29.1 22.0Z', '#FFF3B0']]],
   'ultimate': ['#6E3F00', [['M10 46 L5 17 L20 31 L32 8 L44 31 L59 17 L54 46Z', '#FFD23F'], ['M9 45 L55 45 L55 57 L9 57Z', '#FFC42B'], ['M5 11 A4 4 0 1 1 4.9 11Z', '#FF5A7A'], ['M32 2.5 A4.5 4.5 0 1 1 31.9 2.5Z', '#3DA5F5'], ['M59 11 A4 4 0 1 1 58.9 11Z', '#FF5A7A'], ['M32 46 L37 51 L32 56 L27 51Z', '#3DA5F5'], ['M17 48.5 A2.5 2.5 0 1 1 16.9 48.5Z', '#FF5A7A'], ['M47 48.5 A2.5 2.5 0 1 1 46.9 48.5Z', '#FF5A7A']]],
+  // 通貨・お店（v2.101.0）: gem=きらめき石／kakera=石のかけら（石貨）／item=アイテム／shop=ショップ／buy=買う／sell=売る
+  'gem': ['#0E4C7A', [['M8 24 L18 10 L46 10 L56 24 L32 58Z', '#5CCBFF'], ['M8 24 L56 24', 'none'], ['M18 10 L24 24 L32 10 L40 24 L46 10', 'none'], ['M24 24 L32 58 L40 24', '#9FE3FF'], ['M18 10 L32 10 L24 24 L8 24Z', '#C6F0FF'], ['M52.0 1.0 L53.7 6.3 L59.0 8.0 L53.7 9.7 L52.0 15.0 L50.3 9.7 L45.0 8.0 L50.3 6.3Z', '#FFFFFF']]],
+  'kakera': ['#4A3E2C', [['M35.0 10.0 L47.0 14.2 L57.1 22.2 L58.5 35.0 L56.7 47.5 L48.0 57.5 L35.0 59.0 L22.5 56.7 L15.1 46.5 L9.5 35.0 L13.8 22.7 L22.2 12.9Z', '#8E8676'], ['M30.0 5.0 L42.0 9.2 L52.1 17.2 L53.5 30.0 L51.7 42.5 L43.0 52.5 L30.0 54.0 L17.5 51.7 L10.1 41.5 L4.5 30.0 L8.8 17.7 L17.2 7.9Z', '#CFC6B4'], ['M30 22.5 A7.5 7.5 0 1 1 29.9 22.5Z', '#4A443A'], ['M14 18 L17 17', 'none'], ['M43 46 L46 44', 'none'], ['M12 40 L14 43', 'none'], ['M46 18 L48 21', 'none']]],
+  'item': ['#6A1E0E', [['M16 22 C16 14 22 10 32 10 C42 10 48 14 48 22 L50 54 C50 58 47 60 44 60 L20 60 C17 60 14 58 14 54Z', '#E8553A'], ['M24 12 C24 4 40 4 40 12', 'none'], ['M20 38 L44 38 L44 52 L20 52Z', '#FF8A5C'], ['M20 38 L44 38 L44 42 L20 42Z', '#B83A22'], ['M30 44 L34 44 L34 48 L30 48Z', '#FFC42B'], ['M14 30 L8 32 L8 50 L14 52', 'none'], ['M50 30 L56 32 L56 50 L50 52', 'none']]],
+  'shop': ['#3A1060', [['M10 30 L54 30 L54 58 L10 58Z', '#FFF0D6'], ['M24 40 L40 40 L40 58 L24 58Z', '#9A6C3A'], ['M6 18 L58 18 L58 28 C58 33 52 33 50 28 C48 33 41 33 39 28 C37 33 27 33 25 28 C23 33 16 33 14 28 C12 33 6 33 6 28Z', '#C77DFF'], ['M17 18 L14 28', 'none'], ['M32 18 L32 28', 'none'], ['M47 18 L50 28', 'none'], ['M8 8 L56 8 L58 18 L6 18Z', '#FF5A7A']]],
+  'buy': ['#5A3800', [['M4 10 L13 10 L19 42 L50 42', 'none'], ['M15 18 L58 18 L53 36 L18 36Z', '#FFD23F'], ['M28 18 L29 36', 'none'], ['M42 18 L41 36', 'none'], ['M23 46 A5 5 0 1 1 22.9 46Z', '#8A5A2B'], ['M46 46 A5 5 0 1 1 45.9 46Z', '#8A5A2B']]],
+  'sell': ['#4A2A00', [['M22 18 C10 26 8 40 10 48 C12 56 20 60 32 60 C44 60 52 56 54 48 C56 40 54 26 42 18Z', '#E2B56B'], ['M22 18 L42 18 L46 10 C40 12 36 8 32 8 C28 8 24 12 18 10Z', '#C8954A'], ['M21 18 L43 18', 'none'], ['M24 38 L28 32 L36 32 L40 38 L32 50Z', '#5CCBFF'], ['M24 38 L40 38', 'none']]],
 };
 // 使い方: <Emo e="🔥" />  大きさは周りの文字サイズに合わせる（size で倍率変更）
 const Emo = ({ e, size = 1.2, style }) => {
@@ -2883,7 +2894,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
                     <button onClick={() => setShowCapacityExpand(true)}
                       className="py-2 rounded-xl text-white font-black text-xs active:scale-95"
                       style={{ background: 'linear-gradient(135deg, #FFAA00, #FF6B00)', border: '1.5px solid #FFD700' }}>
-                      💎 拡張する
+                      <Emo e="gem" /> 拡張する
                     </button>
                   </div>
                 </div>
@@ -3252,7 +3263,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
                   </div>
                   {/* 右: 石のかけら残数 */}
                   <div className="flex flex-col items-center flex-shrink-0 gap-0.5">
-                    <span className="text-2xl leading-none">🪨</span>
+                    <span className="text-2xl leading-none"><Emo e="kakera" /></span>
                     <span className="text-[9px] font-bold leading-none text-white/80">石のかけら</span>
                     <span className={`text-xs font-black leading-none ${canCapture ? 'text-yellow-200' : 'text-red-300'}`}>
                       {frags}/{CAPTURE_COST}
@@ -3276,7 +3287,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
           <button onClick={() => { setShowShop(true); document.body.style.overflow='hidden'; }}
             className="p-3 rounded-2xl text-white active:scale-95 transition-transform flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 4px 0 #4A0E78', border: '2px solid #E0AEFF' }}>
-            <span className="text-2xl flex-shrink-0">🛍️</span>
+            <span className="text-2xl flex-shrink-0"><Emo e="shop" size={1.3} /></span>
             <div className="flex-1 text-left min-w-0">
               <div className="font-black text-sm leading-tight">ショップ</div>
               <div className="text-[10px] font-bold opacity-90 leading-tight">アイテムを購入</div>
@@ -3285,7 +3296,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
           <button onClick={() => { setShowInventory(true); document.body.style.overflow='hidden'; }}
             className="p-3 rounded-2xl text-white active:scale-95 transition-transform flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg, #FFB347, #E67E22)', boxShadow: '0 4px 0 #8B4513', border: '2px solid #FFD699' }}>
-            <span className="text-2xl flex-shrink-0">🎒</span>
+            <span className="text-2xl flex-shrink-0"><Emo e="item" size={1.3} /></span>
             <div className="flex-1 text-left min-w-0">
               <div className="font-black text-sm leading-tight">アイテム</div>
               <div className="text-[10px] font-bold opacity-90 leading-tight">所持{player.inventory.length}個</div>
@@ -5710,7 +5721,7 @@ function IshimonZukan() {
               <div className="text-[10px] font-bold opacity-70 mt-0.5">貯めておいていつでも使える！</div>
             </div>
             <div className="bg-white/10 rounded-2xl p-2.5 mb-3 text-white" style={{ border: '1px solid #8B6914' }}>
-              <div className="text-xs font-bold opacity-80">石のかけら 🪨</div>
+              <div className="text-xs font-bold opacity-80">石のかけら <Emo e="kakera" /></div>
               <div className="text-2xl font-black">+{fragmentBonus || 5}個！</div>
               <div className="text-[10px] font-bold opacity-70 mt-0.5">撮影・進化に使おう！</div>
             </div>
@@ -5902,13 +5913,13 @@ function IshimonZukan() {
 
             {/* 買う / 売る 切替 */}
             <div className="flex gap-1 p-1 rounded-2xl mb-3" style={{ background: 'rgba(0,0,0,0.3)' }}>
-              {[['buy', '🛒 買う'], ['sell', '💰 売る']].map(([m, label]) => (
+              {[['buy', 'buy', '買う'], ['sell', 'sell', '売る']].map(([m, ic, label]) => (
                 <button key={m} onClick={() => setMode(m)}
                   className="flex-1 py-2 rounded-xl text-sm font-black transition-all active:scale-95"
                   style={mode === m
                     ? { background: 'linear-gradient(135deg, #FFE066, #FFD700)', color: '#5A3A1A' }
                     : { background: 'transparent', color: 'rgba(255,255,255,0.7)' }}>
-                  {label}
+                  <Emo e={ic} /> {label}
                 </button>
               ))}
             </div>
@@ -6101,7 +6112,7 @@ function IshimonZukan() {
                 <button onClick={() => { setShowInventory(false); setShowShop(true); document.body.style.overflow='hidden'; }}
                   className="px-4 py-2 rounded-xl text-white font-black text-sm active:scale-95"
                   style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 3px 0 #4A0E78', border: '2px solid white' }}>
-                  🛍️ ショップへ行く
+                  <Emo e="shop" /> ショップへ行く
                 </button>
               </div>
             ) : (
@@ -6169,7 +6180,7 @@ function IshimonZukan() {
               <button onClick={() => { setShowInventory(false); setShowShop(true); document.body.style.overflow='hidden'; }}
                 className="w-full mt-3 py-2.5 rounded-2xl text-white font-black text-sm active:scale-95 flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg, #C77DFF, #7B2CBF)', boxShadow: '0 3px 0 #4A0E78', border: '2px solid white' }}>
-                🛍️ ショップへ行く
+                <Emo e="shop" /> ショップへ行く
               </button>
             )}
           </div>
@@ -6406,7 +6417,7 @@ function IshimonZukan() {
               style={{ background: 'linear-gradient(135deg, #7B2CBF, #4A0E78)', border: '3px solid #C77DFF', boxShadow: '0 5px 0 #1A003A' }}>
               <div className="flex items-center justify-between">
                 <div className="text-left">
-                  <div className="text-xl">💎 きらめき石で 1かい</div>
+                  <div className="text-xl"><Emo e="gem" /> きらめき石で 1かい</div>
                   <div className="text-xs opacity-80">きらめき石を 50こ つかう</div>
                 </div>
                 <div className="flex items-center gap-1 bg-purple-900/60 rounded-xl px-3 py-1"
@@ -6425,7 +6436,7 @@ function IshimonZukan() {
               style={{ background: 'linear-gradient(135deg, #9D4EDD, #4A0E78)', border: '3px solid #FFD700', boxShadow: '0 5px 0 #2E0068' }}>
               <div className="flex items-center justify-between">
                 <div className="text-left">
-                  <div className="text-xl">💎×500 きらめき石で 10れん</div>
+                  <div className="text-xl"><Emo e="gem" />×500 きらめき石で 10れん</div>
                   <div className="text-xs opacity-80">レア以上かくてい！ おトク！</div>
                 </div>
                 <div className="flex items-center gap-1 bg-yellow-400/30 rounded-xl px-3 py-1"
@@ -6589,7 +6600,7 @@ function IshimonZukan() {
           </div>
           <div className="flex-none text-[10px] font-black text-white bg-black/40 rounded-full px-2.5 py-1 leading-none"
             style={{ border: '1.5px solid rgba(255,255,255,0.3)' }}>
-            🎒 {invTotal}/{invMax}
+            <Emo e="item" /> {invTotal}/{invMax}
           </div>
         </div>
 
@@ -6673,11 +6684,11 @@ function IshimonZukan() {
         {/* 固定フッター：もちもの数・きらめき石・ショップ導線 */}
         <div className="flex-none flex items-center gap-2 px-3 py-2"
           style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))', background: 'rgba(20,16,28,0.96)', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
-          <div className="flex items-center gap-1 text-white font-black text-[11px] bg-black/40 rounded-full px-2.5 py-1.5 leading-none" style={{ border: '1.5px solid rgba(255,255,255,0.25)' }}>🎒 もちもの {invTotal}/{invMax}</div>
+          <div className="flex items-center gap-1 text-white font-black text-[11px] bg-black/40 rounded-full px-2.5 py-1.5 leading-none" style={{ border: '1.5px solid rgba(255,255,255,0.25)' }}><Emo e="item" /> もちもの {invTotal}/{invMax}</div>
           <div className="flex items-center gap-1 text-yellow-200 font-black text-[11px] bg-black/40 rounded-full px-2.5 py-1.5 leading-none" style={{ border: '1.5px solid rgba(255,215,0,0.4)' }}>✨ きらめき石 {player.gems || 0}</div>
           <button onClick={() => { setShowEquip(null); setShowShop(true); }}
             className="flex-1 text-purple-900 font-black text-xs py-2 rounded-full active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #FFE066, #FFD700)' }}>🛒 ショップへ</button>
+            style={{ background: 'linear-gradient(135deg, #FFE066, #FFD700)' }}><Emo e="shop" /> ショップへ</button>
         </div>
       </div>
     );
@@ -7678,7 +7689,7 @@ function IshimonZukan() {
                   )}
                   {result.fragmentsGained > 0 && (
                     <div className="text-white text-xl font-black flex items-center gap-1">
-                      <span className="text-lg">🪨</span>
+                      <span className="text-lg"><Emo e="kakera" /></span>
                       +{result.fragmentsGained}
                     </div>
                   )}
@@ -7867,7 +7878,7 @@ function IshimonZukan() {
             <button onClick={() => { onClose(); setShowCapacityExpand(true); }}
               className="w-full py-3 rounded-2xl text-white font-black text-sm active:scale-95"
               style={{ background: 'linear-gradient(135deg, #FFAA00, #FF6B00)', border: '2px solid #FFD700' }}>
-              💎 容量を 拡張する
+              <Emo e="gem" /> 容量を 拡張する
             </button>
             <button onClick={onClose}
               className="w-full py-2 rounded-xl text-white/70 font-bold text-xs active:scale-95"
@@ -7936,7 +7947,7 @@ function IshimonZukan() {
             </div>
           )}
 
-          <div className="text-5xl mb-2">💎</div>
+          <div className="text-5xl mb-2"><Emo e="gem" /></div>
           <div className="text-yellow-300 text-xl font-black mb-1">容量を ひろげよう</div>
           <div className="text-white/80 text-xs font-bold mb-4">
             きらめき石を つかって ずかんを 拡張できます
@@ -7971,7 +7982,7 @@ function IshimonZukan() {
             }}>
             <div className="text-yellow-300 text-base font-black mb-1">+{unit}体 拡張</div>
             <div className="flex items-center justify-center gap-1.5 mb-2">
-              <span className="text-2xl">💎</span>
+              <span className="text-2xl"><Emo e="gem" /></span>
               <span className="text-white font-black text-lg">{cost}</span>
               <span className="text-white/60 text-xs font-bold">きらめき石</span>
             </div>
@@ -7986,7 +7997,7 @@ function IshimonZukan() {
               color: justExpanded ? '#FFD700' : 'rgba(255,255,255,0.7)',
               transition: 'color 0.3s ease',
             }}>
-            いま もってる: 💎 {gems}個
+            いま もってる: <Emo e="gem" /> {gems}個
           </div>
 
           {/* ボタン */}
@@ -8000,7 +8011,7 @@ function IshimonZukan() {
                 border: `2px solid ${canAfford && !expanding ? '#FFD700' : 'rgba(150,150,150,0.5)'}`,
                 opacity: canAfford && !expanding ? 1 : 0.6,
               }}>
-              {expanding ? '拡張中...' : canAfford ? `💎${cost} つかって 拡張する` : 'きらめき石が たりません'}
+              {expanding ? '拡張中...' : canAfford ? <><Emo e="gem" />{cost} つかって 拡張する</> : 'きらめき石が たりません'}
             </button>
             <button onClick={onClose}
               className="w-full py-2 rounded-xl text-white/70 font-bold text-xs active:scale-95"
@@ -8961,7 +8972,7 @@ function IshimonZukan() {
                     }}>
                     <span className="text-base">✨ 進化</span>
                     <span className={`text-[11px] font-bold ${hasFragsForEvolve ? 'text-yellow-100' : 'text-red-300'}`}>
-                      🪨 {evolveCost} {hasFragsForEvolve ? '' : `(あと${evolveCost - (player.stoneFragments || 0)})`}
+                      <Emo e="kakera" /> {evolveCost} {hasFragsForEvolve ? '' : `(あと${evolveCost - (player.stoneFragments || 0)})`}
                     </span>
                   </button>
                 ) : (
@@ -9514,7 +9525,7 @@ function IshimonZukan() {
               <div className="text-white/70 text-[9px] font-bold">きらめき石</div>
             </div>
             <div className="bg-white/10 rounded-xl p-2 text-center" style={{ border: '1px solid rgba(139,105,20,0.4)' }}>
-              <span className="w-4 h-4 text-sm leading-none flex items-center justify-center mx-auto mb-0.5">🪨</span>
+              <span className="w-4 h-4 text-sm leading-none flex items-center justify-center mx-auto mb-0.5"><Emo e="kakera" size={1.4} /></span>
               <div className="text-white font-black text-lg leading-tight">{player.stoneFragments || 0}</div>
               <div className="text-white/70 text-[9px] font-bold">石のかけら</div>
             </div>
@@ -9657,7 +9668,7 @@ function IshimonZukan() {
         <button onClick={() => { setShowInventory(true); document.body.style.overflow='hidden'; }}
           className="w-full mt-2 p-3 rounded-2xl text-white active:scale-95 flex items-center gap-2"
           style={{ background: 'linear-gradient(135deg, #FFB347, #E67E22)', boxShadow: '0 4px 0 #8B4513', border: '2px solid #FFD699' }}>
-          <span className="text-xl">🎒</span>
+          <span className="text-xl"><Emo e="item" /></span>
           <div className="flex-1 text-left">
             <div className="font-black text-sm">アイテム</div>
             <div className="text-[10px] font-bold opacity-90">所持中の装備を確認 ({player.inventory.length}個)</div>
@@ -10783,18 +10794,18 @@ function IshimonZukan() {
                   };
                   return (
                     <div className="rounded-xl p-3 mt-3" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <div className="text-white font-black text-sm mb-1">💎 リソース補充</div>
+                      <div className="text-white font-black text-sm mb-1"><Emo e="gem" /> リソース補充</div>
                       <div className="text-white/50 text-[10px] leading-relaxed mb-3">
                         消えてしまった「石のかけら」「きらめき石」をここから復旧できます。
                       </div>
                       {/* 現在の所持数 */}
                       <div className="flex gap-2 mb-3">
                         <div className="flex-1 rounded-lg py-1.5 text-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                          <div className="text-white/60 text-[9px] font-bold">きらめき石 💎</div>
+                          <div className="text-white/60 text-[9px] font-bold">きらめき石 <Emo e="gem" /></div>
                           <div className="text-white font-black text-lg leading-tight">{player.gems || 0}</div>
                         </div>
                         <div className="flex-1 rounded-lg py-1.5 text-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                          <div className="text-white/60 text-[9px] font-bold">石のかけら 🪨</div>
+                          <div className="text-white/60 text-[9px] font-bold">石のかけら <Emo e="kakera" /></div>
                           <div className="text-white font-black text-lg leading-tight">{player.stoneFragments || 0}</div>
                         </div>
                       </div>
