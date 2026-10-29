@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.99.0'; // v2.99.0: 下部メニューのアイコンをオリジナルSVGに
+const APP_VERSION = '2.100.0'; // v2.100.0: 段階アイコン（ベイビー・チャンピオン・アルティメット）と生成中のたまごをオリジナルSVGに
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1781,6 +1781,11 @@ const ISHI_ICONS = {
   '⚔️': ['#2C3550', [['M12.7 9.0 L23.2 10.6 L42.5 33.6 L31.8 42.6 L12.5 19.6Z', '#E4ECF5'], ['M15.9 12.8 L35.2 35.8', 'none'], ['M28.7 45.2 L45.6 31.1 L49.4 35.7 L32.6 49.8Z', '#FFC42B'], ['M38.3 45.0 L43.7 40.5 L49.5 47.4 L44.1 51.9Z', '#8A5A2B'], ['M45.5 48.1 L52.5 48.7 L51.9 55.7 L44.9 55.1Z', '#FFC42B'], ['M51.3 9.0 L51.5 19.6 L32.2 42.6 L21.5 33.6 L40.8 10.6Z', '#E4ECF5'], ['M48.1 12.8 L28.8 35.8', 'none'], ['M18.4 31.1 L35.3 45.2 L31.4 49.8 L14.6 35.7Z', '#FFC42B'], ['M20.3 40.5 L25.7 45.0 L19.9 51.9 L14.5 47.4Z', '#8A5A2B'], ['M18.5 48.1 L19.1 55.1 L12.1 55.7 L11.5 48.7Z', '#FFC42B']]],
   '🎴': ['#3A0E28', [['M12 34 L52 34 L55 60 L9 60Z', '#FF5A7A'], ['M32 4 A21 21 0 1 1 31.9 4Z', '#DFF3FF'], ['M20 20 A5 5 0 1 1 19.9 20Z', '#FFE066'], ['M36 16 A5 5 0 1 1 35.9 16Z', '#3DA5F5'], ['M40 30 A5 5 0 1 1 39.9 30Z', '#8AE06A'], ['M26 31 A5 5 0 1 1 25.9 31Z', '#C77DFF'], ['M32 42 A6 6 0 1 1 31.9 42Z', '#FFC42B'], ['M26 48 L38 48', 'none'], ['M20 53 L27 53 L27 59 L20 59Z', '#3A0E28']]],
   '👤': ['#0D3C6C', [['M9 59 C9 43 19 35 32 35 C45 35 55 43 55 59Z', '#3DA5F5'], ['M32 7 A12 12 0 1 1 31.9 7Z', '#FFD9B8']]],
+  // 段階（v2.100.0）: 🥚=生成中・生まれる前のたまご／baby・champion・ultimate=段階の印
+  '🥚': ['#6B4F1D', [['M32 4 C46 4 55 26 55 40 C55 53 45 60 32 60 C19 60 9 53 9 40 C9 26 18 4 32 4Z', '#FFF3DA'], ['M24 19 A5 5 0 1 1 23.9 19Z', '#8AD0C0'], ['M41 27 A6 6 0 1 1 40.9 27Z', '#8AD0C0'], ['M25 42 A4 4 0 1 1 24.9 42Z', '#8AD0C0'], ['M40 47 A3 3 0 1 1 39.9 47Z', '#8AD0C0']]],
+  'baby': ['#6B4F1D', [['M13 40 C13 20 21 6 32 6 C43 6 51 20 51 40Z', '#C9A27A'], ['M25 18.8 A2.2 2.2 0 1 1 24.9 18.8Z', '#6B4F1D'], ['M39 18.8 A2.2 2.2 0 1 1 38.9 18.8Z', '#6B4F1D'], ['M29 27 Q32 30 35 27', 'none'], ['M8 38 L15 32 L21 38 L27 31 L33 38 L39 31 L45 38 L51 32 L56 38 C56 52 46 60 32 60 C18 60 8 52 8 38Z', '#FFF3DA'], ['M20 45 A3 3 0 1 1 19.9 45Z', '#8AD0C0'], ['M42 45 A4 4 0 1 1 41.9 45Z', '#8AD0C0']]],
+  'champion': ['#7A4A00', [['M20 36 L11 59 L21 55 L26 62 L33 42Z', '#3DA5F5'], ['M44 36 L53 59 L43 55 L38 62 L31 42Z', '#FF5A7A'], ['M32 4 A21 21 0 1 1 31.9 4Z', '#FFC42B'], ['M32 10 A15 15 0 1 1 31.9 10Z', '#FFD23F'], ['M32.0 14.0 L34.9 22.0 L43.4 22.3 L36.8 27.5 L39.1 35.7 L32.0 31.0 L24.9 35.7 L27.2 27.5 L20.6 22.3 L29.1 22.0Z', '#FFF3B0']]],
+  'ultimate': ['#6E3F00', [['M10 46 L5 17 L20 31 L32 8 L44 31 L59 17 L54 46Z', '#FFD23F'], ['M9 45 L55 45 L55 57 L9 57Z', '#FFC42B'], ['M5 11 A4 4 0 1 1 4.9 11Z', '#FF5A7A'], ['M32 2.5 A4.5 4.5 0 1 1 31.9 2.5Z', '#3DA5F5'], ['M59 11 A4 4 0 1 1 58.9 11Z', '#FF5A7A'], ['M32 46 L37 51 L32 56 L27 51Z', '#3DA5F5'], ['M17 48.5 A2.5 2.5 0 1 1 16.9 48.5Z', '#FF5A7A'], ['M47 48.5 A2.5 2.5 0 1 1 46.9 48.5Z', '#FF5A7A']]],
 };
 // 使い方: <Emo e="🔥" />  大きさは周りの文字サイズに合わせる（size で倍率変更）
 const Emo = ({ e, size = 1.2, style }) => {
@@ -1808,9 +1813,9 @@ const TYPE_CHART = {
 const getTypeMultiplier = (atk, def) => TYPE_CHART[atk]?.[def] ?? 1.0;
 
 const STAGES = {
-  1: { label: 'ベイビー', emoji: '🥚' },
-  2: { label: 'チャンピオン', emoji: '⭐' },
-  3: { label: 'アルティメット', emoji: '👑' },
+  1: { label: 'ベイビー', emoji: '🥚', icon: 'baby' },
+  2: { label: 'チャンピオン', emoji: '⭐', icon: 'champion' },
+  3: { label: 'アルティメット', emoji: '👑', icon: 'ultimate' },
 };
 
 const getRarityLabel = (r) => {
@@ -3049,7 +3054,7 @@ function CollectionView({ collection, collectionFilter, collectionSort, collecti
                   <div className="relative">
                     {m.imagePending ? (
                       <div className="w-full h-24 flex flex-col items-center justify-center gap-0.5" style={{ background: `${t.dark}66` }}>
-                        <span className="text-3xl">{m.imageForce ? '🎨' : '🥚'}</span>
+                        <span className="text-3xl">{m.imageForce ? '🎨' : <Emo e="🥚" />}</span>
                         <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : m.imageBirth ? 'もうすぐ誕生' : 'しんかちゅう'}</span>
                       </div>
                     ) : m.imageDataUrl ? (
@@ -3169,7 +3174,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
                 return t ? (
                   <span className="text-[11px] font-black leading-none truncate max-w-[120px]"
                     style={{ color: r.color }}>
-                    {t.emoji} {t.name}
+                    {t.emoji === '🥚' ? <Emo e="🥚" /> : t.emoji} {t.name}
                   </span>
                 ) : (
                   <span className="text-[11px] font-bold leading-none text-white/30">称号なし</span>
@@ -3316,7 +3321,7 @@ function HomeView({ authLoading, claimableMissions, collection, fileRef, firebas
                     <div className="relative">
                       {m.imagePending ? (
                         <div className="w-full h-24 flex flex-col items-center justify-center gap-0.5" style={{ background: `${t.dark}66` }}>
-                          <span className="text-3xl">{m.imageForce ? '🎨' : '🥚'}</span>
+                          <span className="text-3xl">{m.imageForce ? '🎨' : <Emo e="🥚" />}</span>
                           <span className="text-[9px] font-black text-white/90">{m.imageForce ? '作成中' : m.imageBirth ? 'もうすぐ誕生' : 'しんかちゅう'}</span>
                         </div>
                       ) : m.imageDataUrl ? (
@@ -5832,7 +5837,7 @@ function IshimonZukan() {
                     boxShadow: `0 0 20px ${r.color}66`,
                   }}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-3xl">{t.emoji}</span>
+                    <span className="text-3xl">{t.emoji === '🥚' ? <Emo e="🥚" /> : t.emoji}</span>
                     <div className="flex-1">
                       <div className="text-white font-black text-base leading-tight">{t.name}</div>
                       <div className="text-[9px] font-black inline-block px-1.5 py-0.5 rounded mt-0.5"
@@ -8858,8 +8863,8 @@ function IshimonZukan() {
               {(evolvingImageId === mon.id || mon.imagePending) && (
                 <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-2"
                   style={{ background: 'rgba(0,0,0,0.72)', border: '2px solid #FFD700' }}>
-                  <div className="text-6xl" style={{ animation: mon.imageForce ? 'none' : 'eggwob 1.6s ease-in-out infinite' }}>{mon.imageForce ? '🎨' : '🥚'}</div>
-                  <div className="text-white font-black text-sm">{mon.imageForce ? '新しい絵を描いています…' : mon.imageBirth ? '🥚 もうすぐ生まれます…' : '🥚 進化中…'}</div>
+                  <div className="text-6xl" style={{ animation: mon.imageForce ? 'none' : 'eggwob 1.6s ease-in-out infinite' }}>{mon.imageForce ? '🎨' : <Emo e="🥚" />}</div>
+                  <div className="text-white font-black text-sm">{mon.imageForce ? '新しい絵を描いています…' : <><Emo e="🥚" /> {mon.imageBirth ? 'もうすぐ生まれます…' : '進化中…'}</>}</div>
                   <PendingCountdown until={mon.imageForce ? null : mon.revealAt} />
                   <style>{`@keyframes eggwob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }`}</style>
                 </div>
@@ -8870,7 +8875,7 @@ function IshimonZukan() {
               {mon.imagePending ? (
                 <>
                   {/* v2.94.0: ガチャ生まれで絵がまだの時はたまご表示 */}
-                  <div className="text-7xl" style={{ animation: 'eggwob 1.6s ease-in-out infinite' }}>🥚</div>
+                  <div className="text-7xl" style={{ animation: 'eggwob 1.6s ease-in-out infinite' }}><Emo e="🥚" /></div>
                   <div className="text-white font-black text-sm">もうすぐ生まれます…</div>
                   <div className="text-white/60 text-[11px] font-bold">アプリを閉じても、次に開いた時に続きから描きます</div>
                   <style>{`@keyframes eggwob { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }`}</style>
@@ -8895,7 +8900,7 @@ function IshimonZukan() {
                   <Emo e={t.emoji} size={1.4} />{t.name}
                 </span>
                 <span className={pillCls} style={{ background: 'rgba(0,0,0,0.35)' }}>
-                  <span className="text-[10px]">{stage.emoji}</span>{stage.label}
+                  <Emo e={stage.icon || stage.emoji} size={1.4} />{stage.label}
                 </span>
                 {/* v2.85.0: 「いろちがい」バッジを撤去。
                     色違いはレア度ではなく姿バリエーションの一種という整理に合わせる。
@@ -9478,7 +9483,7 @@ function IshimonZukan() {
                       border: `1.5px solid ${r.color}`,
                       boxShadow: `0 0 10px ${r.color}55`,
                     }}>
-                    <span className="text-sm leading-none">{t.emoji}</span>
+                    <span className="text-sm leading-none">{t.emoji === '🥚' ? <Emo e="🥚" /> : t.emoji}</span>
                     <span className="text-white font-black text-[11px]">{t.name}</span>
                   </button>
                 );
