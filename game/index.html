@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.104.0'; // v2.104.0: 図鑑・石モン詳細・ガチャ・ステージ/バトルのアイコンをオリジナルSVGに
+const APP_VERSION = '2.104.1'; // v2.104.1: オリジナルアイコンが絵文字より小さく見えていたのを修正（表示枠を絵の範囲ぴったりに）
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1860,19 +1860,20 @@ const Emo = ({ e, size = 1.2, style }) => {
   if (!ic) return <>{e}</>;
   const [line, parts] = ic;
   return (
-    <svg viewBox="-4 -4 72 72" role="img" aria-label={e}
-      style={{ width: size + 'em', height: size + 'em', display: 'inline-block', verticalAlign: '-0.2em', flexShrink: 0, ...style }}>
+    // v2.104.1: 枠は絵の範囲（4〜60）ぴったり。白フチは枠の外にはみ出して描く（以前は余白込みで絵文字より小さく見えていた）
+    <svg viewBox="4 4 56 56" role="img" aria-label={e}
+      style={{ width: size + 'em', height: size + 'em', display: 'inline-block', verticalAlign: '-0.2em', flexShrink: 0, overflow: 'visible', ...style }}>
       {parts.map(([d, c], i) => <path key={'b' + i} d={d} fill={c === 'none' ? 'none' : '#fff'} stroke="#fff" strokeWidth="9" strokeLinejoin="round" strokeLinecap="round" />)}
       {parts.map(([d, c], i) => <path key={'f' + i} d={d} fill={c} stroke={line} strokeWidth="3.2" strokeLinejoin="round" strokeLinecap="round" />)}
     </svg>
   );
 };
 // レア度の星を並べる: <Stars n={mon.rarity} />（色はレア度ごと。v2.103.0）
-const Stars = ({ n, size = 1.05 }) => {
+const Stars = ({ n, size = 0.95 }) => {
   const k = Math.max(1, Math.min(5, Number(n) || 1));
   return (
     <span className="inline-flex items-center" style={{ verticalAlign: '-0.15em' }} aria-label={'★' + k}>
-      {Array.from({ length: k }, (_, i) => <Emo key={i} e={'r' + k} size={size} style={{ verticalAlign: 'baseline', marginLeft: i ? '-0.18em' : 0 }} />)}
+      {Array.from({ length: k }, (_, i) => <Emo key={i} e={'r' + k} size={size} style={{ verticalAlign: 'baseline', marginLeft: i ? '0.06em' : 0 }} />)}
     </span>
   );
 };
