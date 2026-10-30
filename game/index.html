@@ -895,7 +895,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.106.0'; // v2.106.0: 見た目のCSSを書き出し済みファイル（tw.css）に切り替え、起動と操作を軽く
+const APP_VERSION = '2.107.0'; // v2.107.0: 背景で上下に動く星（ホーム等30個・起動画面20個）を廃止
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1960,17 +1960,6 @@ const getBirthElapsed = (key) => {
   return el < 1600 ? el : null;
 };
 
-// v2.95.0: ホーム等の背景のキラキラ。起動時に1回だけ位置を決める
-const BG_SPARKLES = Array.from({ length: 30 }, () => ({
-  ch: ['✨', '⭐', '💫'][Math.floor(Math.random() * 3)],
-  style: {
-    top: Math.random() * 100 + '%', left: Math.random() * 100 + '%',
-    fontSize: (Math.random() * 14 + 10) + 'px',
-    opacity: Math.random() * 0.5 + 0.2,
-    animation: `float ${Math.random() * 4 + 3}s ease-in-out infinite`,
-    animationDelay: Math.random() * 3 + 's',
-  },
-}));
 
 // 層(タイプの格): 1=自然 / 2=幻想 / 3=天(エンシェント)。視覚ルールの基準。
 const TYPE_LAYER = {
@@ -8472,19 +8461,7 @@ function IshimonZukan() {
         style={{
           background: 'linear-gradient(180deg, #FF6B35 0%, #C71F8E 50%, #5A1A78 100%)',
         }}>
-        {/* 浮遊する星 */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => (
-            <div key={i} className="absolute" style={{
-              top: ((i * 37) % 100) + '%',
-              left: ((i * 53) % 100) + '%',
-              fontSize: ((i % 3) * 4 + 12) + 'px',
-              opacity: 0.4,
-              animation: `float ${3 + (i % 3)}s ease-in-out infinite`,
-              animationDelay: (i * 0.2) + 's',
-            }}>{['✨', '⭐', '💫'][i % 3]}</div>
-          ))}
-        </div>
+        {/* v2.107.0: 浮遊する星（20個）は廃止 */}
 
         {/* 中央コンテンツ */}
         <div className="relative z-10 flex flex-col items-center">
@@ -11136,14 +11113,7 @@ function IshimonZukan() {
         @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap');
         body { -webkit-tap-highlight-color: transparent; }
       `}</style>
-      {view !== 'battle' && !settings.animationReduced && (
-        <div className="absolute inset-0 pointer-events-none">
-          {/* v2.95.0: 位置は起動時に1回だけ決める（以前は画面が更新されるたびに30個すべて作り直していた） */}
-          {BG_SPARKLES.map((p, i) => (
-            <div key={i} className="absolute" style={p.style}>{p.ch}</div>
-          ))}
-        </div>
-      )}
+      {/* v2.107.0: 背景で上下に動く星（30個）は廃止。見た目の整理と軽量化のため */}
       <style>{`@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }`}</style>
 
       {view === 'home' && <HomeView authLoading={authLoading} claimableMissions={claimableMissions} collection={collection} fileRef={fileRef} firebaseReady={firebaseReady} firebaseUser={firebaseUser} player={player} setSelected={setSelected} setShowInventory={setShowInventory} setShowMissions={setShowMissions} setShowShop={setShowShop} setView={setView} signInWithGoogle={signInWithGoogle} forceSaveToFirestore={forceSaveToFirestore} openCamera={openCamera} handleImage={handleImage} />}
