@@ -95,7 +95,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- v2.106.0: 見た目（Tailwind）は端末の中で毎回作らず、書き出し済みの tw.css を読む（head の最後で読み込み）。
+     tw.css は game/index.html を更新すると GitHub Actions が自動で作り直す -->
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <!-- v2.95.0: Babel は起動時に読まない。初回（または更新直後）だけ下のローダーが読み込んで変換し、
@@ -161,6 +162,7 @@
     font-size: 16px !important;
   }
 </style>
+<link rel="stylesheet" href="/game/tw.css">
 </head>
 <body>
 <div id="root">
@@ -893,7 +895,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.105.0'; // v2.105.0: 誕生画面・思い出スタンプ・お知らせのアイコンをSVGに／石モン詳細が横にずれる問題を修正
+const APP_VERSION = '2.106.0'; // v2.106.0: 見た目のCSSを書き出し済みファイル（tw.css）に切り替え、起動と操作を軽く
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====

@@ -1,0 +1,35 @@
+# game/index.html が変わったら、使っている見た目だけの CSS（game/tw.css）を自動で作り直して保存する
+name: 見た目のCSSを書き出す（Tailwind）
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game/index.html'
+      - '.github/tailwind/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: CSSを書き出す
+        run: npx -y tailwindcss@3.4.17 -c .github/tailwind/tailwind.config.js -i .github/tailwind/input.css -o game/tw.css --minify
+      - name: 変わっていたら保存する
+        run: |
+          if git diff --quiet -- game/tw.css; then
+            echo "変更なし"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add game/tw.css
+          git commit -m "見た目のCSS（game/tw.css）を自動更新"
+          git push
