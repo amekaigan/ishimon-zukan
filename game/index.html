@@ -893,7 +893,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.104.1'; // v2.104.1: オリジナルアイコンが絵文字より小さく見えていたのを修正（表示枠を絵の範囲ぴったりに）
+const APP_VERSION = '2.105.0'; // v2.105.0: 誕生画面・思い出スタンプ・お知らせのアイコンをSVGに／石モン詳細が横にずれる問題を修正
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -1852,6 +1852,20 @@ const ISHI_ICONS = {
   '🔮': ['#3A1060', [['M20 45 L44 45 L48 50 L16 50Z', '#FFC42B'], ['M15 50 L49 50 L53 60 L11 60Z', '#8A5A2B'], ['M32 6 A21 21 0 1 1 31.9 6Z', '#C77DFF'], ['M19 22 C21 15 26 11 32 10', 'none'], ['M38.0 23.0 L39.4 28.6 L45.0 30.0 L39.4 31.4 L38.0 37.0 L36.6 31.4 L31.0 30.0 L36.6 28.6Z', '#FFFFFF']]],
   '🎁': ['#7A1030', [['M8 28 L56 28 L56 59 L8 59Z', '#FF5A7A'], ['M4 18 L60 18 L60 28 L4 28Z', '#FF7A95'], ['M28 18 L36 18 L36 59 L28 59Z', '#FFD23F'], ['M32 18 C24 4 10 9 18 18Z', '#FFD23F'], ['M32 18 C40 4 54 9 46 18Z', '#FFD23F']]],
   '⬆️': ['#1E5A2A', [['M32 4 L59 31 L42 31 L42 60 L22 60 L22 31 L5 31Z', '#5BC46A']]],
+  // 誕生画面・思い出スタンプ・お知らせ（v2.105.0）
+  '☀️': ['#8A4A00', [['M32.0 2.0 L37.4 11.7 L47.0 6.0 L46.8 17.2 L58.0 17.0 L52.3 26.6 L62.0 32.0 L52.3 37.4 L58.0 47.0 L46.8 46.8 L47.0 58.0 L37.4 52.3 L32.0 62.0 L26.6 52.3 L17.0 58.0 L17.2 46.8 L6.0 47.0 L11.7 37.4 L2.0 32.0 L11.7 26.6 L6.0 17.0 L17.2 17.2 L17.0 6.0 L26.6 11.7Z', '#FFAA2B'], ['M32 17 A15 15 0 1 1 31.9 17Z', '#FFD23F']]],
+  '☔': ['#3A0E5A', [['M32 34 L32 53 C32 60 23 60 23 53', 'none'], ['M4 33 C4 15 18 5 32 5 C46 5 60 15 60 33 C55 29 49 29 46 33 C42 29 36 29 32 33 C28 29 22 29 18 33 C14 29 8 29 4 33Z', '#8A44D6'], ['M32 5 C26 12 22 22 18 33', 'none'], ['M32 5 C38 12 42 22 46 33', 'none'], ['M12 44 L10 50', 'none'], ['M52 42 L50 48', 'none']]],
+  '😊': ['#7A4A00', [['M32 5 A27 27 0 1 1 31.9 5Z', '#FFD23F'], ['M18 28 Q23 22 28 28', 'none'], ['M36 28 Q41 22 46 28', 'none'], ['M20 39 Q32 50 44 39', 'none']]],
+  '😌': ['#7A4A00', [['M32 5 A27 27 0 1 1 31.9 5Z', '#FFD23F'], ['M18 27 Q23 32 28 27', 'none'], ['M36 27 Q41 32 46 27', 'none'], ['M25 42 Q32 47 39 42', 'none']]],
+  '🥹': ['#7A4A00', [['M32 5 A27 27 0 1 1 31.9 5Z', '#FFD23F'], ['M17 28 C17 21 28 21 28 28 C28 35 17 35 17 28Z', '#3A2A10'], ['M36 28 C36 21 47 21 47 28 C47 35 36 35 36 28Z', '#3A2A10'], ['M21 24 A2 2 0 1 1 20.9 24Z', '#FFFFFF'], ['M40 24 A2 2 0 1 1 39.9 24Z', '#FFFFFF'], ['M44 36 C44 40 47 44 47 46 C47 49 41 49 41 46 C41 44 44 40 44 36Z', '#8ED8FF'], ['M26 45 Q29 42 32 45 Q35 48 38 45', 'none']]],
+  '🌊': ['#0D3C6C', [['M4 59 L4 38 C8 22 24 12 40 15 C52 18 54 30 46 35 C40 38 34 33 37 27 C29 28 26 38 33 44 C41 51 54 45 60 39 L60 59Z', '#3DA5F5'], ['M37 27 C34 33 40 38 46 35', 'none']]],
+  '🏞️': ['#2E5A10', [['M4 10 L60 10 L60 55 L4 55Z', '#BDEBFF'], ['M4 46 L20 25 L31 39 L42 29 L60 46 L60 55 L4 55Z', '#6CC24A'], ['M22 55 C26 48 36 48 42 55Z', '#3DA5F5'], ['M48 15 A5 5 0 1 1 47.9 15Z', '#FFD23F']]],
+  '✈️': ['#0D3C6C', [['M34.1 22.8 L8.0 16.4 L3.0 21.4 L24.9 32.0Z', '#5AB0FF'], ['M41.2 29.9 L47.6 56.0 L42.6 61.0 L32.0 39.1Z', '#5AB0FF'], ['M52.5 11.5 C55.3 14.3 51.8 19.3 47.6 23.5 L27.1 44.0 L25.6 55.3 L22.1 58.9 L15.7 48.3 L5.1 41.9 L8.7 38.4 L20.0 36.9 L40.5 16.4 C44.7 12.2 49.7 8.7 52.5 11.5Z', '#FFFFFF']]],
+  '⭐': ['#7A4A00', [['M32.0 5.0 L40.8 22.9 L60.5 25.7 L46.3 39.6 L49.6 59.3 L32.0 50.0 L14.4 59.3 L17.7 39.6 L3.5 25.7 L23.2 22.9Z', '#FFD23F']]],
+  '👀': ['#2A1A3A', [['M6 32 C6 17 29 17 29 32 C29 47 6 47 6 32Z', '#FFFFFF'], ['M35 32 C35 17 58 17 58 32 C58 47 35 47 35 32Z', '#FFFFFF'], ['M22 27.5 A6.5 6.5 0 1 1 21.9 27.5Z', '#2A1A3A'], ['M51 27.5 A6.5 6.5 0 1 1 50.9 27.5Z', '#2A1A3A']]],
+  '🤝': ['#6E3F00', [['M2 29 L14 23 L22 39 L10 45Z', '#3DA5F5'], ['M62 29 L50 23 L42 39 L54 45Z', '#FF7A45'], ['M14 29 C20 21 28 19 34 21 L46 25 C50 27 50 31 46 33 L50 37 C52 41 48 45 44 43 C44 47 40 49 36 47 C34 51 28 51 26 47 L18 41Z', '#FFD9B8'], ['M33 35 L40 39', 'none'], ['M29 39 L35 43', 'none']]],
+  '🎉': ['#6E3F00', [['M6 58 L20 22 L42 44Z', '#FFC42B'], ['M11 45 L28 30', 'none'], ['M15 35 L22 28', 'none'], ['M30 8 L36 6 L37 12 L31 14Z', '#FF5A7A'], ['M49 9 A4 4 0 1 1 48.9 9Z', '#3DA5F5'], ['M52 30 L58 28 L59 34 L53 36Z', '#5BC46A'], ['M42 21 A3 3 0 1 1 41.9 21Z', '#FF5A7A'], ['M22 15 C26 11 22 7 26 3', 'none']]],
+  '✍️': ['#2C3550', [['M9 5 L43 5 L53 15 L53 59 L9 59Z', '#FFFFFF'], ['M43 5 L43 15 L53 15Z', '#DDE3EE'], ['M17 24 L43 24', 'none'], ['M17 32 L43 32', 'none'], ['M17 40 L31 40', 'none'], ['M35 55 L55 35 L61 41 L41 61Z', '#FFC42B'], ['M35 55 L41 61 L31 64Z', '#F6E3B4']]],
   '🔐': ['#6E3F00', [['M20 28 L20 20 C20 6 44 6 44 20 L44 28', 'none'], ['M10 28 L54 28 L54 59 L10 59Z', '#FFC42B'], ['M32 35 A5 5 0 1 1 31.9 35Z', '#6E3F00'], ['M30 42 L34 42 L35 51 L29 51Z', '#6E3F00']]],
 };
 // 使い方: <Emo e="🔥" />  大きさは周りの文字サイズに合わせる（size で倍率変更）
@@ -1867,6 +1881,14 @@ const Emo = ({ e, size = 1.2, style }) => {
       {parts.map(([d, c], i) => <path key={'f' + i} d={d} fill={c} stroke={line} strokeWidth="3.2" strokeLinejoin="round" strokeLinecap="round" />)}
     </svg>
   );
+};
+// 文字列の先頭の絵文字だけをオリジナルアイコンにして表示（保存データの文字列はそのまま。v2.105.0）
+// 例: <EmoText text="☀️はれ" /> → [☀️のSVG]はれ
+const EmoText = ({ text, size }) => {
+  const t = String(text == null ? '' : text);
+  const k = Object.keys(ISHI_ICONS).find(key => key.charCodeAt(0) > 0x2000 && t.startsWith(key));
+  if (!k) return <>{t}</>;
+  return <><Emo e={k} size={size} />{t.slice(k.length)}</>;
 };
 // レア度の星を並べる: <Stars n={mon.rarity} />（色はレア度ごと。v2.103.0）
 const Stars = ({ n, size = 0.95 }) => {
@@ -8576,7 +8598,7 @@ function IshimonZukan() {
                 style={{ border: '5px solid #FFD700', boxShadow: '0 0 60px #FFAA00' }} />
               {/* ルーペ(観察中) / 完成マーク(できた時) */}
               {pendingMon ? (
-                <div className="absolute text-4xl" style={{ top: '30%', left: 'calc(50% - 20px)', filter: 'drop-shadow(0 0 12px rgba(255,215,0,0.9))' }}>✨</div>
+                <div className="absolute text-4xl" style={{ top: '30%', left: 'calc(50% - 20px)', filter: 'drop-shadow(0 0 12px rgba(255,215,0,0.9))' }}><Emo e="✨" /></div>
               ) : (
                 <div className="absolute text-4xl"
                   style={{
@@ -8585,7 +8607,7 @@ function IshimonZukan() {
                     transform: `rotate(${walkRotate}deg)`,
                     transition: 'all 0.6s ease-in-out',
                     filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.8))',
-                  }}>🔍</div>
+                  }}><Emo e="🔍" /></div>
               )}
             </div>
           )}
@@ -8594,7 +8616,7 @@ function IshimonZukan() {
         {/* メインメッセージ */}
         <div className="text-yellow-300 text-lg font-black tracking-wider mb-4 text-center"
           style={{ textShadow: '0 0 20px #FFAA00' }}>
-          {pendingMon ? '✨ できたよ！会いに行こう' : loadingMsg}
+          {pendingMon ? <><Emo e="✨" /> できたよ！会いに行こう</> : loadingMsg}
         </div>
 
 
@@ -8608,7 +8630,7 @@ function IshimonZukan() {
             animation: 'fadeIn 0.5s ease-in',
           }}>
           <div className="text-yellow-200 text-[10px] font-black tracking-widest mb-1">
-            {tip.icon} {tip.title}
+            <Emo e={tip.icon} /> {tip.title}
           </div>
           <div className="text-white/90 text-xs font-bold leading-relaxed">
             {tip.text}
@@ -8910,7 +8932,8 @@ function IshimonZukan() {
           )}
           {/* スクロール本文（ヘッダーの下を流れる） */}
           <div className="absolute inset-0 overflow-y-auto px-3"
-            style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
+            // v2.105.0: 横に指でずらせてしまうのを防ぐ（中の演出がはみ出しても横スクロールさせない）
+            style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', overflowX: 'hidden', touchAction: 'pan-y',
                      paddingTop: 'calc(env(safe-area-inset-top) + 52px)',
                      paddingBottom: 'calc(1rem + 72px + env(safe-area-inset-bottom))' }}
             ref={el => { if (el) el.scrollTop = monScrollRef.current; }}
@@ -9179,7 +9202,7 @@ function IshimonZukan() {
                     {mon.stamps.map((s, i) => (
                       <span key={i} className="px-2 py-0.5 rounded-full text-[11px] font-bold"
                         style={{ background: '#FBE8C9', color: '#8A5A1A', border: '1px solid #E8C98A' }}>
-                        {s}
+                        <EmoText text={s} />
                       </span>
                     ))}
                   </div>
@@ -11162,7 +11185,7 @@ function IshimonZukan() {
             style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,215,0,0.4)', backdropFilter: 'blur(10px)' }}>
             {/* v2.20.0: 見出し(大きめ) */}
             <div className="text-center mb-3">
-              <div className="text-yellow-200 text-lg font-black">✍️ 思い出を残そう</div>
+              <div className="text-yellow-200 text-lg font-black"><Emo e="✍️" /> 思い出を残そう</div>
               <div className="text-yellow-200/70 text-[11px] font-bold">（あとで振り返れるよ）</div>
             </div>
             {/* v2.20.0: スタンプ タブUI(タブ内は2行・横スクロール、ボタン大きめ) */}
@@ -11191,7 +11214,7 @@ function IshimonZukan() {
                     style={on
                       ? { background: '#FFD700', color: '#5A1A78', border: '2px solid #FFD700' }
                       : { background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.9)', border: '2px solid rgba(255,255,255,0.2)' }}>
-                    {val}
+                    <EmoText text={val} />
                   </button>
                 );
               })}
@@ -11213,7 +11236,7 @@ function IshimonZukan() {
                 <button onClick={revealPendingMon}
                   className="reveal-cta mt-3 w-full py-3 rounded-2xl font-black text-base active:scale-95 transition-transform"
                   style={{ background: 'linear-gradient(135deg, #FFD700, #FF6B35)', boxShadow: '0 4px 0 rgba(0,0,0,0.3)', color: '#5A1A78' }}>
-                  ✨ 生まれたよ！会いに行く →
+                  <Emo e="✨" /> 生まれたよ！会いに行く →
                 </button>
                 <style>{`
                   @keyframes ctaGlow { 0%,100% { box-shadow: 0 4px 0 rgba(0,0,0,0.3), 0 0 0 0 rgba(255,200,0,0); } 50% { box-shadow: 0 4px 0 rgba(0,0,0,0.3), 0 0 22px 5px rgba(255,200,0,0.8); } }
@@ -11408,7 +11431,7 @@ function IshimonZukan() {
       {toast && !toast.startsWith('⏱') && (
         <div className="fixed bottom-4 left-4 right-4 rounded-2xl p-3 text-white font-bold text-center z-[71]"
           style={{ background: '#16A34A', border: '3px solid white', boxShadow: '0 4px 0 #0B5C26' }}>
-          {toast}
+          <EmoText text={toast} />
         </div>
       )}
       {/* v2.90.2: 計測表示（オーナーのみ）は画面上部の小さな帯に。下のボタンと重ねない・タップを邪魔しない */}
