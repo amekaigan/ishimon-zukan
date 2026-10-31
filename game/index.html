@@ -895,7 +895,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.108.0'; // v2.108.0: 背景ぼかし（17か所）をやめて軽量化。下部メニューなどは少し濃くして見た目を保つ
+const APP_VERSION = '2.108.1'; // v2.108.1: バトル回数・タイプ別バトルのミッションが数えられない不具合を修正 / v2.108.0: 背景ぼかし（17か所）をやめて軽量化。下部メニューなどは少し濃くして見た目を保つ
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -5595,9 +5595,12 @@ function IshimonZukan() {
     updateMission('battle');
     updateMission('battle_type', { type: mon.type });
     // 前回使った石モンIDを保存
-    const updatedP = { ...player, lastBattleMonId: mon.id };
-    setPlayer(updatedP);
-    savePlayer(updatedP);
+    // v2.108.1: 古い player から作ると直前のミッション進捗を上書きして消してしまうため、最新の状態(prev)から作る
+    setPlayer(prev => {
+      const updatedP = { ...prev, lastBattleMonId: mon.id };
+      savePlayer(updatedP);
+      return updatedP;
+    });
   };
 
   const battleResolve = (myAction) => {
