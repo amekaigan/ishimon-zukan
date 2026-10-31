@@ -895,7 +895,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.108.2'; // v2.108.2: ミッションの+20ボーナス獲得済みを金色の枠で表示 / v2.108.1: バトル回数・タイプ別バトルのミッションが数えられない不具合を修正 / v2.108.0: 背景ぼかし（17か所）をやめて軽量化。下部メニューなどは少し濃くして見た目を保つ
+const APP_VERSION = '2.109.0'; // v2.109.0: ゲーム本体の変換をGitHub側で済ませ、更新直後にページが落ちないように / v2.108.2: ミッションの+20ボーナス獲得済みを金色の枠で表示 / v2.108.1: バトル回数・タイプ別バトルのミッションが数えられない不具合を修正 / v2.108.0: 背景ぼかし（17か所）をやめて軽量化。下部メニューなどは少し濃くして見た目を保つ
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -11456,13 +11456,27 @@ ReactDOM.render(React.createElement(IshimonZukan), document.getElementById("root
     var key = hash(src);
     idbGet(key).then(function(code){
       if (code) { window.__bootMode = 'cache'; run(code); return; }
+      // v2.109.0: GitHub側で変換済みの app.js があれば使う（端末内の変換は重く、ページが落ちることがあるため）。
+      //   app.js は本番保存のあと自動で作り直される。作り直し前で印が合わないときだけ従来どおり端末内で変換する。
+      return fetchPrebuilt(key).then(function(pre){
+        if (pre) { window.__bootMode = 'prebuilt'; run(pre); idbReplace(key, pre); return; }
+        return compileHere();
+      });
+    }).catch(function(e){ setTimeout(function(){ throw e; }, 0); }); // 起動エラー表示に乗せる
+    function compileHere(){
       return loadBabel().then(function(){
         var out = window.Babel.transform(src, { presets: ['react'] }).code;
         window.__bootMode = 'compiled';
         run(out);
         idbReplace(key, out); // 古い版の変換結果は消して1つだけ保持
       });
-    }).catch(function(e){ setTimeout(function(){ throw e; }, 0); }); // 起動エラー表示に乗せる
+    }
+  }
+  function fetchPrebuilt(key){
+    return fetch('/game/app.js?k=' + encodeURIComponent(key))
+      .then(function(r){ return r.ok ? r.text() : null; })
+      .then(function(t){ return (t && t.indexOf('/*ISHIMON-KEY:' + key + '*/') === 0) ? t : null; })
+      .catch(function(){ return null; });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

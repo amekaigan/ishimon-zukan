@@ -51,7 +51,8 @@ self.addEventListener('fetch', event => {
     url.includes('openai') ||
     url.includes('workers.dev') ||
     url.includes('deepinfra') ||
-    url.includes('replicate')
+    url.includes('replicate') ||
+    url.includes('/game/app.js') // 版ごとにURLが変わり、端末側でも保存するのでSWでは溜めない
   ) {
     return; // ブラウザに直接やらせる
   }

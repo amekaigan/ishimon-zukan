@@ -1,5 +1,7 @@
-# game/index.html が変わったら、使っている見た目だけの CSS（game/tw.css）を自動で作り直して保存する
-name: 見た目のCSSを書き出す（Tailwind）
+# game/index.html が変わったら、次の2つを自動で作り直して保存する
+#   1) 使っている見た目だけの CSS（game/tw.css）
+#   2) ゲーム本体を変換済みのJS（game/app.js）… iPhoneの中で変換すると重く、ページが落ちることがあるため（v2.109.0〜）
+name: 見た目のCSSとゲーム本体を書き出す
 
 on:
   push:
@@ -7,10 +9,16 @@ on:
     paths:
       - 'game/index.html'
       - '.github/tailwind/**'
+      - '.github/build/**'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+# 続けて保存したときは、最後の1回だけ仕上げればよい
+concurrency:
+  group: build-assets
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -22,14 +30,19 @@ jobs:
           node-version: '20'
       - name: CSSを書き出す
         run: npx -y tailwindcss@3.4.17 -c .github/tailwind/tailwind.config.js -i .github/tailwind/input.css -o game/tw.css --minify
+      - name: ゲーム本体を変換する
+        run: |
+          npm install --no-save --no-package-lock @babel/standalone@7.25.6
+          node .github/build/compile-app.js
       - name: 変わっていたら保存する
         run: |
-          if git diff --quiet -- game/tw.css; then
+          if git diff --quiet -- game/tw.css && git diff --quiet -- game/app.js && [ -z "$(git status --porcelain -- game/app.js)" ]; then
             echo "変更なし"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add game/tw.css
-          git commit -m "見た目のCSS（game/tw.css）を自動更新"
+          git add game/tw.css game/app.js
+          git commit -m "見た目のCSS（game/tw.css）とゲーム本体（game/app.js）を自動更新"
+          git pull --rebase
           git push
