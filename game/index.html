@@ -895,7 +895,7 @@ const formatPlace = (name) => {
   if (pref && muni) return pref + ' ' + muni;
   return pref || name || '';
 };
-const APP_VERSION = '2.108.1'; // v2.108.1: バトル回数・タイプ別バトルのミッションが数えられない不具合を修正 / v2.108.0: 背景ぼかし（17か所）をやめて軽量化。下部メニューなどは少し濃くして見た目を保つ
+const APP_VERSION = '2.108.2'; // v2.108.2: ミッションの+20ボーナス獲得済みを金色の枠で表示 / v2.108.1: バトル回数・タイプ別バトルのミッションが数えられない不具合を修正 / v2.108.0: 背景ぼかし（17か所）をやめて軽量化。下部メニューなどは少し濃くして見た目を保つ
 const IS_BETA = true; // §3: ベータ版フラグ
 
 // ===== ポリシー・規約のバージョン管理 (v2.13.0で追加) =====
@@ -5883,14 +5883,25 @@ function IshimonZukan() {
               })}
             </div>
 
-            <div className="rounded-xl p-2 text-center"
-              style={{ background: missions.allClaimed ? 'rgba(0,0,0,0.4)' : 'linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,107,53,0.3))', border: '1px dashed #FFD700' }}>
-              <div className="text-yellow-300 text-[10px] font-black tracking-widest">3つ全部クリアで</div>
-              <div className="text-white font-black text-sm flex items-center justify-center gap-1">
-                <Gem className="w-4 h-4 text-purple-300" /> +20 ボーナス
+            {/* v2.108.2: 獲得済みはひと目で分かるよう金色の枠に切り替える（未獲得は点線のまま） */}
+            {missions.allClaimed ? (
+              <div className="rounded-xl p-2 text-center"
+                style={{ background: 'linear-gradient(135deg, #FFE066, #FFB800)', border: '2px solid #FFF3B0', boxShadow: '0 0 14px rgba(255,200,0,0.55)' }}>
+                <div className="text-[10px] font-black tracking-widest" style={{ color: '#7A4A00' }}>ぜんぶクリア！</div>
+                <div className="font-black text-sm flex items-center justify-center gap-1" style={{ color: '#3B2300' }}>
+                  <Gem className="w-4 h-4 text-purple-700" /> +20 ボーナス
+                </div>
+                <div className="inline-block mt-1 px-3 py-0.5 rounded-full text-[11px] font-black text-white" style={{ background: '#E0457B' }}>✓ 獲得済み</div>
               </div>
-              {missions.allClaimed && <div className="text-yellow-300 text-[10px] font-black mt-0.5">✓ ボーナス獲得！</div>}
-            </div>
+            ) : (
+              <div className="rounded-xl p-2 text-center"
+                style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,107,53,0.3))', border: '1px dashed #FFD700' }}>
+                <div className="text-yellow-300 text-[10px] font-black tracking-widest">3つ全部クリアで</div>
+                <div className="text-white font-black text-sm flex items-center justify-center gap-1">
+                  <Gem className="w-4 h-4 text-purple-300" /> +20 ボーナス
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
