@@ -85,7 +85,7 @@ dict(
   research=[("火山の石くらべ","安山岩・玄武岩・軽石を集めて、色・重さ・穴の多さを表にまとめる。"),
             ("近くの火山を調べる","拾った川の上流にどんな火山があるか、地図で調べる。")],
   type_text="灰色の安山岩はアース、黒っぽいものはアースやドラゴンのタイプになりやすい傾向があります。",
-  related=["basalt","granite","rhyolite","pumice"],
+  related=["basalt","granite","rhyolite","pumice","diorite"],
 ),
 dict(
   id="basalt", name="玄武岩", yomi="げんぶがん", cat="igneous",
@@ -116,7 +116,7 @@ dict(
   research=[("重さくらべ","同じくらいの大きさの玄武岩・安山岩・軽石の重さを、キッチンスケールで比べる。"),
             ("穴の観察","穴のある玄武岩を虫めがねで見て、穴の形や向きから、溶岩がどちらに流れたか想像する。")],
   type_text="黒っぽい玄武岩は、アースやドラゴンのタイプになりやすい傾向があります。",
-  related=["andesite","obsidian","pumice","magnetite"],
+  related=["andesite","obsidian","pumice","magnetite","agate"],
 ),
 dict(
   id="rhyolite", name="流紋岩", yomi="りゅうもんがん", cat="igneous",
@@ -145,7 +145,7 @@ dict(
          "白っぽい石を拾ったときは、花崗岩（つぶが大きい）・石英（ツヤがある）・流紋岩（細かくて流れ模様）を比べてみると、見分ける力がつきます。"],
   research=[("同じマグマの3兄弟","流紋岩・黒曜石・軽石の写真を並べて、同じマグマからなぜ違う石ができるのか調べる。")],
   type_text="白っぽい流紋岩はスピリットやスカイ、ピンク色のものはスピリットのタイプになりやすい傾向があります。",
-  related=["obsidian","pumice","granite","andesite"],
+  related=["obsidian","pumice","granite","andesite","tuff"],
 ),
 dict(
   id="obsidian", name="黒曜石", yomi="こくようせき", cat="igneous",
@@ -398,7 +398,7 @@ dict(
          "崖の下は落石の危険があるので、近づきすぎないようにしましょう。"],
   research=[("つぶの大きさくらべ","礫岩・砂岩・泥岩を並べて、つぶの大きさと、できた場所（川の近く／遠い海）の関係を調べる。")],
   type_text="黒っぽい泥岩は、アースやドラゴンのタイプになりやすい傾向があります。",
-  related=["sandstone","slate","conglomerate","limestone"],
+  related=["sandstone","slate","conglomerate","limestone","hornfels"],
 ),
 dict(
   id="conglomerate", name="礫岩", yomi="れきがん", cat="sedimentary",
@@ -458,7 +458,7 @@ dict(
          "街の中でも、石灰岩が使われていることがあります。また、海岸に打ち上げられたサンゴや貝のかけらも、石灰岩と同じ成分です。"],
   research=[("泡が出る石さがし","拾った石と、貝がら・卵のから・チョークにお酢をかけて、泡が出るものと出ないものを分ける。")],
   type_text="白っぽい石灰岩はスピリットやスカイ、灰色のものはアースのタイプになりやすい傾向があります。",
-  related=["marble","chert","quartz","sandstone"],
+  related=["marble","chert","quartz","sandstone","calcite"],
 ),
 # ───────────────────────── 変成岩 ─────────────────────────
 dict(
@@ -488,7 +488,7 @@ dict(
          "平べったいので、水切り遊びの石としても人気です。"],
   research=[("割れ方くらべ","粘板岩・泥岩・砂岩の割れた面を比べて、どれがいちばん平らか調べる。")],
   type_text="黒い粘板岩は、ドラゴンやアースのタイプになりやすい傾向があります。",
-  related=["mudstone","schist","marble","sandstone"],
+  related=["mudstone","schist","marble","sandstone","pyrite"],
 ),
 dict(
   id="schist", name="結晶片岩", yomi="けっしょうへんがん", cat="metamorphic",
@@ -517,7 +517,7 @@ dict(
          "天然記念物の場所（長瀞の岩畳など）では、石を拾うことはできません。"],
   research=[("変成岩の地図","三波川変成帯がどこを通っているか地図で調べ、自分の住む地域から近い場所を探す。")],
   type_text="銀色や灰色の結晶片岩はアース、黒っぽいものはドラゴンのタイプになりやすい傾向があります。",
-  related=["slate","serpentinite","mica","marble"],
+  related=["slate","serpentinite","mica","marble","gneiss","garnet"],
 ),
 dict(
   id="serpentinite", name="蛇紋岩", yomi="じゃもんがん", cat="metamorphic",
@@ -547,7 +547,7 @@ dict(
          "蛇紋岩の地層があるところは、植物があまり育たず、独特の植物が生えることでも知られています。"],
   research=[("ヒスイと蛇紋岩","ヒスイと蛇紋岩の写真を並べて、見分けるポイント（重さ・かたさ・ツヤ）を表にまとめる。")],
   type_text="緑〜黒っぽい蛇紋岩は、アースやドラゴンのタイプになりやすい傾向があります。",
-  related=["jade","schist","slate","magnetite"],
+  related=["jade","schist","slate","magnetite","peridotite"],
 ),
 dict(
   id="marble", name="大理石", yomi="だいりせき", cat="metamorphic",
@@ -578,7 +578,7 @@ dict(
   where_caution=None,
   research=[("街の大理石さがし","駅や建物の床・壁で、大理石や石灰岩が使われている場所を探して写真に撮り、模様を比べる。")],
   type_text="白い大理石は、スピリットやスカイのタイプになりやすい傾向があります。",
-  related=["limestone","quartz","slate","schist"],
+  related=["limestone","quartz","slate","schist","calcite"],
 ),
 dict(
   id="hornfels", name="ホルンフェルス", yomi="ホルンフェルス", cat="metamorphic", date="2026-10-15",
