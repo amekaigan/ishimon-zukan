@@ -47,6 +47,7 @@ self.addEventListener('fetch', event => {
     url.includes('tailwindcss') ||
     url.includes('googletagmanager') ||
     url.includes('google-analytics') ||
+    url.includes('cloudflareinsights') ||
     url.includes('huggingface') ||
     url.includes('openai') ||
     url.includes('workers.dev') ||

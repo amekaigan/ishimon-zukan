@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- Google tag (gtag.js) -->
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "640fc9295b3c49b3ae427b4069a2201e"}'></script><!-- End Cloudflare Web Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -31,7 +32,7 @@
       var p=document.createElement('div'); p.textContent='• '+msg; d.appendChild(p);
     }catch(e){}
   }
-  var IGNORE=/googletagmanager|google-analytics|gtag\/js|doubleclick|analytics\.google/;
+  var IGNORE=/googletagmanager|google-analytics|cloudflareinsights|gtag\/js|doubleclick|analytics\.google/;
   window.addEventListener('error', function(ev){
     if(ev && ev.target && ev.target.tagName && (ev.target.tagName==='SCRIPT'||ev.target.tagName==='LINK')){
       var u=(ev.target.src||ev.target.href||'?');
