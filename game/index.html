@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- Google tag (gtag.js) -->
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "640fc9295b3c49b3ae427b4069a2201e"}'></script><!-- End Cloudflare Web Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-J4CZ7ZZST3"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -31,7 +32,7 @@
       var p=document.createElement('div'); p.textContent='• '+msg; d.appendChild(p);
     }catch(e){}
   }
-  var IGNORE=/googletagmanager|google-analytics|gtag\/js|doubleclick|analytics\.google/;
+  var IGNORE=/googletagmanager|google-analytics|cloudflareinsights|gtag\/js|doubleclick|analytics\.google/;
   window.addEventListener('error', function(ev){
     if(ev && ev.target && ev.target.tagName && (ev.target.tagName==='SCRIPT'||ev.target.tagName==='LINK')){
       var u=(ev.target.src||ev.target.href||'?');
@@ -978,6 +979,7 @@ const buildImageUrl = (prompt, seed) => {
     uid: window._currentUid || '',   // v2.68.0: Worker側の日次上限判定に使う
     gid: window._curGid || '',       // v2.68.0: 撮影1回の識別子。リトライでも同じ＝二重消費しない
   });
+  if (window._currentUid && window._currentUid === window.OWNER_UID) params.set('owner', '1'); // ログで自分の分を見分ける目印
   return `https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;
 };
 
@@ -1010,11 +1012,13 @@ const warmUpIshimon = () => {
     if (engine !== 'ishimon') return;              // ishimonの時だけ意味がある
     if (Date.now() - _lastWarmAt < 120000) return; // 2分以内に温めていればスキップ
     _lastWarmAt = Date.now();
-    const url = 'https://ishimon-img.ishimonzukan.workers.dev/?' + new URLSearchParams({
+    const wp = new URLSearchParams({
       prompt: 'TOK', width: '1024', height: '1024', seed: '1',
       engine: 'ishimon', model: 'ishimon',
       warm: '1', // Worker側で1ステップに軽量化する合図。未対応でも通常生成として温まる
-    }).toString();
+    });
+    if (window._currentUid && window._currentUid === window.OWNER_UID) wp.set('owner', '1'); // ログで自分の分を見分ける目印
+    const url = 'https://ishimon-img.ishimonzukan.workers.dev/?' + wp.toString();
     fetch(url).catch(() => {});
   } catch (e) {}
 };

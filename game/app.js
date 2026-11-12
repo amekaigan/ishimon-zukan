@@ -1,4 +1,4 @@
-/*ISHIMON-KEY:51uocr-559369*/
+/*ISHIMON-KEY:sd9g2v-559612*/
 function _extends(){return _extends=Object.assign?Object.assign.bind():function(n){for(var e=1;e<arguments.length;e++){var t=arguments[e];for(var r in t)({}).hasOwnProperty.call(t,r)&&(n[r]=t[r]);}return n;},_extends.apply(null,arguments);}const{useState,useEffect,useRef,useMemo,useCallback,Fragment}=React;// アプリバージョン（設定画面・キャッシュバスト等で使用）
 // ===== スライドショー用石モン画像（base64埋め込み） =====
 const SLIDE_IMGS={mon1:"/images/mon2.webp",mon2:"/images/mon6.webp",mon3:"/images/mon3.webp",fire:"/images/mon4.webp"};// ===== 出会いマップ：都道府県→地方（v2.50.0・座標は保存しない＝市区町村どまり）=====
@@ -29,7 +29,8 @@ if(window._currentUid!==window.OWNER_UID)engine='ishimon';// v2.36.0: 非オー�
 const params=new URLSearchParams({prompt:prompt,width:'1024',height:'1024',seed:String(seed||Math.floor(Math.random()*1000000)),engine:engine,// 'ishimon'(本命LoRA) / 'pollinations'(保険) / それ以外→turbo
 model:engine==='pollinations'?'flux':engine==='ishimon'?'ishimon':'turbo',uid:window._currentUid||'',// v2.68.0: Worker側の日次上限判定に使う
 gid:window._curGid||''// v2.68.0: 撮影1回の識別子。リトライでも同じ＝二重消費しない
-});return`https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;};// ===== 1日の無料生成枠（uid単位・端末ローカル。Step2でWorker厳格化予定） =====
+});if(window._currentUid&&window._currentUid===window.OWNER_UID)params.set('owner','1');// ログで自分の分を見分ける目印
+return`https://ishimon-img.ishimonzukan.workers.dev/?${params.toString()}`;};// ===== 1日の無料生成枠（uid単位・端末ローカル。Step2でWorker厳格化予定） =====
 const DAILY_FREE_GEN=5;// 1日に無料で生成できる回数
 const _genQuotaKey=()=>{const uid=window._currentUid||'guest';const d=new Date();const day=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;return`ishimon-gen-${uid}-${day}`;};const getGenCountToday=()=>{try{return parseInt(localStorage.getItem(_genQuotaKey())||'0',10)||0;}catch(_){return 0;}};const bumpGenCountToday=()=>{try{localStorage.setItem(_genQuotaKey(),String(getGenCountToday()+1));}catch(_){}};const genRemainingToday=()=>Math.max(0,DAILY_FREE_GEN-getGenCountToday());// AIエンジンのウォームアップ（コールドスタート対策）
 // Replicate(ishimon)は眠っていると起動に40〜60秒。撮影ボタンを押した瞬間にダミー生成を1発投げ、
@@ -39,8 +40,9 @@ let _lastWarmAt=0;const warmUpIshimon=()=>{try{let engine='ishimon';try{const s=
 if(window._currentUid!==window.OWNER_UID)engine='ishimon';// v2.36.0: 非オーナーはishimon固定（uid判定）
 if(engine!=='ishimon')return;// ishimonの時だけ意味がある
 if(Date.now()-_lastWarmAt<120000)return;// 2分以内に温めていればスキップ
-_lastWarmAt=Date.now();const url='https://ishimon-img.ishimonzukan.workers.dev/?'+new URLSearchParams({prompt:'TOK',width:'1024',height:'1024',seed:'1',engine:'ishimon',model:'ishimon',warm:'1'// Worker側で1ステップに軽量化する合図。未対応でも通常生成として温まる
-}).toString();fetch(url).catch(()=>{});}catch(e){}};// Hugging Face画像生成
+_lastWarmAt=Date.now();const wp=new URLSearchParams({prompt:'TOK',width:'1024',height:'1024',seed:'1',engine:'ishimon',model:'ishimon',warm:'1'// Worker側で1ステップに軽量化する合図。未対応でも通常生成として温まる
+});if(window._currentUid&&window._currentUid===window.OWNER_UID)wp.set('owner','1');// ログで自分の分を見分ける目印
+const url='https://ishimon-img.ishimonzukan.workers.dev/?'+wp.toString();fetch(url).catch(()=>{});}catch(e){}};// Hugging Face画像生成
 const generateImageHuggingFace=async(prompt,seed)=>{const payload={inputs:prompt,parameters:{seed:seed||Math.floor(Math.random()*1000000),width:512,height:512}};const headers={'Content-Type':'application/json'};if(HF_API_TOKEN!=='HF_API_TOKEN_HERE')headers['Authorization']=`Bearer ${HF_API_TOKEN}`;const res=await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`,{method:'POST',headers,body:JSON.stringify(payload)});if(!res.ok)throw new Error(`HF API ${res.status}`);const blob=await res.blob();return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});};// ===== GPS位置情報の取得 =====
 // ユーザーの現在地を取得し、可能なら逆ジオコーディングで地名を返す
 const getCurrentLocation=async()=>{if(!navigator.geolocation)return null;return new Promise(resolve=>{const timeout=setTimeout(()=>resolve(null),8000);navigator.geolocation.getCurrentPosition(async pos=>{clearTimeout(timeout);const{latitude,longitude}=pos.coords;const result={name:null};// 逆ジオコーディング (OpenStreetMap Nominatim、無料・APIキー不要)
