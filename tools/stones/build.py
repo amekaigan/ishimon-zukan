@@ -19,6 +19,7 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
 from stones import CATEGORIES, HANDMADE, RIVER_CAUTION, STONES  # noqa: E402
+from photos import PHOTOS  # noqa: E402
 
 DATE = "2026-10-14"
 SITE = "https://ishimonzukan.com"
@@ -63,6 +64,34 @@ def caution_box(c):
 
 def paras(ps):
     return "\n".join(f"      <p>{p}</p>" for p in ps)
+
+
+def hero_html(sid, name):
+    """石の写真（photos.py に登録があるときだけ）。撮影者とライセンスを写真の下に出す。"""
+    ph = PHOTOS.get(sid)
+    if not ph:
+        return f"  <!-- PHOTO:START（写真は tools/stones/photos.py に登録すると出る） -->\n  <!-- PHOTO:END -->\n"
+    lic = f'<a href="{ph["license_url"]}" rel="license noopener" target="_blank">{ph["license"]}</a>' if ph.get("license_url") else ph["license"]
+    return f"""  <!-- PHOTO:START（tools/stones/build.py が tools/stones/photos.py から作る） -->
+  <figure class="stone-hero">
+    <img src="/images/stones/{sid}.webp" alt="{ph.get('alt') or name + 'の標本'}" width="{ph['w']}" height="{ph['h']}" decoding="async">
+    <figcaption>写真：{ph['author']}／{lic}／<a href="{ph['page']}" rel="noopener" target="_blank">ウィキメディア・コモンズ</a></figcaption>
+  </figure>
+  <!-- PHOTO:END -->
+"""
+
+
+def patch_handmade():
+    """手書きページ（chert・quartz）の写真の部分だけを差し替える。"""
+    for sid, st in HANDMADE.items():
+        p = os.path.join(ROOT, "stones", f"{sid}.html")
+        src = open(p, encoding="utf-8").read()
+        block = hero_html(sid, st["name"])
+        if "<!-- PHOTO:START" in src:
+            src = re.sub(r"  <!-- PHOTO:START.*?<!-- PHOTO:END -->\n", lambda m: block, src, flags=re.S)
+        else:
+            src = re.sub(r"  <!-- 写真（標本が届いたら戻す）.*?-->\n", lambda m: block, src, count=1, flags=re.S)
+        open(p, "w", encoding="utf-8").write(src)
 
 
 def page(s):
@@ -184,13 +213,7 @@ def page(s):
     <div class="article-meta">石モン図鑑 / {date_ja(d)}</div>
   </header>
 
-  <!-- 写真（標本が届いたら戻す）：/images/stones/{sid}.webp 4:3
-  <figure class="stone-hero">
-    <img src="/images/stones/{sid}.webp" alt="{name}の標本" width="1200" height="900">
-    <figcaption>{name}の標本（石モン図鑑 撮影）</figcaption>
-  </figure>
-  -->
-
+{hero_html(sid, name)}
   <p class="stone-lead">
     {s['lead']}
   </p>
@@ -387,6 +410,7 @@ def build_sitemaps():
 def main():
     for s in STONES:
         open(os.path.join(ROOT, "stones", f"{s['id']}.html"), "w", encoding="utf-8").write(page(s))
+    patch_handmade()
     build_index()
     build_sitemaps()
     print(f"built {len(STONES)} pages + index + sitemaps")
