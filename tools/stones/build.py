@@ -110,7 +110,7 @@ def page(s):
                 "@type": "Article",
                 "headline": s["title"].split("｜")[0],
                 "description": s["desc"],
-                "image": f"{SITE}/ogp_ishimon.png",
+                "image": f"{SITE}/images/stones/{sid}.webp" if sid in PHOTOS else f"{SITE}/ogp_ishimon.png",
                 "datePublished": d,
                 "dateModified": d,
                 "inLanguage": "ja",
@@ -329,6 +329,13 @@ def ordered_ids():
     return out
 
 
+def thumb_html(sid):
+    """一覧のカードの写真（小さく切り抜いたもの）。写真がない石は🪨のまま。"""
+    if sid in PHOTOS and os.path.exists(os.path.join(ROOT, "images", "stones", "thumb", f"{sid}.webp")):
+        return f'<img src="/images/stones/thumb/{sid}.webp" alt="" width="320" height="240" loading="lazy" decoding="async">'
+    return "🪨"
+
+
 def build_index():
     p = os.path.join(ROOT, "stones", "index.html")
     src = open(p, encoding="utf-8").read()
@@ -339,7 +346,7 @@ def build_index():
         for sid in groups[k]:
             st = ALL[sid]
             cards.append(f"""      <a class="stone-card" href="/stones/{sid}.html">
-        <div class="sc-thumb">🪨</div>
+        <div class="sc-thumb">{thumb_html(sid)}</div>
         <div class="sc-body">
           <div class="sc-name">{st['name']}</div>
           <div class="sc-desc">{st['card']}</div>

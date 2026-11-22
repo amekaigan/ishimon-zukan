@@ -311,6 +311,8 @@ h2,
   background: linear-gradient(135deg, rgba(199,31,142,0.10), rgba(90,26,120,0.08));
 }
 .stone-card.soon .sc-thumb { background: #f3f3f3; color: #ccc; }
+.stone-card .sc-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.zukan-photo-note { font-size: 11px; color: #888; margin: -4px 0 16px; }
 
 /* ---------- 一覧ページ：種類の見出しと目次 ---------- */
 .zukan-count {
